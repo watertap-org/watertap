@@ -34,6 +34,7 @@ from idaes.core import (
     UnitModelCostingBlock,
     UnitModelBlockData,
 )
+from idaes.core.util.exceptions import InitializationError
 from idaes.models.unit_models import (
     Feed,
     Separator,
@@ -604,79 +605,214 @@ class ADHealthyRootInitializer(InitializerBase):
 
     CONFIG = InitializerBase.CONFIG()
 
-    # Healthy-root seed for the digester liquid outlet (kg/m3). Only components
-    # present in the property package are applied, so this serves ADM1 variants.
+    # _HEALTHY_SEED = {
+    #     "S_su": 0.012,
+    #     "S_aa": 0.005,
+    #     "S_fa": 0.10,
+    #     "S_va": 0.012,
+    #     "S_bu": 0.013,
+    #     "S_pro": 0.017,
+    #     "S_ac": 0.20,
+    #     "S_h2": 2e-7,
+    #     "S_ch4": 0.055,
+    #     "X_ch": 0.03,
+    #     "X_pr": 0.10,
+    #     "X_li": 0.03,
+    #     "X_su": 0.5,
+    #     "X_aa": 1.0,
+    #     "X_fa": 0.3,
+    #     "X_c4": 0.4,
+    #     "X_pro": 0.15,
+    #     "X_ac": 0.8,
+    #     "X_h2": 0.35,
+    #     "X_c": 3.0,
+    # }
+
     _HEALTHY_SEED = {
-        "S_I": 0.057,
-        "S_IC": 1.611,
-        "S_IN": 2.828,
-        "S_IP": 3.298,
-        "S_K": 1.231,
-        "S_Mg": 0.878,
-        "S_aa": 0.00725,
-        "S_ac": 1.173,
-        "S_bu": 2.538,
-        "S_ch4": 0.0234,
-        "S_fa": 12.9,
-        "S_h2": 0.00339,
-        "S_pro": 0.488,
-        "S_su": 11.269,
-        "S_va": 2.246,
-        "X_I": 14.94,
-        "X_aa": 0.669,
-        "X_ac": 0.11,
-        "X_ch": 0.0778,
-        "X_li": 0.101,
-        "X_pr": 0.0785,
+        "S_ac": 0.20,
+        "S_h2": 2e-7,
+        "S_ch4": 0.055,
+        "X_ac": 0.8,
+        "X_h2": 0.35,
     }
 
-    # This routine manages its own state fixing/restoration.
     def fix_initialization_states(self, model):
         return
 
     def restore_model_state(self, model):
         return
 
-    def initialization_routine(self, model, **kwargs):
-        solver = get_solver(options={"max_iter": 3000, "bound_push": 1e-8})
-        rblk = model.liquid_phase.reactions[0]
-        keys = _methanogen_reaction_keys(model.config.reaction_package)
+    def initialization_routine(
+        self, model, liquid_state_args=None, vapor_state_args=None, **kwargs
+    ):
 
-        # Fix the inlet so the unit is a square, standalone system.
-        fixed = []
-        for var in model.inlet.vars.values():
-            for idx in var:
-                if not var[idx].fixed:
-                    var[idx].fix()
-                    fixed.append(var[idx])
-        props_in = model.liquid_phase.properties_in[0]
-        for nm in ("anions", "cations"):
-            v = getattr(props_in, nm, None)
-            if v is not None and not v.fixed:
-                v.fix()
-                fixed.append(v)
+        # ---------------------------------------------------------------
+        # Solver
+        # ---------------------------------------------------------------
+        outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
+        solver = kwargs.get("solver", None)
+        optarg = kwargs.get("optarg", None)
 
-        # Seed the healthy root (biomass + near-neutral pH).
-        props_out = model.liquid_phase.properties_out[0]
-        complist = {c for (_, c) in model.inlet.conc_mass_comp.keys()}
-        for c, val in self._HEALTHY_SEED.items():
-            if c in complist:
-                props_out.conc_mass_comp[c].set_value(val)
-        rblk.S_H.set_value(6e-8)
+        if optarg is None:
+            optarg = {}
 
-        # Stage 1: relax methanogen pH inhibition -> seeded biomass grows in.
-        for r in keys:
-            rblk.I_fun[r].deactivate()
-            rblk.I[r].fix(1.0)
-        solver.solve(model)
-        # Stage 2: restore true inhibition -> healthy root holds.
-        for r in keys:
-            rblk.I[r].unfix()
-            rblk.I_fun[r].activate()
-        results = solver.solve(model)
+        solverobj = get_solver(solver, optarg)
 
-        for v in fixed:
+        # ---------------------------------------------------------------
+        # Healthy initial state
+        # ---------------------------------------------------------------
+        # liquid_state_args = {
+        #     "conc_mass_comp": self._HEALTHY_SEED.copy(),
+        # }
+
+        # ---------------------------------------------------------------
+        # Check DOF
+        # ---------------------------------------------------------------
+        if degrees_of_freedom(model) != 0:
+            raise InitializationError(
+                f"{model.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(model)}"
+            )
+
+        # ---------------------------------------------------------------
+        # Logging
+        # ---------------------------------------------------------------
+        init_log = idaeslog.getInitLogger(
+            model.name, kwargs.get("outlvl", idaeslog.NOTSET), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, kwargs.get("outlvl", idaeslog.NOTSET), tag="unit"
+        )
+
+        # ---------------------------------------------------------------
+        # Initialize liquid phase
+        #
+        # This is the same basic operation performed by AD.initialize_build().
+        # The important difference is that we provide state_args containing
+        # the healthy methane-producing state.
+        # ---------------------------------------------------------------
+        for t, v in model.liquid_phase.properties_out[0].conc_mass_comp.items():
+            v.fix()
+
+        flags = model.liquid_phase.initialize(
+            outlvl=kwargs.get("outlvl", idaeslog.NOTSET),
+            optarg=kwargs.get("optarg", None),
+            solver=kwargs.get("solver", None),
+            state_args=liquid_state_args,
+            hold_state=True,
+        )
+
+        # ---------------------------------------------------------------
+        # Initialize vapor phase
+        # ---------------------------------------------------------------
+        for t, v in model.vapor_phase[0].conc_mass_comp.items():
+            v.fix()
+
+        model.vapor_phase.initialize(
+            outlvl=kwargs.get("outlvl", idaeslog.NOTSET),
+            optarg=kwargs.get("optarg", None),
+            solver=kwargs.get("solver", None),
+            state_args=vapor_state_args,
+            hold_state=False,
+        )
+
+        for t, v in model.vapor_phase[0].conc_mass_comp.items():
             v.unfix()
+
+        init_log.info_high("Initialization Step 2 Complete.")
+
+        # ---------------------------------------------------------------
+        # Set healthy initial guesses
+        # ---------------------------------------------------------------
+
+        # Release the temporary concentration fixing
+        for t, v in model.liquid_phase.properties_out[0].conc_mass_comp.items():
+            v.unfix()
+
+        props = model.liquid_phase.properties_out[0]
+
+        for c, value in self._HEALTHY_SEED.items():
+            props.conc_mass_comp[c].set_value(value)
+
+        # ---------------------------------------------------------------
+        # Simplify AD chemistry, exactly as default initialization does
+        # ---------------------------------------------------------------
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+
+            rblk = model.liquid_phase.reactions[0.0]
+
+            rblk.pKW.fix()
+            rblk.pK_a_co2.fix()
+            rblk.pK_a_IN.fix()
+
+            rblk.Dissociation.deactivate()
+            rblk.CO2_acid_base_equilibrium.deactivate()
+            rblk.IN_acid_base_equilibrium.deactivate()
+
+            model.KH_co2.fix()
+            model.KH_ch4.fix()
+            model.KH_h2.fix()
+
+            model.CO2_Henrys_law.deactivate()
+            model.Ch4_Henrys_law.deactivate()
+            model.H2_Henrys_law.deactivate()
+
+            # -----------------------------------------------------------
+            # Solve simplified AD
+            # -----------------------------------------------------------
+            results = solverobj.solve(
+                model,
+                tee=slc.tee,
+                options={"ma27_pivtol": 1e-2},
+            )
+
+            if not pyo.check_optimal_termination(results):
+                init_log.warning(
+                    f"Trouble solving unit model {model.name}, " "trying one more time"
+                )
+
+                results = solverobj.solve(
+                    model,
+                    tee=slc.tee,
+                    options={"ma27_pivtol": 1e-2},
+                )
+
+        init_log.info_high(
+            "Initialization Step 3 {}.".format(idaeslog.condition(results))
+        )
+
+        # ---------------------------------------------------------------
+        # Restore model
+        # ---------------------------------------------------------------
+        model.liquid_phase.release_state(
+            flags,
+            outlvl=kwargs.get("outlvl", idaeslog.NOTSET),
+        )
+
+        rblk.pKW.unfix()
+        rblk.pK_a_co2.unfix()
+        rblk.pK_a_IN.unfix()
+
+        rblk.Dissociation.activate()
+        rblk.CO2_acid_base_equilibrium.activate()
+        rblk.IN_acid_base_equilibrium.activate()
+
+        model.KH_co2.unfix()
+        model.KH_ch4.unfix()
+        model.KH_h2.unfix()
+
+        model.CO2_Henrys_law.activate()
+        model.Ch4_Henrys_law.activate()
+        model.H2_Henrys_law.activate()
+
+        if not pyo.check_optimal_termination(results):
+            raise InitializationError(
+                f"{model.name} failed to initialize successfully. "
+                "Please check the output logs for more information."
+            )
+
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
         return results
 
 
@@ -811,6 +947,7 @@ def initialize_system(m, bio_P=False, solver=None):
         # unit.initialize(outlvl=idaeslog.WARNING)
         if unit is m.fs.AD:
             ad_initializer.initialize(unit, output_level=_log.debug)
+            # unit.initialize(outlvl=idaeslog.WARNING)
         else:
             unit.initialize(outlvl=idaeslog.WARNING)
 
@@ -1084,7 +1221,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
