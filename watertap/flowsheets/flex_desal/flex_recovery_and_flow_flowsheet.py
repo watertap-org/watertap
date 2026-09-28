@@ -14,7 +14,7 @@
 Copied from the flexible desalination flowsheet, but altered ro surrogate.
 """
 
-from idaes.apps.grid_integration import OperationModel
+from idaes.apps.grid_integration import OperationModel, StorageModel
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -210,8 +210,17 @@ def build_desal_flowsheet(blk, params: um_params.FlexDesalParams):
         )  # Slack variable so that when plant power is zero, the solar has somewhere to go.
 
     if params.include_battery:
-        blk.battery = OperationModel()
-        blk.net_power_consumption += blk.battery.power_charge - blk.battery.discharge
+        blk.battery = StorageModel(
+            time_interval=params.timestep_hours,
+            charge_efficiency=params.battery.efficiency,
+            max_charge_rate=params.battery.power_capacity,
+            max_discharge_rate=params.battery.power_capacity,
+            max_holdup=params.battery.energy_capacity * params.battery.maximum_soc,
+            min_holdup=params.battery.energy_capacity * params.battery.minimum_soc,
+        )
+        blk.net_power_consumption += (
+            blk.battery.charge_rate - blk.battery.discharge_rate
+        )
 
     # Power purchased from the grid
     blk.power_from_grid = Var(
