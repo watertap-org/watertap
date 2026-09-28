@@ -1,5 +1,5 @@
 How to build a Flexible Reverse Osmosis Flowsheet
-============================
+=================================================
 
 Introduction
 ------------
@@ -42,3 +42,5 @@ But these bounds could be defined by other factors such as:
     - All described inthe other flex ro document
 - Run Pricetaker optimization
     - The problem formulation is MINLP, meaning the default waterTAP solver cannot be used. Instead, one of the solvers in the tutorial should be selected.
+
+    

@@ -1,5 +1,5 @@
 Flexible Reverse Osmosis Flowsheets
-============================
+===================================
 
 Introduction
 ------------
@@ -317,7 +317,7 @@ The RO unit uses the ``ROParams`` dataclass.
      - ``1``
      - time steps
      - Delay (time steps) between startup command and operation.
-  * - ``max_num_skids_shutdown_per_timestep``
+   * - ``max_num_skids_shutdown_per_timestep``
      - ``1``
      - num of skids
      - Number of skids that can shutdown in a single time step
@@ -415,7 +415,7 @@ in "unit_models".
    "Power consumption", ":math:`P = EI \cdot Q^{product}`"
 
 Pricetaker Model Functions
--------------------------
+--------------------------
 To setup of the Pricetaker model, several helper function are used. These functions are part of the Pricetaker framework and are defined in IDAES.
 
 * ``append_lmp_data``
