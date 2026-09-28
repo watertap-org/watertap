@@ -20,6 +20,7 @@ How To Guides
    how_to_use_parameter_sweep
    how_to_use_parameter_sweep_monte_carlo
    how_to_run_differential_parameter_sweep
+   how_to_create_flex_ro_multiperiod_model
    how_to_use_loopTool_to_explore_flowsheets
    how_to_use_debugging_solver_wrapper
    how_to_use_property_test_harness
