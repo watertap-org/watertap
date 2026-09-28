@@ -341,6 +341,7 @@ def constrain_water_production(m, baseline_production: float = None):
 
 
 def add_useful_expressions(m):
+    # TODO: Split this function so the name reflects the purpose
     """Defines useful expressions for custom objective functions"""
 
     m.total_water_revenue = Expression(expr=sum(m.period[:, :].water_revenue))

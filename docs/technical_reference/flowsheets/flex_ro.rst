@@ -1,53 +1,115 @@
-
-Flexible Reverse Osmosis Flowsheet
+Flexible Reverse Osmosis Flowsheets
 ============================
 
 Introduction
 ------------
 
-The flowsheets represents the operational window and energy consumption of two different RO plants.
-The flowsheet is used with the Pricetaker model to determine the cost-optimal operation based on the treatment 
-system energy surrogates and constraints as well as the variable grid electricity costs. 
+The flowsheets ``flex_recovery.py`` and ``flex_recovery_and_flow.py`` represent two different RO plants.
+Both flowsheets use the IDAES [Pricetaker model](https://github.com/IDAES/idaes-pse/blob/main/docs/reference_guides/apps/grid_integration/multiperiod/Price_Taker.rst) 
+to determine the cost-optimal operation based on treatment energy requirement, operational constraints, and variable grid electricity costs. 
+Each flowsheet characterizes the operational flexiblity of the respective plants.
 
 
 File Structure
 ---------------
 
-The flowsheet is 'wrd_ro_flowsheet' in watertap.flowsheets.flex_desal.wrd_ro_flowsheet.
-The parameters of each unit model are defined in params. They are passed during the model build.
-The specific unit models for the UF and RO are in watertap.flowsheets.flex_desal.wrd_unit_models. 
-The general unit model are in watertap.flowsheets.flex_desal.unit_models. 
-A few additional function are included in the watertap.flowsheets.flex_desal.utils
+There are four files associated with each case study.
+1) The flowsheet file (``flex_recovery.py`` or ``flex_recovery_and_flow.py``) contains the model build, constraints, and expressions used to construct the Pricetaker optimization problem.
+2) The unit model file (``unit_models.py``) contains the unit model definitions for each treament step in the flowsheet.
+3) The params file (``params.py``) contains the parameter definitions for each unit model and the overall FlexDesal model.
+4) The utilities file (``utils.py``) includes a few additional functions.
+ 
+Edits to the model typically invlove changes to the flowsheet, unit model, and parameters files.
 
 Parameters
 ----------
+Parameters from both flowsheets are described here. Note that not all are used in each flowsheet.
 
 The top-level ``FlexDesalParams`` values include:
 
-.. csv-table::
-  :header: "Parameter", "Default value", "Units", "Description"
+.. list-table::
+   :header-rows: 1
 
-  "``start_date``", "``2022-07-05 00:00:00``", "timestamp", "Start of the simulation horizon."
-  "``end_date``", "``2022-07-06 00:00:00``", "timestamp", "End of the simulation horizon."
-  "``timestep_hours``", "``0.25``", "h", "Length of each simulation time step."
-  "``product_water_price``", "``0``", "$ / m3", "Unit revenue for produced water."
-  "``fixed_monthly_cost``", "``766000``", "$ / month", "Fixed monthly customer/facility charge."
-  "``customer_rate``", "``100``", "-", "Customer-rate multiplier used in tariff calculations."
-  "``constrain_to_baseline_production``", "``False``", "-", "Whether to enforce baseline production tracking."
-  "``curtailment_fraction``", "``0.0``", "dimensionless", "Allowed fractional curtailment relative to baseline production."
-  "``annual_production_AF``", "``3125``", "acre-ft/year", "Annual production target used for absolute production constraints."
-  "``production_constraint_to_objective``", "``False``", "-", "Whether production compliance is enforced through objective penalization."
-  "``production_constraint_penalty``", "``0.6``", "$ / m3 (effective penalty scale)", "Penalty weight applied when production target is incorporated in the objective."
-  "``emissions_cost``", "``0``", "$ / kg", "Cost assigned to emissions associated with grid electricity use."
-  "``include_demand_response``", "``False``", "-", "Enable demand-response price/revenue terms."
-  "``include_battery``", "``False``", "-", "Enable battery operation model."
-  "``include_onsite_solar``", "``False``", "-", "Enable onsite solar generation model."
-  "``onsite_capacity``", "``0``", "kW", "Installed onsite generation capacity."
-  "``nonworking_hours``", "``[]``", "hour index list", "Hours where startup/shutdown actions may be restricted."
-  "``rainy_days``", "``None``", "day count", "Optional count/indicator used by scenario-specific logic."
-  "``CAPEX_yr``", "``None``", "$ / year", "Optional annualized CAPEX value for economic reporting."
-  "``max_daily_shutdowns``", "``None``", "count/day", "Optional limit on shutdown events over a daily rolling window."
-
+   * - Parameter
+     - Default value
+     - Units
+     - Description
+   * - ``start_date``
+     - ``2022-07-05 00:00:00``
+     - timestamp
+     - Start of the simulation horizon.
+   * - ``end_date``
+     - ``2022-07-06 00:00:00``
+     - timestamp
+     - End of the simulation horizon.
+   * - ``timestep_hours``
+     - ``0.25``
+     - hour(s)
+     - Length of each simulation time step.
+   * - ``product_water_price``
+     - ``0``
+     - $/m3
+     - Unit revenue for produced water.
+   * - ``fixed_monthly_cost``
+     - ``766000``
+     - $/month
+     - Fixed monthly customer/facility charge.
+   * - ``customer_rate``
+     - ``100``
+     - dimensionless
+     - Customer-rate multiplier used in tariff calculations.
+   * - ``constrain_to_baseline_production``
+     - ``False``
+     - None
+     - Whether to enforce baseline production tracking.
+   * - ``curtailment_fraction``
+     - ``0.0``
+     - dimensionless
+     - Allowed fractional curtailment relative to baseline production.
+   * - ``annual_production_AF``
+     - ``3125``
+     - acre-ft/year
+     - Annual production target used for absolute production constraints.
+   * - ``production_constraint_to_objective``
+     - ``False``
+     - None
+     - Whether production compliance is enforced through objective penalization.
+   * - ``production_constraint_penalty``
+     - ``0.6``
+     - $/m3 (effective penalty scale)
+     - Penalty weight applied when production target is incorporated in the objective.
+   * - ``emissions_cost``
+     - ``0``
+     - $/kg
+     - Cost assigned to emissions associated with grid electricity use.
+   * - ``include_demand_response``
+     - ``False``
+     - None
+     - Enable demand-response price/revenue terms.
+   * - ``include_battery``
+     - ``False``
+     - None
+     - Enable battery operation model.
+   * - ``include_onsite_solar``
+     - ``False``
+     - None
+     - Enable onsite solar generation model.
+   * - ``onsite_capacity``
+     - ``0``
+     - kW
+     - Installed onsite generation capacity.
+   * - ``nonworking_hours``
+     - ``[]`` 
+     - hour index list
+     - Hours where startup/shutdown actions may be restricted.
+   * - ``CAPEX_yr``
+     - ``None``
+     - $/year
+     - Optional annualized CAPEX value for economic reporting.
+   * - ``max_daily_shutdowns``
+     - ``None``
+     - count/day
+     - Optional limit on shutdown events over a daily rolling window.
 
 
 Unit Models
@@ -55,10 +117,10 @@ Unit Models
 The existing flowsheets are built with the following unit models:
 
 Intake
-~~~~~~~~
+~~~~~~
 
-The intake unit uses the ``IntakeParams`` dataclass in
-``watertap.flowsheets.flex_desal.params``.
+The intake unit uses the ``IntakeParams`` dataclass:
+
 
 .. list-table::
    :header-rows: 1
@@ -92,11 +154,47 @@ The intake unit uses the ``IntakeParams`` dataclass in
      - $/m3
      - Optional chemical cost.
 
-Pretreatment (UF)
-~~~~~~~~~~~~~~~~~
+Pretreament (Generic)
+~~~~~~~~~~~~~~~~~~~~~
 
-The UF unit uses the ``WRD_UFParams`` dataclass in
-``watertap.flowsheets.flex_desal.params``.
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Default value
+     - Units
+     - Description
+   * - ``allow_shutdown``
+     - ``False``
+     - None
+     - Enables pretreatment unit on/off commitment logic.
+   * - ``energy_intensity``
+     - ``0.01``
+     - kWh/m3
+     - Specific pretreatment energy intensity.
+   * - ``leakage_fraction``
+     - ``0``
+     - dimensionless
+     - Fraction of inlet flow not recovered in pretreatment.
+   * - ``minimum_downtime``
+     - ``0``
+     - num time steps
+     - Minimum number of time steps the pretreatment unit remains off after shutdown.
+   * - ``startup_delay``
+     - ``0``
+     - num time steps
+     - Delay between startup command and pretreatment operation.
+   * - ``chemical_cost``
+     - ``None``
+     - $/m3 pretreatment feed flow
+     - Optional pretreatment chemical cost.
+
+
+
+Ultrafiltration (UF)
+~~~~~~~~~~~~~~~~~~~~
+
+The UF unit uses the ``UFParams`` dataclass. This is an alternative pretreatment to the generic unit model above.
 
 .. list-table::
    :header-rows: 1
@@ -159,11 +257,10 @@ The UF unit uses the ``WRD_UFParams`` dataclass in
      - Coefficients for the quadratic UF energy intensity surrogate.
 
 
-RO
-~~
+Reverse Omosis (RO)
+~~~~~~~~~~~~~~~~~~~
 
-The RO unit uses the ``WRD_ROParams`` dataclass in
-``watertap.flowsheets.flex_desal.params``.
+The RO unit uses the ``ROParams`` dataclass.
 
 .. list-table::
    :header-rows: 1
@@ -174,7 +271,7 @@ The RO unit uses the ``WRD_ROParams`` dataclass in
      - Description
    * - ``num_ro_skids``
      - ``4``
-     - None
+     - num of skids
      - Number of RO skids represented in the model.
    * - ``minimum_operating_skids``
      - ``2``
@@ -220,6 +317,10 @@ The RO unit uses the ``WRD_ROParams`` dataclass in
      - ``1``
      - time steps
      - Delay (time steps) between startup command and operation.
+  * - ``max_num_skids_shutdown_per_timestep``
+     - ``1``
+     - num of skids
+     - Number of skids that can shutdown in a single time step
    * - ``allow_variable_recovery``
      - ``False``
      - None
@@ -290,21 +391,21 @@ Common Variables
 There are several variables common across the unit models.
 
 .. csv-table::
-  :header: "Variable", "Symbol used in this document", "Used in equations"
+  :header: "Variable", "Symbol", "Set"
 
-  "Flowrate", ":math:`Q` (e.g., :math:`Q^{RO}_{t,i}`, :math:`Q^{UF}_{t,i}`)", "RO/UF positive and negative flow-change detection"
-  "Recovery", ":math:`R`", "None in current Equations and Relationships table"
-  "Operating mode", ":math:`u` (e.g., :math:`u^{brine}_{t}`)", "Total feed cost"
-  "Startup", ":math:`SU`", "None in current Equations and Relationships table"
-  "Shutdown", ":math:`s`", "Degree of flex"
-  "Energy intensity", ":math:`EI`", "None in current Equations and Relationships table"
-  "Flow cost", ":math:`c` (e.g., :math:`c^{intake}_{t}`, :math:`c^{brine}_{t}`)", "Total feed cost, Total brine-discharge cost, Total chemical cost"
+  "Flowrate", ":math:`Q` (e.g., :math:`Q^{RO}_{t,i}`, :math:`Q^{UF}_{t,i}`)", "[t,i]"
+  "Recovery", ":math:`R`", "[t,i]"
+  "Operating mode", ":math:`u` (e.g., :math:`u^{brine}_{t}`)", "[t,i]"
+  "Startup", ":math:`SU`", "[t,i]"
+  "Shutdown", ":math:`s`", "[t,i]"
+  "Energy intensity", ":math:`EI`", "[t,i]"
+  "Flow cost", ":math:`c` (e.g., :math:`c^{intake}_{t}`, :math:`c^{brine}_{t}`)", "None"
 
-Common Equations
-----------------
+Unit Model Common Equations
+---------------------------
 
 The following equations are built for every unit model via ``_add_required_variables``
-in ``watertap.flowsheets.flex_desal.unit_models``.
+in "unit_models".
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -313,15 +414,54 @@ in ``watertap.flowsheets.flex_desal.unit_models``.
    "Product flowrate", ":math:`Q^{product} = Q^{feed} \cdot R`"
    "Power consumption", ":math:`P = EI \cdot Q^{product}`"
 
-Symmetry Breaking Equations
----------------------------
+Pricetaker Model Functions
+-------------------------
+To setup of the Pricetaker model, several helper function are used. These functions are part of the Pricetaker framework and are defined in IDAES.
+
+* ``append_lmp_data``
+  Appends locational marginal price (LMP) data to the model for each time step. 
+
+  ..csv-table::
+     :header: "Description", "Symbol", "Name", "Index", "Units"
+
+     "Locational marginal price", ":math:`\lambda`", "lmp", "[t]", ":math:`\$/\text{kWh}`"
+
+
+* ``build_multiperiod_model``
+  Builds the Pricetaker operation model, which includes the objective function and constraints for the optimization problem.
+
+* ``update_operation_params``
+  Updates the Pricetaker operation model with the latest parameter values from the FlexDesalParams dataclass.
+
+Required Helper Functions
+--------------------------
+To complete setup, some WaterTAP defined function are used.
+
+* ``add_demand_and_fixed_costs``
+  Adds total demand and fixed costs over the time horizon.
+
+  .. csv-table::
+     :header: "Description", "Symbol", "Name", "Index", "Units"
+
+  "Fixed demand charge", ":math:`C_{demand}^{fixed}`", "fixed_demand_cost", "None", ":math:`\$`"
+  "Variable demand charge", ":math:`C_{demand}^{var}`", "variable_demand_cost", "None", ":math:`\$`"
+  "Fixed monthly customer cost", ":math:`C_{customer}`", "fixed_monthly_cost", "None", ":math:`\$`"
+
+* ``constrain_water_production``
+  Enforces either a baseline-tracking production target or an absolute production target over the horizon.
+
+  .. csv-table::
+  :header: "Description", "Symbol", "Name", "Index", "Units"
+
+  "Curtailment fraction", ":math:`\phi_{curtail}`", "curtailment_fraction", "None", ":math:`\text{dimensionless}`"
+  "Baseline production", ":math:`W_{base}`", "baseline_production", "None", ":math:`\text{m}^3`"
+  "Absolute production target", ":math:`W_{target}`", "production_target_abs", "None", ":math:`\text{m}^3`"
 
 
 Optional Helper Functions
------------
-In addition to the functions described in the first tutorial, the WRD implementation
-uses several helper functions in ``watertap.flowsheets.flex_desal.wrd_ro_flowsheet``.
-The following quantities are only built when specific helper functions are used.
+-------------------------
+A number of helper functions are defined in the ``watertap.flowsheets.flex_desal.flex_recovery_and_flow.flex_recovery_and_flow_flowsheet``.
+These helper function is build additional variables, constraints, and equations when called.
 
 * ``add_flow_costs(m)``
   Adds total feed, brine-discharge, and chemical-cost expressions over the time horizon.
@@ -389,6 +529,11 @@ left-hand-side quantity is introduced.
 .. csv-table::
   :header: "Description", "Defined in", "Equation"
 
+  "Fixed demand charge lower bound", "``add_demand_and_fixed_costs(m)``", ":math:`C_{demand,t}^{fixed} \geq r_{demand,t}^{fixed} P^{grid}_{t} N_{months}`"
+  "Variable demand charge lower bound", "``add_demand_and_fixed_costs(m)``", ":math:`C_{demand,t}^{var} \geq r_{demand,t}^{var} P^{grid}_{t} N_{months}`"
+  "Fixed monthly customer cost", "``add_demand_and_fixed_costs(m)``", ":math:`C_{customer} = c_{customer}^{monthly} N_{months}`"
+  "Baseline production target", "``constrain_water_production(m, baseline_production)``", ":math:`W_{prod} \geq W_{base} \left(1 - \phi_{curtail}\right)`"
+  "Absolute production target", "``constrain_water_production(m)``", ":math:`W_{prod} \geq W_{target}`"
   "Total feed cost", "``add_flow_costs(m)``", ":math:`C_{feed} = \Delta t \sum_{t} c^{intake}_{t}(1 - u^{brine}_{t})`"
   "Total brine-discharge cost", "``add_flow_costs(m)``", ":math:`C_{brine} = \Delta t \sum_{t} c^{brine}_{t}`"
   "Total chemical cost", "``add_flow_costs(m)``", ":math:`C_{chem} = \Delta t \left(\sum_{t} c^{intake,chem}_{t} + \sum_{t} c^{post,chem}_{t}\right)`"
@@ -408,12 +553,16 @@ left-hand-side quantity is introduced.
   "Non-flexible skid startup fixed", "``restrict_flexible_trains(m, num_flexible_trains)``", ":math:`SU_{t,i} = 0, \quad \forall i \in \mathcal{I}_{nonflex}, \forall t`"
   "Non-flexible skid shutdown fixed", "``restrict_flexible_trains(m, num_flexible_trains)``", ":math:`SD_{t,i} = 0, \quad \forall i \in \mathcal{I}_{nonflex}, \forall t`"
 
+Symmetry Breaking Equations
+---------------------------
+A number of equations are introduced that enable faster solve times by "breaking symmetry" in the optimization problem. These equations do not reflect physical constraints on the system, rather ways of reducing the feasible space of the problem.
 
-Flowsheet Specifications
-------------------------
-TODO: Currently table is incomplete because I want feedback on whether this organizational structure is a good idea.
-Also, these values aren't called / defined except in the tutoral. Not the flowsheet.
-The first flowsheet represents the ???? Santa Barbra plant, which flexibly varies recovery. The key paramters are given in the table below.
+
+
+Flowsheet Specifications in Tutorials
+-------------------------------------
+NOTE: These values aren't called / defined except in the tutoral. Not the flowsheet.
+The first flowsheet represents the Santa Barbra plant, which flexibly varies recovery.
 
 .. csv-table::
   :header: "Description", "Value", "Units"

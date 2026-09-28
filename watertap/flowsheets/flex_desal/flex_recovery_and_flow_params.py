@@ -23,6 +23,57 @@ import numpy as np
 
 
 @dataclass
+class FlexDesalParams:
+    """Parameters for flexible desalination"""
+
+    start_date: str = "2022-07-05 00:00:00"
+    end_date: str = "2022-07-06 00:00:00"
+    timestep_hours: float = 0.25
+
+    product_water_price: float = 0
+    fixed_monthly_cost: float = 766000
+    customer_rate: float = 100
+    constrain_to_baseline_production: bool = False
+    curtailment_fraction: float = 0.0
+    annual_production_AF: float = 3125  # in acre-ft / year
+    production_constraint_to_objective: bool = False
+    production_constraint_penalty: float = 0.6
+    emissions_cost: float = 0  # Cost of emissions in $/kg
+
+    include_demand_response: bool = False
+    include_battery: bool = False
+    include_onsite_solar: bool = False
+    onsite_capacity: float = 0
+    # Other parameters not used in tutorial, but have related functions in flex_recovery_and_flow_flowsheet.py
+    nonworking_hours: list[int] = field(default_factory=list)
+    CAPEX_yr: float = None
+    max_daily_shutdowns: Optional[int] = None
+
+    def __post_init__(self):
+        self.intake = IntakeParams()
+        self.uf = UFParams()
+        self.ro = ROParams()
+        self.posttreatment = PosttreatmentParams()
+        self.brinedischarge = BrineDischargeParams()
+        self.battery = Battery()
+
+        # datetime array
+        t = np.arange(
+            datetime.fromisoformat(self.start_date),
+            datetime.fromisoformat(self.end_date),
+            timedelta(hours=self.timestep_hours),
+        ).astype(datetime)
+
+        # length of time step in seconds
+        dt_seconds = self.timestep_hours * 3600
+        total_num_seconds = (t[-1] - t[0]).total_seconds() + dt_seconds
+
+        self.num_hours = total_num_seconds / 3600
+        self.num_days = self.num_hours / 24
+        self.num_months = self.num_days / 31
+
+
+@dataclass
 class UnitParams:
     """Abstract dataclass for parameters of all units"""
 
@@ -194,54 +245,3 @@ class Battery:
     initial_soc: float = 0.5
     minimum_soc: float = 0.2
     maximum_soc: float = 0.95
-
-
-@dataclass
-class FlexDesalParams:
-    """Parameters for flexible desalination"""
-
-    start_date: str = "2022-07-05 00:00:00"
-    end_date: str = "2022-07-06 00:00:00"
-    timestep_hours: float = 0.25
-
-    product_water_price: float = 0
-    fixed_monthly_cost: float = 766000
-    customer_rate: float = 100
-    constrain_to_baseline_production: bool = False
-    curtailment_fraction: float = 0.0
-    annual_production_AF: float = 3125  # in acre-ft / year
-    production_constraint_to_objective: bool = False
-    production_constraint_penalty: float = 0.6
-    emissions_cost: float = 0  # Cost of emissions in $/kg
-
-    include_demand_response: bool = False
-    include_battery: bool = False
-    include_onsite_solar: bool = False
-    onsite_capacity: float = 0
-    # Other parameters not used in tutorial, but have related functions in flex_recovery_and_flow_flowsheet.py
-    nonworking_hours: list[int] = field(default_factory=list)
-    CAPEX_yr: float = None
-    max_daily_shutdowns: Optional[int] = None
-
-    def __post_init__(self):
-        self.intake = IntakeParams()
-        self.uf = UFParams()
-        self.ro = ROParams()
-        self.posttreatment = PosttreatmentParams()
-        self.brinedischarge = BrineDischargeParams()
-        self.battery = Battery()
-
-        # datetime array
-        t = np.arange(
-            datetime.fromisoformat(self.start_date),
-            datetime.fromisoformat(self.end_date),
-            timedelta(hours=self.timestep_hours),
-        ).astype(datetime)
-
-        # length of time step in seconds
-        dt_seconds = self.timestep_hours * 3600
-        total_num_seconds = (t[-1] - t[0]).total_seconds() + dt_seconds
-
-        self.num_hours = total_num_seconds / 3600
-        self.num_days = self.num_hours / 24
-        self.num_months = self.num_days / 31
