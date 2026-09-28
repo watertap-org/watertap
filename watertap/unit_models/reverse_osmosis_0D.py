@@ -33,9 +33,6 @@ from watertap.unit_models.reverse_osmosis_base import (
     _add_has_full_reporting,
 )
 from watertap.core.util.unit_models import _list_um_vars_to_fix
-from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 
 __author__ = "Tim Bartholomew, Adam Atia, Bernard Knueven"
 
