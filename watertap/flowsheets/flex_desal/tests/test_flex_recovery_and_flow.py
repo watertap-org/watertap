@@ -100,6 +100,7 @@ class TestPriceTakerWorkflow:
             {
                 "startup_delay": 2,  # hours
                 "minimum_downtime": 2,
+                "max_num_skids_shutdown_per_timestep": 2,
                 "minimum_flowrate": 520,  # m3/hr
                 "nominal_flowrate": 602,
                 "maximum_flowrate": 635,
@@ -167,6 +168,7 @@ class TestPriceTakerWorkflow:
 
         # Check params added
         assert hasattr(m.params.intake, "feed_cost")
+        assert hasattr(m.params.ro, "max_num_skids_shutdown_per_timestep")
         assert hasattr(m.params.ro, "surrogate_file")
         assert hasattr(m.params.ro, "replacement_types")
         assert hasattr(m.params.ro, "replacement_costs")
@@ -210,7 +212,7 @@ class TestPriceTakerWorkflow:
         assert isinstance(m.match_train_1_at_start_and_end, pyo.Constraint)
 
         # Add the slow shutdown constraint
-        fs.add_delayed_shutdown_constraints(m)
+        fs.add_num_skids_shutdown_constraints(m)
         assert hasattr(m, "posttreatment_unit_commitment_shutdown")
 
         # Limit hours when start-ups and shutdowns can occur to reflect when operators are on-site

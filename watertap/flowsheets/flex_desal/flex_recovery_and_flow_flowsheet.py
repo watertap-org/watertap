@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -646,7 +646,7 @@ def fix_operations_for_first_four_days(m, peak_hours=None):
                 )  # Plant must be on
 
 
-def add_delayed_shutdown_constraints(m):
+def add_num_skids_shutdown_constraints(m):
     # Consider implmenting with the add_ramping_limits from IDAES price_taker_model
     """Adds the delayed shutdown constraints to the model"""
     params: um_params.FlexDesalParams = m.params
@@ -661,7 +661,7 @@ def add_delayed_shutdown_constraints(m):
                 blk.period[d, t].reverse_osmosis.ro_skid[i].shutdown
                 for i in range(1, params.ro.num_ro_skids + 1)
             )
-            <= 2
+            <= params.ro.max_num_skids_shutdown_per_timestep
         )
 
 

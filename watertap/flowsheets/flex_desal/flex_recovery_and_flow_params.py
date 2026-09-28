@@ -140,6 +140,7 @@ class ROParams(UnitParams):
     maximum_recovery: float = 0.925
     minimum_uptime: int = 2
     minimum_downtime: int = 2
+    max_num_skids_shutdown_per_timestep: int = 2
     startup_delay: int = 1
     allow_variable_recovery: bool = False
     replacement_types: list[str] = field(default_factory=list)
@@ -219,7 +220,6 @@ class FlexDesalParams:
     onsite_capacity: float = 0
     # Other parameters not used in tutorial, but have related functions in flex_recovery_and_flow_flowsheet.py
     nonworking_hours: list[int] = field(default_factory=list)
-    shutdown_days: int = None
     CAPEX_yr: float = None
     max_daily_shutdowns: Optional[int] = None
 
