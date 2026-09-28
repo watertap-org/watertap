@@ -91,21 +91,7 @@ def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
     return solver
 
 
-def fix_recovery(m, recovery):
-    """Modifies the model for the fixed recovery case"""
-    # Compute the energy intensity
-    ro_skid = m.period[1, 1].reverse_osmosis.ro_skid[1]
-    energy_intensity = m.params.ro.get_energy_intensity(recovery)
-
-    for p in m.period:
-        for skid in m.period[p].reverse_osmosis.set_ro_skids:
-            ro_skid = m.period[p].reverse_osmosis.ro_skid[skid]
-            ro_skid.recovery.fix(recovery)
-            ro_skid.energy_intensity.fix(energy_intensity)
-            ro_skid.calculate_energy_intensity.deactivate()
-
-
-def wrd_fix_uf_recovery(m, uf_recovery):
+def fix_uf_recovery(m, uf_recovery):
     """Fixes the recovery of the UF pretreatment"""
     for p in m.period:
         for pump in m.period[p].pretreatment.set_uf_pumps:
@@ -113,9 +99,9 @@ def wrd_fix_uf_recovery(m, uf_recovery):
             uf_pump.recovery.fix(uf_recovery)
 
 
-def wrd_fix_ro_recovery(m, ro_recovery):
+def fix_ro_recovery(m, ro_recovery):
     """Modifies the model for the fixed recovery case"""
-    # For WRD model, energy intensity depends on flowrate and recovery.
+    # Energy intensity depends on flowrate and recovery.
     # If there is a case where recovery needs to be fixed, use this function
     for p in m.period:
         for skid in m.period[p].reverse_osmosis.set_ro_skids:
@@ -158,7 +144,9 @@ def get_baseline_model(m):
     return bm
 
 
-def wrd_plot_function(m, n_time_points, output_stem=None, peak_hours=None):
+def flex_recovery_and_flow_plot_function(
+    m, n_time_points, output_stem=None, peak_hours=None
+):
     time = np.linspace(0, n_time_points - 1, n_time_points)
     fig = plt.figure(figsize=(12, 12))
     gs = fig.add_gridspec(2, 1, height_ratios=[1, 1])
