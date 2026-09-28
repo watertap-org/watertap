@@ -76,7 +76,7 @@ def main_NaCl():
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.fixed,
         pressure_change_type=PressureChangeType.calculated,
-        transport_model=TransportModel.SKK,
+        transport_model=TransportModel.SD,
     )
 
     # m.fs.unit.list_vars_to_fix()
@@ -90,10 +90,10 @@ def main_NaCl():
     # dP_dx = 3e5 / 6
     membrane_area = 50
     membrane_length = 6
-    # A = 4.2e-12
-    # B = 3.5e-8
-    alpha = 0.8
-    sigma = 0.95
+    A = 4.2e-12
+    B = 3.5e-8
+    # alpha = 0.8
+    # sigma = 0.95
     pressure_atmospheric = 101325
     # concentration_polarization_modulus = 1.1
     K = 2.6259644014323275e-05
@@ -111,10 +111,10 @@ def main_NaCl():
     # m.fs.unit.feed_side.dP_dx.fix(-dP_dx)
     m.fs.unit.area.fix(membrane_area)
     m.fs.unit.length.fix(membrane_length)
-    # m.fs.unit.A_comp.fix(A)
-    # m.fs.unit.B_comp.fix(B)
-    m.fs.unit.alpha.fix(alpha)
-    m.fs.unit.reflect_coeff.fix(sigma)
+    m.fs.unit.A_comp.fix(A)
+    m.fs.unit.B_comp.fix(B)
+    # m.fs.unit.alpha.fix(alpha)
+    # m.fs.unit.reflect_coeff.fix(sigma)
     m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
     # m.fs.unit.feed_side.cp_modulus.fix(concentration_polarization_modulus)
     m.fs.unit.feed_side.K.fix(K)
@@ -199,8 +199,8 @@ def main_MCAS():
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
-    m.fs.unit.B_comp.unfix()
-    m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(0.9)
+    # m.fs.unit.B_comp.unfix()
+    # m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(0.9)
 
     # for r in np.linspace(0.9, 0.99, 10):
     #     m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)

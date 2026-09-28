@@ -219,79 +219,58 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             "membrane area": self.area,
             "permeate pressure": self.permeate.pressure[0],
         }
-        # Check the property package type to determine the solute name
-        if isinstance(self.config.property_package, NaClParameterBlock):
-            solute_name = "NaCl"
-        elif isinstance(self.config.property_package, MCASParameterBlock):
-            solute_name = "Na_+"
-        elif isinstance(self.config.property_package, SeawaterParameterBlock):
-            solute_name = "TDS"
-        else:
-            raise NotImplementedError(
-                "list_vars_to_fix is only implemented for NaCl property package and H2O/MCAS with NaCl only systems"
-            )
+        solute_name = next(iter(self.config.property_package.solute_set), None)
 
         if self.config.transport_model == TransportModel.SD:
-            vars.update(
-                {
-                    "water permeability": self.A_comp[0, "H2O"],
-                    "salt permeability": self.B_comp[0, solute_name],
-                }
-            )
+            solutes = [
+                j for j in self.config.property_package.solute_set if j != "Cl_-"
+            ]  # Assuming Cl- is always unfixed for MCAS prop package
+            solute_name = next(iter(solutes), None)
+            vars["water permeability"] = self.A_comp[0, "H2O"]
+            for name in solutes:
+                vars[f"salt permeability ({name})"] = self.B_comp[0, name]
         elif self.config.transport_model == TransportModel.SKK:
-            vars.update(
-                {"reflection coefficient": self.reflect_coeff, "alpha": self.alpha}
-            )
+            vars["reflection coefficient"] = self.reflect_coeff
+            vars["alpha"] = self.alpha
 
         if (
             self.config.has_pressure_change == True
             and self.config.pressure_change_type == PressureChangeType.fixed_per_stage
         ):
-            vars.update({"pressure drop": self.feed_side.deltaP[0]})
+            vars["pressure drop"] = self.feed_side.deltaP[0]
         elif (
             self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
         ):
-            vars.update({"pressure drop per unit length": self.feed_side.dP_dx[0]})
+            vars["pressure drop per unit length"] = self.feed_side.dP_dx[0]
 
         if (
             self.config.concentration_polarization_type
             == ConcentrationPolarizationType.fixed
+            and solute_name is not None
         ):
-            vars.update(
-                {
-                    "concentration polarization modulus inlet": self.feed_side.cp_modulus[
-                        0, 0, solute_name
-                    ],
-                    "concentration polarization modulus outlet": self.feed_side.cp_modulus[
-                        0, 1, solute_name
-                    ],
-                }
+            vars["concentration polarization modulus inlet"] = (
+                self.feed_side.cp_modulus[0, 0, solute_name]
+            )
+            vars["concentration polarization modulus outlet"] = (
+                self.feed_side.cp_modulus[0, 1, solute_name]
             )
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.fixed:
-            vars.update(
-                {
-                    "mass transfer coeff inlet": self.feed_side.K[0, 0, solute_name],
-                    "mass transfer coeff outlet": self.feed_side.K[0, 1, solute_name],
-                }
-            )
+            vars["mass transfer coeff inlet"] = self.feed_side.K[0, 0, solute_name]
+            vars["mass transfer coeff outlet"] = self.feed_side.K[0, 1, solute_name]
 
         if (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
             or self.config.pressure_change_type == PressureChangeType.calculated
         ):
-            vars.update(
-                {
-                    "feed-spacer porosity": self.feed_side.spacer_porosity,
-                    "feed-channel height": self.feed_side.channel_height,
-                }
-            )
+            vars["feed-spacer porosity"] = self.feed_side.spacer_porosity
+            vars["feed-channel height"] = self.feed_side.channel_height
 
         if (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
             or self.config.pressure_change_type != PressureChangeType.fixed_per_stage
         ):
-            vars.update({"length": self.length})
+            vars["length"] = self.length
 
         return vars
 
