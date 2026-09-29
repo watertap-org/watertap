@@ -31,7 +31,6 @@ from idaes.core.surrogate.surrogate_block import SurrogateBlock
 
 from watertap.flowsheets.flex_desal import flex_recovery_and_flow_params as um_params
 
-
 # NOTE: OperationModel class automatically adds startup, shutdown,
 # and op_mode binary variables. So, no need to define these variables
 # explicitly.
