@@ -5,8 +5,8 @@ Introduction
 ------------
 
 The flowsheets ``flex_recovery.py`` and ``flex_recovery_and_flow.py`` represent two different RO plants.
-Both flowsheets use the IDAES [Pricetaker model](https://github.com/IDAES/idaes-pse/blob/main/docs/reference_guides/apps/grid_integration/multiperiod/Price_Taker.rst) 
-to determine the cost-optimal operation based on treatment energy requirement, operational constraints, and variable grid electricity costs. 
+Both flowsheets use the IDAES `Pricetaker model <https://github.com/IDAES/idaes-pse/blob/main/docs/reference_guides/apps/grid_integration/multiperiod/Price_Taker.rst>`_
+to determine the cost-optimal operation based on treatment energy requirement, operational constraints, and variable grid electricity costs.
 Each flowsheet characterizes the operational flexiblity of the respective plants.
 
 
@@ -20,6 +20,32 @@ There are four files associated with each case study.
 4) The utilities file (``utils.py``) includes a few additional functions.
  
 Edits to the model typically invlove changes to the flowsheet, unit model, and parameters files.
+
+Pricetaker Model Functions
+--------------------------
+To setup of the Pricetaker model, several helper function are used. These functions are part of the Pricetaker framework and are defined in IDAES.
+
+* ``append_lmp_data``
+  Appends the locational marginal price (LMP) time series to the PriceTaker model. This is used to calculate 
+  the consumption or energy charge portion of the electricity costs.
+
+  .. csv-table::
+     :header: "Description", "Symbol", "Name", "Index", "Units"
+
+     "Locational marginal price", ":math:`\lambda`", "lmp", "[t]", ":math:`\$/\text{kWh}`"
+
+* ``build_multiperiod_model``
+  Builds the full multiperiod PriceTaker model, attaching the plant flowsheet,
+  operational constraints, and objective-function terms for every time period.
+  This step links the WaterTAP desalination model to the IDAES price-taker
+  framework and initializes the time-indexed operating model.
+
+* ``update_operation_params``
+  Updates the already-constructed PriceTaker model with scenario-specific operating
+  data such as tariff rates, emissions intensity, and onsite generation factors.
+  This allows the same model structure to be reused for different pricing or
+  operational cases without rebuilding the full model.
+
 
 Parameters
 ----------
@@ -35,81 +61,122 @@ The top-level ``FlexDesalParams`` values include:
      - Units
      - Description
    * - ``start_date``
-     - ``2022-07-05 00:00:00``
-     - timestamp
+     - :math:`2022\text{-}07\text{-}05\ 00\text{:}00\text{:}00`
+     - :math:`\text{timestamp}`
      - Start of the simulation horizon.
    * - ``end_date``
-     - ``2022-07-06 00:00:00``
-     - timestamp
+     - :math:`2022\text{-}07\text{-}06\ 00\text{:}00\text{:}00`
+     - :math:`\text{timestamp}`
      - End of the simulation horizon.
    * - ``timestep_hours``
-     - ``0.25``
-     - hour(s)
+     - :math:`0.25`
+     - :math:`\text{hour}`
      - Length of each simulation time step.
    * - ``product_water_price``
-     - ``0``
-     - $/m3
+     - :math:`0`
+     - :math:`\$/\text{m}^{3}`
      - Unit revenue for produced water.
    * - ``fixed_monthly_cost``
-     - ``766000``
-     - $/month
+     - :math:`766000`
+     - :math:`\$/\text{month}`
      - Fixed monthly customer/facility charge.
    * - ``customer_rate``
-     - ``100``
-     - dimensionless
+     - :math:`100`
+     - :math:`\text{dimensionless}`
      - Customer-rate multiplier used in tariff calculations.
    * - ``constrain_to_baseline_production``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Whether to enforce baseline production tracking.
    * - ``curtailment_fraction``
-     - ``0.0``
-     - dimensionless
+     - :math:`0.0`
+     - :math:`\text{dimensionless}`
      - Allowed fractional curtailment relative to baseline production.
    * - ``annual_production_AF``
-     - ``3125``
-     - acre-ft/year
+     - :math:`3125`
+     - :math:`\text{acre-ft/year}`
      - Annual production target used for absolute production constraints.
    * - ``production_constraint_to_objective``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Whether production compliance is enforced through objective penalization.
    * - ``production_constraint_penalty``
-     - ``0.6``
-     - $/m3 (effective penalty scale)
+     - :math:`0.6`
+     - :math:`\$/\text{m}^{3}`
      - Penalty weight applied when production target is incorporated in the objective.
    * - ``emissions_cost``
-     - ``0``
-     - $/kg
+     - :math:`0`
+     - :math:`\$/\text{kg}`
      - Cost assigned to emissions associated with grid electricity use.
    * - ``include_demand_response``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Enable demand-response price/revenue terms.
    * - ``include_battery``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Enable battery operation model.
    * - ``include_onsite_solar``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Enable onsite solar generation model.
    * - ``onsite_capacity``
-     - ``0``
-     - kW
+     - :math:`0`
+     - :math:`\text{kW}`
      - Installed onsite generation capacity.
    * - ``nonworking_hours``
-     - ``[]`` 
-     - hour index list
+     - :math:`[]`
+     - :math:`\text{hour index list}`
      - Hours where startup/shutdown actions may be restricted.
    * - ``CAPEX_yr``
-     - ``None``
-     - $/year
+     - :math:`\text{None}`
+     - :math:`\$/\text{year}`
      - Optional annualized CAPEX value for economic reporting.
    * - ``max_daily_shutdowns``
-     - ``None``
-     - count/day
+     - :math:`\text{None}`
+     - :math:`\text{count/day}`
      - Optional limit on shutdown events over a daily rolling window.
+
+Additional FlexDesal Parameter Details
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The following optional parameters change the formulation during the model build (``build_multiperiod_model(m)``).
+
+* ``include_demand_response``
+  Enables the demand-response revenue term in the objective. When active, the
+  plant can earn revenue by reducing grid power below a baseline reference level
+  during event periods, and the model tracks the corresponding time-varying
+  demand-response price.
+
+  .. csv-table::
+     :header: "Description", "Symbol", "Name", "Index", "Units"
+
+     "Demand-response price", ":math:`\pi^{DR}_{t}`", "demand_response_price", "[t]", ":math:`\$/\text{kWh}`"
+     "Baseline power reference", ":math:`P^{base}`", "baseline_power", "None", ":math:`\text{kW}`"
+     "Demand-response revenue", ":math:`R_{DR}`", "demand_response_revenue", "[t]", ":math:`\$`"
+
+* ``include_onsite_solar``
+  Adds an onsite photovoltaic generation model and computes the power supplied to
+  the plant from solar generation. Any unused generation is treated as excess
+  solar power that can be curtailed rather than exported or stored.
+
+  .. csv-table::
+     :header: "Description", "Symbol", "Name", "Index", "Units"
+
+     "Solar capacity factor", ":math:`CF_t`", "capacity_factor", "[t]", "dimensionless"
+     "Onsite solar power used", ":math:`P^{solar}_{t}`", "power_utilized", "[t]", ":math:`\text{kW}`"
+     "Excess solar power", ":math:`P^{excess}_{t}`", "excess_solar_power", "[t]", ":math:`\text{kW}`"
+
+* ``include_battery(m)``
+  Adds a battery storage model that can charge or discharge to shift electricity
+  purchases across time. This supports temporal arbitrage and defers demand during
+  higher-cost periods while conserving the plant's operating flexibility.
+
+  .. csv-table::
+     :header: "Description", "Symbol", "Name", "Index", "Units"
+
+     "Battery charge rate", ":math:`P^{chg}_{t}`", "charge_rate", "[t]", ":math:`\text{kW}`"
+     "Battery discharge rate", ":math:`P^{dis}_{t}`", "discharge_rate", "[t]", ":math:`\text{kW}`"
+     "Battery energy state", ":math:`E_t`", "holdup", "[t]", ":math:`\text{kWh}`"
 
 
 Unit Models
@@ -130,28 +197,28 @@ The intake unit uses the ``IntakeParams`` dataclass:
      - Units
      - Description
    * - ``energy_intensity``
-     - ``0.157121734``
-     - kWh/m3
+     - :math:`0.157121734`
+     - :math:`\text{kWh}/\text{m}^{3}`
      - Specific intake energy intensity.
    * - ``minimum_flowrate``
-     - ``1063.5``
-     - m3/h
+     - :math:`1063.5`
+     - :math:`\text{m}^{3}/\text{h}`
      - Minimum intake flowrate.
    * - ``nominal_flowrate``
-     - ``1063.5``
-     - m3/h
+     - :math:`1063.5`
+     - :math:`\text{m}^{3}/\text{h}`
      - Nominal intake flowrate.
    * - ``maximum_flowrate``
-     - ``1063.5``
-     - m3/h
+     - :math:`1063.5`
+     - :math:`\text{m}^{3}/\text{h}`
      - Maximum intake flowrate.
    * - ``feed_cost``
-     - ``None``
-     - $/m3
+     - :math:`\text{None}`
+     - :math:`\$/\text{m}^{3}`
      - Optional feed-water cost.
    * - ``chemical_cost``
-     - ``None``
-     - $/m3
+     - :math:`\text{None}`
+     - :math:`\$/\text{m}^{3}`
      - Optional chemical cost.
 
 Pretreament (Generic)
@@ -165,28 +232,28 @@ Pretreament (Generic)
      - Units
      - Description
    * - ``allow_shutdown``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Enables pretreatment unit on/off commitment logic.
    * - ``energy_intensity``
-     - ``0.01``
-     - kWh/m3
+     - :math:`0.01`
+     - :math:`\text{kWh}/\text{m}^{3}`
      - Specific pretreatment energy intensity.
    * - ``leakage_fraction``
-     - ``0``
-     - dimensionless
+     - :math:`0`
+     - :math:`\text{dimensionless}`
      - Fraction of inlet flow not recovered in pretreatment.
    * - ``minimum_downtime``
-     - ``0``
-     - num time steps
+     - :math:`0`
+     - :math:`\text{num time steps}`
      - Minimum number of time steps the pretreatment unit remains off after shutdown.
    * - ``startup_delay``
-     - ``0``
-     - num time steps
+     - :math:`0`
+     - :math:`\text{num time steps}`
      - Delay between startup command and pretreatment operation.
    * - ``chemical_cost``
-     - ``None``
-     - $/m3 pretreatment feed flow
+     - :math:`\text{None}`
+     - :math:`\$/\text{m}^{3}`
      - Optional pretreatment chemical cost.
 
 
@@ -204,56 +271,56 @@ The UF unit uses the ``UFParams`` dataclass. This is an alternative pretreatment
      - Units
      - Description
    * - ``num_uf_pumps``
-     - ``4``
-     - None
+     - :math:`4`
+     - :math:`\text{None}`
      - Number of UF pumps represented in the model.
    * - ``minimum_operating_pumps``
-     - ``1``
-     - None
+     - :math:`1`
+     - :math:`\text{None}`
      - Minimum number of UF pumps that must operate.
    * - ``allow_shutdown``
-     - ``True``
-     - None
+     - :math:`\text{True}`
+     - :math:`\text{None}`
      - Enables UF unit on/off commitment logic.
    * - ``minimum_flowrate``
-     - ``344``
-     - m3/h
+     - :math:`344`
+     - :math:`\text{m}^{3}/\text{h}`
      - Minimum UF pump flowrate when operating (m3/h).
    * - ``nominal_flowrate``
-     - ``900``
-     - m3/h
+     - :math:`900`
+     - :math:`\text{m}^{3}/\text{h}`
      - Nominal UF pump flowrate (m3/h).
    * - ``maximum_flowrate``
-     - ``989``
-     - m3/h
+     - :math:`989`
+     - :math:`\text{m}^{3}/\text{h}`
      - Maximum UF pump flowrate (m3/h).
    * - ``nominal_recovery``
-     - ``1``
-     - dimensionless
+     - :math:`1`
+     - :math:`\text{dimensionless}`
      - Nominal UF recovery.
    * - ``minimum_uptime``
-     - ``2``
-     - time steps
+     - :math:`2`
+     - :math:`\text{time steps}`
      - Minimum number of time steps the UF pump stays on after startup.
    * - ``minimum_downtime``
-     - ``2``
-     - time steps
+     - :math:`2`
+     - :math:`\text{time steps}`
      - Minimum number of time steps the UF pump stays off after shutdown.
    * - ``startup_delay``
-     - ``1``
-     - time steps
+     - :math:`1`
+     - :math:`\text{time steps}`
      - Delay (time steps) between startup command and operation.
    * - ``allow_variable_recovery``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Recovery is fixed at nominal value for this WRD UF model.
    * - ``surrogate_type``
-     - ``quadratic_energy_intensity``
-     - None
+     - :math:`\text{quadratic_energy_intensity}`
+     - :math:`\text{None}`
      - UF energy intensity surrogate form.
    * - ``surrogate_a``, ``surrogate_b``, ``surrogate_c``
-     - ``1``, ``1``, ``1``
-     - surrogate-dependent
+     - :math:`1`, :math:`1`, :math:`1`
+     - :math:`\text{surrogate-dependent}`
      - Coefficients for the quadratic UF energy intensity surrogate.
 
 
@@ -270,68 +337,68 @@ The RO unit uses the ``ROParams`` dataclass.
      - Units
      - Description
    * - ``num_ro_skids``
-     - ``4``
-     - num of skids
+     - :math:`4`
+     - :math:`\text{num of skids}`
      - Number of RO skids represented in the model.
    * - ``minimum_operating_skids``
-     - ``2``
-     - None
+     - :math:`2`
+     - :math:`\text{None}`
      - Minimum number of RO skids that must operate.
    * - ``allow_shutdown``
-     - ``True``
-     - None
+     - :math:`\text{True}`
+     - :math:`\text{None}`
      - Enables RO skid on/off commitment logic.
    * - ``minimum_flowrate``
-     - ``0``
-     - m3/h
+     - :math:`0`
+     - :math:`\text{m}^{3}/\text{h}`
      - Minimum RO skid flowrate when operating (m3/h).
    * - ``nominal_flowrate``
-     - ``337.670``
-     - m3/h
+     - :math:`337.670`
+     - :math:`\text{m}^{3}/\text{h}`
      - Nominal RO skid flowrate (m3/h).
    * - ``maximum_flowrate``
-     - ``400``
-     - m3/h
+     - :math:`400`
+     - :math:`\text{m}^{3}/\text{h}`
      - Maximum RO skid flowrate (m3/h).
    * - ``minimum_recovery``
-     - ``0.88``
-     - dimensionless
+     - :math:`0.88`
+     - :math:`\text{dimensionless}`
      - Minimum RO recovery.
    * - ``nominal_recovery``
-     - ``0.92``
-     - dimensionless
+     - :math:`0.92`
+     - :math:`\text{dimensionless}`
      - Nominal RO recovery.
    * - ``maximum_recovery``
-     - ``0.925``
-     - dimensionless
+     - :math:`0.925`
+     - :math:`\text{dimensionless}`
      - Maximum RO recovery.
    * - ``minimum_uptime``
-     - ``2``
-     - time steps
+     - :math:`2`
+     - :math:`\text{time steps}`
      - Minimum number of time steps a skid stays on after startup.
    * - ``minimum_downtime``
-     - ``2``
-     - time steps
+     - :math:`2`
+     - :math:`\text{time steps}`
      - Minimum number of time steps a skid stays off after shutdown.
    * - ``startup_delay``
-     - ``1``
-     - time steps
+     - :math:`1`
+     - :math:`\text{time steps}`
      - Delay (time steps) between startup command and operation.
    * - ``max_num_skids_shutdown_per_timestep``
-     - ``1``
-     - num of skids
+     - :math:`1`
+     - :math:`\text{num of skids}`
      - Number of skids that can shutdown in a single time step
    * - ``allow_variable_recovery``
-     - ``False``
-     - None
+     - :math:`\text{False}`
+     - :math:`\text{None}`
      - Recovery is bounded but not optimized as a free variable in default setup.
    * - ``surrogate_type``
-     - ``constant_energy_intensity``
-     - None
+     - :math:`\text{constant_energy_intensity}`
+     - :math:`\text{None}`
      - RO surrogate type selector for the WRD case.
    * - ``surrogate_file``
-     - ``None``
-     - path
+     - :math:`\text{None}`
+     - :math:`\text{path}`
      - Optional file path for a loaded RO energy surrogate.
 
 
@@ -350,16 +417,16 @@ The UV posttreatment unit uses the ``PosttreatmentParams`` dataclass in
      - Units
      - Description
    * - ``energy_intensity``
-     - ``0.41``
-     - kWh/m3
+     - :math:`0.41`
+     - :math:`\text{kWh}/\text{m}^{3}`
      - Specific UV energy intensity.
    * - ``leakage_fraction``
-     - ``0``
-     - dimensionless
+     - :math:`0`
+     - :math:`\text{dimensionless}`
      - Fraction of inlet flow not recovered in UV posttreatment.
    * - ``chemical_cost``
-     - ``None``
-     - $/m3
+     - :math:`\text{None}`
+     - :math:`\$/\text{m}^{3}`
      - Optional variable chemical cost ($/m3).
 
 Brine Discharge
@@ -376,12 +443,12 @@ The brine discharge unit uses the ``BrineDischargeParams`` dataclass in
      - Units
      - Description
    * - ``energy_intensity``
-     - ``0.1``
-     - kWh/m3
+     - :math:`0.1`
+     - :math:`\text{kWh}/\text{m}^{3}`
      - Specific brine-discharge energy intensity.
    * - ``brine_cost``
-     - ``None``
-     - $/m3
+     - :math:`\text{None}`
+     - :math:`\$/\text{m}^{3}`
      - Optional brine-disposal cost.
 
 
@@ -414,48 +481,36 @@ in "unit_models".
    "Product flowrate", ":math:`Q^{product} = Q^{feed} \cdot R`"
    "Power consumption", ":math:`P = EI \cdot Q^{product}`"
 
-Pricetaker Model Functions
---------------------------
-To setup of the Pricetaker model, several helper function are used. These functions are part of the Pricetaker framework and are defined in IDAES.
-
-* ``append_lmp_data``
-  Appends locational marginal price (LMP) data to the model for each time step. 
-
-  ..csv-table::
-     :header: "Description", "Symbol", "Name", "Index", "Units"
-
-     "Locational marginal price", ":math:`\lambda`", "lmp", "[t]", ":math:`\$/\text{kWh}`"
-
-
-* ``build_multiperiod_model``
-  Builds the Pricetaker operation model, which includes the objective function and constraints for the optimization problem.
-
-* ``update_operation_params``
-  Updates the Pricetaker operation model with the latest parameter values from the FlexDesalParams dataclass.
 
 Required Helper Functions
 --------------------------
 To complete setup, some WaterTAP defined function are used.
 
 * ``add_demand_and_fixed_costs``
-  Adds total demand and fixed costs over the time horizon.
+  Adds the horizon-level demand-charge variables and binds them to the per-period
+  grid-power usage through lower-bound constraints. This helper is used to capture
+  both fixed demand charges and variable demand charges, along with the fixed
+  customer fee for the modeled billing horizon.
 
   .. csv-table::
      :header: "Description", "Symbol", "Name", "Index", "Units"
 
-  "Fixed demand charge", ":math:`C_{demand}^{fixed}`", "fixed_demand_cost", "None", ":math:`\$`"
-  "Variable demand charge", ":math:`C_{demand}^{var}`", "variable_demand_cost", "None", ":math:`\$`"
-  "Fixed monthly customer cost", ":math:`C_{customer}`", "fixed_monthly_cost", "None", ":math:`\$`"
+     "Fixed demand charge", ":math:`C_{demand}^{fixed}`", "fixed_demand_cost", "None", ":math:`\$`"
+     "Variable demand charge", ":math:`C_{demand}^{var}`", "variable_demand_cost", "None", ":math:`\$`"
+     "Fixed monthly customer cost", ":math:`C_{customer}`", "fixed_monthly_cost", "None", ":math:`\$`"
 
 * ``constrain_water_production``
-  Enforces either a baseline-tracking production target or an absolute production target over the horizon.
+  Enforces the plant production requirement over the simulation horizon. Depending
+  on the selected configuration, it either tracks a baseline production target
+  (with optional curtailment) or enforces a fixed absolute target based on the
+  annual production requirement.
 
   .. csv-table::
-  :header: "Description", "Symbol", "Name", "Index", "Units"
+     :header: "Description", "Symbol", "Name", "Index", "Units"
 
-  "Curtailment fraction", ":math:`\phi_{curtail}`", "curtailment_fraction", "None", ":math:`\text{dimensionless}`"
-  "Baseline production", ":math:`W_{base}`", "baseline_production", "None", ":math:`\text{m}^3`"
-  "Absolute production target", ":math:`W_{target}`", "production_target_abs", "None", ":math:`\text{m}^3`"
+     "Curtailment fraction", ":math:`\phi_{curtail}`", "curtailment_fraction", "None", ":math:`\text{dimensionless}`"
+     "Baseline production", ":math:`W_{base}`", "baseline_production", "None", ":math:`\text{m}^3`"
+     "Absolute production target", ":math:`W_{target}`", "production_target_abs", "None", ":math:`\text{m}^3`"
 
 
 Optional Helper Functions
@@ -464,7 +519,7 @@ A number of helper functions are defined in the ``watertap.flowsheets.flex_desal
 These helper function is build additional variables, constraints, and equations when called.
 
 * ``add_flow_costs(m)``
-  Adds total feed, brine-discharge, and chemical-cost expressions over the time horizon.
+  Adds total feed, brine-discharge, and chemical-cost expressions.
 
   .. csv-table::
      :header: "Description", "Symbol", "Name", "Index", "Units"
@@ -474,16 +529,16 @@ These helper function is build additional variables, constraints, and equations 
      "Total chemical cost", ":math:`C_{chem}`", "total_chemical_cost", "None", ":math:`\$`"
 
 * ``add_flow_changes_penalty(m)``
-  Introduces binary variables and Big-M constraints to detect RO/UF flowrate changes
-  between time steps, then adds a penalty expression for frequent changes.
+  Adds binary indicators for RO and UF flow changes between consecutive time
+  steps and penalizes such changes in the objective. This discourages frequent
+  ramping and stabilizes operational patterns.
 
   .. csv-table::
      :header: "Description", "Symbol", "Name", "Index", "Units"
 
-      "RO flow-change indicator", ":math:`y^{RO}`", "flow_changed", "[t, i]", ":math:`\text{dimensionless}`"
-      "UF flow-change indicator", ":math:`y^{UF}`", "uf_flow_changed", "[t, i]", ":math:`\text{dimensionless}`"
+     "RO flow-change indicator", ":math:`y^{RO}`", "flow_changed", "[t, i]", ":math:`\text{dimensionless}`"
+     "UF flow-change indicator", ":math:`y^{UF}`", "uf_flow_changed", "[t, i]", ":math:`\text{dimensionless}`"
      "Total flow-change penalty", ":math:`C_{chg}`", "flow_changes_penalty", "None", ":math:`\$`"
-
 
 * ``calculate_replacement_costs(m)``
   Computes a flexibility metric from shutdown behavior and uses that metric to form
@@ -496,8 +551,8 @@ These helper function is build additional variables, constraints, and equations 
      "Total replacement cost", ":math:`C_{rep}`", "total_replacement_cost", "None", ":math:`\$`"
 
 * ``calculate_flexibility_metrics(m, baseline_power, baseline_electricity_cost, baseline_replacement_cost)``
-  Post-processes solved results to estimate flexibility quantities such as charge/discharge
-  capacities and levelized value/cost of flexibility. These metrics are defined in Rao et al. [1].
+  Post-processes solved results to estimate flexibility metrics such as charge/discharge
+  capacities and levelized value or cost of flexibility. These metrics are defined in Rao et al. [1].
 
   .. csv-table::
      :header: "Description", "Symbol", "Name", "Index", "Units"
@@ -508,16 +563,17 @@ These helper function is build additional variables, constraints, and equations 
      "Levelized value/cost of flexibility", ":math:`LVOF`", "LVOF", "None", ":math:`\$/\text{kWh}`"
 
 * ``begin_and_end_constraint(m)``
-  Enforces cyclic operation by matching RO train 1 operating mode at the first and
+  Enforces a cyclic operating-state condition by matching RO train 1 operating mode at the first and
   last time points.
 
 * ``add_working_hours_constraint(m)``
-  Adds constraints that prevent RO startup and shutdown events during configured
-  nonworking hours.
+  Prevents RO startup and shutdown actions during configured nonworking hours. "Working hours" are based on operator availability
+  to enact chnages to operating state of the system.
 
 * ``restrict_flexible_trains(m, num_flexible_trains)``
-  Restricts flexibility to a selected subset of RO skids by fixing startup and
-  shutdown decisions to zero for non-flexible skids.
+  Fixes startup and shutdown decisions to zero for the non-flexible RO trains so
+  that only a selected subset of skids can participate in the flexible operation
+  strategy.
 
 
 Equations and Relationships
@@ -529,8 +585,12 @@ left-hand-side quantity is introduced.
 .. csv-table::
   :header: "Description", "Defined in", "Equation"
 
-  "Fixed demand charge lower bound", "``add_demand_and_fixed_costs(m)``", ":math:`C_{demand,t}^{fixed} \geq r_{demand,t}^{fixed} P^{grid}_{t} N_{months}`"
-  "Variable demand charge lower bound", "``add_demand_and_fixed_costs(m)``", ":math:`C_{demand,t}^{var} \geq r_{demand,t}^{var} P^{grid}_{t} N_{months}`"
+  "Grid power balance", "``build_desal_flowsheet(...)``", ":math:`P^{grid}_{t} = P^{process}_{t} - P^{solar}_{t} + P^{chg}_{t} - P^{dis}_{t} + P^{excess}_{t}`"
+  "Demand-response revenue", "``add_operational_cost_expressions(...)``", ":math:`R^{DR}_{t} = \pi^{DR}_{t} \left(P^{base} - P^{grid}_{t}\right) \Delta t`"
+  "Energy charge", "``add_operational_cost_expressions(...)``", ":math:`C_{energy} = \Delta t \sum_{t} \lambda_{t} P^{grid}_{t}`"
+  "Emissions cost", "``add_operational_cost_expressions(...)``", ":math:`C_{emissions} = \Delta t \sum_{t} \alpha_{t} P^{grid}_{t}`"
+  "Fixed demand charge", "``add_demand_and_fixed_costs(m)``", ":math:`C_{demand,t}^{fixed} \geq r_{demand,t}^{fixed} P^{grid}_{t} N_{months}`"
+  "Variable demand charge", "``add_demand_and_fixed_costs(m)``", ":math:`C_{demand,t}^{var} \geq r_{demand,t}^{var} P^{grid}_{t} N_{months}`"
   "Fixed monthly customer cost", "``add_demand_and_fixed_costs(m)``", ":math:`C_{customer} = c_{customer}^{monthly} N_{months}`"
   "Baseline production target", "``constrain_water_production(m, baseline_production)``", ":math:`W_{prod} \geq W_{base} \left(1 - \phi_{curtail}\right)`"
   "Absolute production target", "``constrain_water_production(m)``", ":math:`W_{prod} \geq W_{target}`"
@@ -553,11 +613,6 @@ left-hand-side quantity is introduced.
   "Non-flexible skid startup fixed", "``restrict_flexible_trains(m, num_flexible_trains)``", ":math:`SU_{t,i} = 0, \quad \forall i \in \mathcal{I}_{nonflex}, \forall t`"
   "Non-flexible skid shutdown fixed", "``restrict_flexible_trains(m, num_flexible_trains)``", ":math:`SD_{t,i} = 0, \quad \forall i \in \mathcal{I}_{nonflex}, \forall t`"
 
-Symmetry Breaking Equations
----------------------------
-A number of equations are introduced that enable faster solve times by "breaking symmetry" in the optimization problem. These equations do not reflect physical constraints on the system, rather ways of reducing the feasible space of the problem.
-
-
 
 Flowsheet Specifications in Tutorials
 -------------------------------------
@@ -567,11 +622,11 @@ The first flowsheet represents the Santa Barbra plant, which flexibly varies rec
 .. csv-table::
   :header: "Description", "Value", "Units"
   
-  "Number of RO skids", "4", "dimensionless"
-  "Minimum RO recovery", "0.40", "dimensionless"
-  "Maximum RO recovery", "0.52", "dimensionless"
-  "Nominal RO recovery", "0.465", "dimensionless"
-  "Nominal RO flowrate", "337.67", "m3/h"
+  "Number of RO skids", ":math:`4`", ":math:`\text{dimensionless}`"
+  "Minimum RO recovery", ":math:`0.40`", ":math:`\text{dimensionless}`"
+  "Maximum RO recovery", ":math:`0.52`", ":math:`\text{dimensionless}`"
+  "Nominal RO recovery", ":math:`0.465`", ":math:`\text{dimensionless}`"
+  "Nominal RO flowrate", ":math:`337.67`", ":math:`\text{m}^{3}/\text{h}`"
 
 The second flowsheet represents the Water Replenishment District (WRD) ARC facility in Pico Rivera, CA. 
 The plant is modeled by 4 RO trains, 3 UF pumps and 1 UV unit. The energy intensity of each RO train is a function of flowrate and recovery. 
@@ -581,12 +636,12 @@ The default parameters for the WRD RO and UF unit models represent those limits.
 .. csv-table::
   :header: "Description", "Value", "Units"
   
-  "Number of RO skids", "4", "dimensionless"
-  "Number of UF pumps", "3", "dimensionless"
-  "Minimum RO recovery", "0.88", "dimensionless"
-  "Maximum RO recovery", "0.925", "dimensionless"
-  "Minimum RO flowrate", "0", "m3/h"
-  "Maximum RO flowrate", "400", "m3/h"
+  "Number of RO skids", ":math:`4`", ":math:`\text{dimensionless}`"
+  "Number of UF pumps", ":math:`3`", ":math:`\text{dimensionless}`"
+  "Minimum RO recovery", ":math:`0.88`", ":math:`\text{dimensionless}`"
+  "Maximum RO recovery", ":math:`0.925`", ":math:`\text{dimensionless}`"
+  "Minimum RO flowrate", ":math:`0`", ":math:`\text{m}^{3}/\text{h}`"
+  "Maximum RO flowrate", ":math:`400`", ":math:`\text{m}^{3}/\text{h}`"
 
 References
 ----------
