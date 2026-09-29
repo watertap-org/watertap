@@ -8,6 +8,7 @@ The flowsheets ``flex_recovery.py`` and ``flex_recovery_and_flow.py`` represent 
 Both flowsheets use the IDAES `Pricetaker model <https://github.com/IDAES/idaes-pse/blob/main/docs/reference_guides/apps/grid_integration/multiperiod/Price_Taker.rst>`_
 to determine the cost-optimal operation based on treatment energy requirement, operational constraints, and variable grid electricity costs.
 Each flowsheet characterizes the operational flexiblity of the respective plants.
+For an step-by-step guide to building a multiperiod model, see the `How to build a Flexible Reverse Osmosis Flowsheet <https://watertap.readthedocs.io/en/latest/how_to_guides/how_to_create_flex_ro_multiperiod_model.html>`_ document.
 
 
 File Structure
