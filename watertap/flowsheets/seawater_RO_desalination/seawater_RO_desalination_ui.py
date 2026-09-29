@@ -16,7 +16,6 @@ from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination impor
     initialize_system,
     solve,
     add_costing,
-    initialize_costing,
 )
 from pyomo.environ import units as pyunits
 
@@ -43,7 +42,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.flow_vol[0],
+        obj=fs.feed.properties[0].flow_vol,
         name="Feed volume flow",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
@@ -55,7 +54,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "tds"],
+        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Feed TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -67,7 +66,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "tss"],
+        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "tss"],
         name="Feed TSS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -242,7 +241,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.desalination.RO.B_comp[0, "TDS"],
+        obj=fs.desalination.RO.B_comp[0, "tds"],
         name="RO salt permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
         display_units="LMH",
@@ -487,19 +486,15 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # System costing
-    # TODO: Should we expose costing parameters? The separate ZO and RO costing complicates this
-    # If so,consider only exposing one input, but fixing the other behind the scenes as well
-    # Also note that the costing packages assume different parameter values (elec_cost, utilization factor, etc.)
-
     # --- Output data ---
     # Municipal
     exports.add(
         obj=fs.municipal.properties[0].flow_vol,
-        name="Municipal water volume flow",
+        name="Municipal water (product) volume flow",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="Municipal water volumetric flowrate",
+        description="Municipal water (product) volumetric flowrate",
         is_input=False,
         is_output=True,
         output_category="Outlets",
@@ -510,7 +505,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=2,
-        description="Municipal water mass flow",
+        description="Municipal water (product) mass flow",
         is_input=False,
         is_output=True,
         output_category="Outlets",
@@ -527,7 +522,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.municipal.properties[0].conc_mass_comp["tds"],
+        obj=fs.municipal.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Municipal TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -572,7 +567,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].conc_mass_comp["tds"],
+        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Landfill TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -594,7 +589,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].conc_mass_comp["tss"],
+        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "tss"],
         name="Landfill TSS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -628,7 +623,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "TDS"],
+        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "tds"],
         name="Disposal TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -639,7 +634,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Disposal TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -651,76 +646,51 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # System metrics
-    total_capital_cost = (
-        pyunits.convert(fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018)
-        + fs.ro_costing.total_capital_cost
-    )
-    exports.add(
-        obj=total_capital_cost,
-        name="Total capital cost",
-        ui_units=pyunits.USD_2018,
-        display_units="USD_2018",
-        rounding=3,
-        description="Total capital cost in USD_2018",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
-    total_operating_cost = (
-        pyunits.convert(
-            fs.zo_costing.total_fixed_operating_cost,
-            to_units=pyunits.USD_2018 / pyunits.year,
-        )
-        + pyunits.convert(
-            fs.zo_costing.total_variable_operating_cost,
-            to_units=pyunits.USD_2018 / pyunits.year,
-        )
-        + fs.ro_costing.total_operating_cost
-    )
-    exports.add(
-        obj=total_operating_cost,
-        name="Total operating cost",
-        ui_units=pyunits.USD_2018 / pyunits.yr,
-        display_units="USD_2018/yr",
-        rounding=3,
-        description="Total operating cost in USD_2018 per year",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
-    lcow = (
-        total_capital_cost * fs.zo_costing.capital_recovery_factor
-        + total_operating_cost
-    ) / (
-        pyunits.convert(
-            fs.municipal.properties[0].flow_vol,
-            to_units=pyunits.m**3 / pyunits.year,
-        )
-        * fs.zo_costing.utilization_factor
+    base_currency_str = str(fs.costing.base_currency)
+    base_period_str = (
+        "year"
+        if fs.costing.base_period == pyunits.year
+        else str(fs.costing.base_period)
     )
 
     exports.add(
-        obj=lcow,
+        obj=fs.costing.total_capital_cost,
+        name="Total capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units=base_currency_str,
+        rounding=3,
+        description=f"Total capital cost in {base_currency_str}",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
+        obj=fs.costing.total_operating_cost,
+        name="Total operating cost",
+        ui_units=fs.costing.base_currency / fs.costing.base_period,
+        display_units=base_currency_str + "/" + base_period_str,
+        rounding=3,
+        description=f"Total operating cost in {base_currency_str} per {base_period_str}",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
+        obj=fs.costing.LCOW,
         name="Levelized cost of water",
-        ui_units=pyunits.USD_2018 / pyunits.m**3,
-        display_units="$/m3 of product water",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units=f"{base_currency_str}/m3 of product water",
         rounding=3,
         description="Levelized cost of water (LCOW)",
         is_input=False,
         is_output=True,
         output_category="System metrics",
     )
-
-    sec = pyunits.convert(
-        fs.zo_costing.aggregate_flow_electricity / fs.municipal.properties[0].flow_vol,
-        to_units=pyunits.kWh / pyunits.m**3,
-    )
-
     exports.add(
-        obj=sec,
+        obj=fs.costing.specific_energy_consumption,
         name="Specific energy consumption",
         ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/yr of product water",
+        display_units="kWh/m3 of product water",
         rounding=3,
         description="Specific energy consumption (SEC)",
         is_input=False,
@@ -744,7 +714,7 @@ def build_flowsheet(build_options=None, **kwargs):
     solve(m)
 
     add_costing(m)
-    initialize_costing(m)
+    m.fs.costing.initialize()
     # Solve flowsheet with costing
     solve(m)
 

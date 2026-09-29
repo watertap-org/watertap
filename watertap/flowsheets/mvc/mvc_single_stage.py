@@ -262,8 +262,8 @@ def build():
     iscale.set_scaling_factor(m.fs.pump_distillate.control_volume.work, 1e-3)
 
     # distillate HX
-    iscale.set_scaling_factor(m.fs.hx_distillate.hot.heat, 1e-3)
-    iscale.set_scaling_factor(m.fs.hx_distillate.cold.heat, 1e-3)
+    iscale.set_scaling_factor(m.fs.hx_distillate.hot.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hx_distillate.cold.heat, 1e-6)
     iscale.set_scaling_factor(
         m.fs.hx_distillate.overall_heat_transfer_coefficient, 1e-3
     )

@@ -246,6 +246,21 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 ]
             )
 
+        if hasattr(self.mixed_permeate[0].params, "ion_set"):
+            if len(self.mixed_permeate[0].params.ion_set) > 1:
+                # electroneutrality constraint for permeate
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    doc="Electroneutrality constraint for permeate",
+                )
+                def eq_electroneutrality_permeate(b, t):
+                    return 0 == sum(
+                        b.mixed_permeate[t].params.get_component(j).config.charge
+                        * b.mixed_permeate[t].flow_mol_phase_comp[p, j]
+                        for p, j in b.mixed_permeate[t].phase_component_set
+                        if j in b.mixed_permeate[t].params.ion_set
+                    )
+
         self._add_flux_balance()
         if self.config.has_pressure_change:
             self._add_deltaP()

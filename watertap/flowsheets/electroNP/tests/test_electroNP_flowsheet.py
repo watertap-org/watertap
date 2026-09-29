@@ -24,7 +24,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.flowsheets.electroNP.electroNP_flowsheet import (
-    build_flowsheet,
+    main,
     display_costing,
 )
 
@@ -33,7 +33,7 @@ class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
     @classmethod
     def model(cls):
-        m, res = build_flowsheet()
+        m, res = main()
 
         m.results = res
 
@@ -61,19 +61,19 @@ class TestElectroNPFlowsheet:
         )
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_A"]
-        ) == pytest.approx(8.41996, rel=1e-4)
+        ) == pytest.approx(8.42207, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_F"]
-        ) == pytest.approx(22.21, rel=1e-4)
+        ) == pytest.approx(22.2167, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_I"]
-        ) == pytest.approx(0.0303056, rel=1e-4)
+        ) == pytest.approx(0.0303054, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_N2"]
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_NH4"]
-        ) == pytest.approx(0.82687, rel=1e-4)
+        ) == pytest.approx(0.8261, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_NO3"]
         ) == pytest.approx(0, abs=1e-4)
@@ -82,7 +82,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
-        ) == pytest.approx(0.66164, rel=1e-4)
+        ) == pytest.approx(0.0303997, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_AUT"]
         ) == pytest.approx(0, abs=1e-4)
@@ -91,7 +91,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_I"]
-        ) == pytest.approx(15.025, rel=1e-4)
+        ) == pytest.approx(15.02816, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_PAO"]
         ) == pytest.approx(0, abs=1e-4)
@@ -103,8 +103,8 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
-        ) == pytest.approx(1.36886, rel=1e-4)
-        assert value(model.fs.costing.LCOW) == pytest.approx(6.284, rel=1e-4)
+        ) == pytest.approx(1.38969, rel=1e-4)
+        assert value(model.fs.costing.LCOW) == pytest.approx(5.36338, rel=1e-4)
 
     @pytest.mark.component
     def test_display(self, model):

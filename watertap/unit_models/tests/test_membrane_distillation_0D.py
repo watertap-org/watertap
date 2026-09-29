@@ -96,6 +96,42 @@ def build():
     m.fs.unit.hot_ch.h_conv.fix(2400)
     m.fs.unit.cold_ch.h_conv.fix(2400)
 
+    m.fs.properties_hot_ch.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
+    m.fs.properties_hot_ch.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+    )
+    m.fs.properties_cold_ch.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
+    m.fs.properties_cold_ch.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+    )
+    m.fs.properties_vapor.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
+    m.fs.properties_vapor.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Vap", "H2O")
+    )
+
+    iscale.set_scaling_factor(
+        m.fs.unit.cold_ch.properties_in[0].flow_mass_phase_comp["Vap", "H2O"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.cold_ch.properties_out[0].flow_mass_phase_comp["Vap", "H2O"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.cold_ch.properties_interface[0, 0].flow_mass_phase_comp["Vap", "H2O"],
+        1,
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.cold_ch.properties_interface[0, 1].flow_mass_phase_comp["Vap", "H2O"],
+        1,
+    )
+    iscale.set_scaling_factor(m.fs.unit.area, 1e-1)
+    iscale.set_scaling_factor(m.fs.unit.hot_ch.heat, 1e-3)
+    iscale.set_scaling_factor(m.fs.unit.cold_ch.heat, 1e-3)
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -111,11 +147,11 @@ class TestMembraneDisillation0D(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 312.652577449503
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 343.401843712127
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.003356790
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.5268
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.69618
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 314.0520934
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 344.102435
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00334578745
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.517108340
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.7069605503
 
         self.conservation_equality = {
             "Check 1": {
@@ -197,15 +233,17 @@ class TestMembraneDisillation0D_temperature_polarization_none(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9016872
+        ] = 0.9033266209853699
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 301.76628
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 351.44918
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.01266
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.687139
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.819987
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 303.6704079347907
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = (
+            352.05089103799094
+        )
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.01233
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6633469
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8292445
 
         self.conservation_equality = {
             "Check 1": {
@@ -296,11 +334,11 @@ class TestMembraneDisillation0D_temperature_polarization_fixed(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 312.652577449503
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 343.401843712127
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.003356790
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.5268
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.69618
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 314.05609
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 344.10965
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00334521
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.51706
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.70707
 
         self.conservation_equality = {
             "Check 1": {
@@ -389,16 +427,16 @@ class TestMembraneDisillation0D_temperature_polarization_calculated(UnitTestHarn
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9002124090930
+        ] = 0.9029749
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 300.20215
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 352.806
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0053989
-        self.unit_solutions[m.fs.unit.recovery_mass[0]] = 0.06713739
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.68575
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8408
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 302.03889
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 353.54345
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0051688
+        self.unit_solutions[m.fs.unit.recovery_mass[0]] = 0.0642747
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.65
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.852207
 
         self.conservation_equality = {
             "Check 1": {
@@ -491,15 +529,15 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9005880857452575
+        ] = 0.903349276
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 300.2498
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 352.785
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0053676595
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.68237393
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8405494334
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 302.08527
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 353.522566
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00513756
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6466382
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8518856
 
         self.conservation_equality = {
             "Check 1": {
@@ -594,15 +632,15 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9015774522415636
+        ] = 0.9042205
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 300.377886
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 352.504663
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00528521
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6733963
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.83968273
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 302.19553
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 353.471809
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00506495
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6387468
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8511047
 
         self.conservation_equality = {
             "Check 1": {
@@ -697,16 +735,16 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9008354100672312
+        ] = 0.903569
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 300.3940
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 352.8690612
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00534704
-        self.unit_solutions[m.fs.unit.recovery_mass[0]] = 0.066491803
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6800786
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.841831
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 302.22345
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 353.60605
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00511924
+        self.unit_solutions[m.fs.unit.recovery_mass[0]] = 0.063659
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6446025
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.85317
 
         self.conservation_equality = {
             "Check 1": {
@@ -805,15 +843,15 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.cold_ch.length] = 8
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9008354100672311
+        ] = 0.903569
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 300.3940665
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 352.86906
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00534704
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6800786
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8418317
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 302.22345
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 353.60605
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00511924
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6446025
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.85317
         self.unit_solutions[m.fs.unit.hot_ch.deltaP[0]] = -500000.0
         self.unit_solutions[m.fs.unit.cold_ch.deltaP[0]] = -500000.0
 
@@ -907,17 +945,17 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.cold_ch.length] = 8
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.9007196
+        ] = 0.903455
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 300.52407
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 352.84163
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00535669
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.6811818
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.841409
-        self.unit_solutions[m.fs.unit.hot_ch.deltaP[0]] = -301454.81094
-        self.unit_solutions[m.fs.unit.cold_ch.deltaP[0]] = -343467.7791
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 302.169
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 353.5788
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00512875
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.64568
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.85275
+        self.unit_solutions[m.fs.unit.hot_ch.deltaP[0]] = -299896.723878
+        self.unit_solutions[m.fs.unit.cold_ch.deltaP[0]] = -342521.37806
 
         self.conservation_equality = {
             "Check 1": {
@@ -992,9 +1030,9 @@ class TestMembraneDisillation0D_temperature_polarization_none_vmd(UnitTestHarnes
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ] = 0.9285175510218185
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 337.7047629447829
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7047629447829
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03648244897818147
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 338.6605219221607
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 338.6605219221607
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.037008
 
         self.conservation_equality = {
             "Check 1": {
@@ -1070,9 +1108,9 @@ class TestMembraneDisillation0D_temperature_polarization_fixed_hot_vmd(UnitTestH
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ] = 0.9479100277176233
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 352.1551430126428
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7492369004734
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.01708997228237665
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 352.655289
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 338.0086
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.017254657
 
         self.conservation_equality = {
             "Check 1": {
@@ -1153,9 +1191,9 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_hot_vmd(
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ] = 0.9348449235681139
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03015507643188607
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 343.476969
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 340.669024
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03057997
 
         self.conservation_equality = {
             "Check 1": {
@@ -1238,9 +1276,9 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ] = 0.9348449235681139
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03004295222746866
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 343.558025
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 340.747587
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03046524
 
         self.conservation_equality = {
             "Check 1": {
@@ -1256,6 +1294,7 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
         return m
 
 
+#
 def build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -1324,10 +1363,10 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ] = 0.9348449235681139
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03004295222746866
-        self.unit_solutions[m.fs.unit.hot_ch.deltaP[0]] = -73462.05019358391
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 343.56891
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 340.756717
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03047074
+        self.unit_solutions[m.fs.unit.hot_ch.deltaP[0]] = -73386.0456
 
         self.conservation_equality = {
             "Check 1": {
@@ -1428,7 +1467,7 @@ class TestMembraneDisillation0D_temperature_polarization_none_pgmd(UnitTestHarne
         self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = (
             304.69178989433595
         )
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0023053139451937005
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.002318637
         self.unit_solutions[m.fs.unit.gap_ch_outlet.temperature[0]] = 326.62398751842414
 
         self.conservation_equality = {

@@ -222,7 +222,7 @@ def grab_unit_components_feed(unit_class):
     )
 
 
-df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
+df = pd.read_csv("WT3_unit_classification_for_doc.csv")
 
 unit_name_list = [i.title() for i in df["Name"]]
 model_type_list = df["model type long"]

@@ -25,6 +25,7 @@ Additional Variables
    "Mass density of chemical solution", "solution_density", ":math:`kg/m^3`"
    "Mass fraction of chemical in solution", "ratio_in_solution", ":math:`dimensionless`"
    "Volumetric flow rate of chemical solution", "chemical_flow_vol", ":math:`m^3/s`"
+   "Mass flow rate of chemical solution", "chemical_flow_mass", ":math:`kg/s`"
    "Electricity consumption of unit", "electricity", ":math:`kW`"
 
 Additional Constraints
@@ -33,7 +34,8 @@ Additional Constraints
 .. csv-table::
    :header: "Description", "Constraint Name"
 
-   "None", "chemical_flow_constraint"
+   "None", "chemical_flow_mass_constraint"
+   "None", "chemical_flow_vol_constraint"
    "Constraint for electricity consumption based on pump flowrate.", "electricity_consumption"
 
 .. index::
