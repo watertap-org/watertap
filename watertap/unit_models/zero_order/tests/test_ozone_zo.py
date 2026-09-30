@@ -87,7 +87,7 @@ class TestOzoneZO_with_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="toc must be in solute list for Ozonation " "or Ozone/AOP",
+            match="A TOC component was not found in the solute list for the OzoneZO model.",
         ):
             model.fs.unit = OzoneZO(property_package=model.fs.params, database=model.db)
 
@@ -385,17 +385,17 @@ def test_with_mcas():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
         solute_list=[
-            "toc",
+            "TOC",
         ],
         ignore_neutral_charge=True,
-        mw_data={"toc": 12e-3},
+        mw_data={"TOC": 12e-3},
         material_flow_basis="mass",
     )
 
     m.fs.unit = OzoneZO(property_package=m.fs.properties, database=m.db)
 
     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(100)
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "toc"].fix(0.00033735)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TOC"].fix(0.00033735)
     m.fs.unit.load_parameters_from_database()
     m.fs.unit.initialize()
     results = solver.solve(m)

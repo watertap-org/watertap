@@ -60,7 +60,7 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
             return b.ozone_toc_ratio == 1 + pyunits.convert(
                 b.concentration_time
                 / b.contact_time
-                / b.properties_in[0].conc_mass_comp["toc"],
+                / b._inlet_conc_toc,
                 to_units=pyunits.dimensionless,
             )
 
@@ -69,7 +69,7 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
             return b.oxidant_dose == pyunits.convert(
                 b.oxidant_ozone_ratio
                 * b.ozone_toc_ratio
-                * b.properties_in[0].conc_mass_comp["toc"],
+                * b._inlet_conc_toc,
                 to_units=pyunits.mg / pyunits.L,
             )
 
