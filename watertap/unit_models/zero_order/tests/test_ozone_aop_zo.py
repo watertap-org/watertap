@@ -431,6 +431,7 @@ def test_costing():
         pytest.approx(value(m.fs.unit.costing.aop_capital_cost), rel=1e-3) == 4611108.51
     )
 
+
 @pytest.mark.component
 def test_with_mcas():
     m = ConcreteModel()

@@ -42,8 +42,12 @@ class OzoneZOData(ZeroOrderBaseData):
 
         # Scans the component list and grabs the first one that matches our accepted names
         self._toc_comp = next(
-            (c for c in self.config.property_package.component_list if c.lower() in accepted_names), 
-            None
+            (
+                c
+                for c in self.config.property_package.component_list
+                if c.lower() in accepted_names
+            ),
+            None,
         )
 
         if self._toc_comp is None:
@@ -82,10 +86,13 @@ class OzoneZOData(ZeroOrderBaseData):
         if hasattr(self.properties_in[0], "conc_mass_comp"):
             self._inlet_conc_toc = self.properties_in[0].conc_mass_comp[self._toc_comp]
         elif hasattr(self.properties_in[0], "conc_mass_phase_comp"):
-            self._inlet_conc_toc = self.properties_in[0].conc_mass_phase_comp["Liq", self._toc_comp]
+            self._inlet_conc_toc = self.properties_in[0].conc_mass_phase_comp[
+                "Liq", self._toc_comp
+            ]
         else:
-            raise PropertyPackageError(f"Inlet concentration of {self._toc_comp} not found. Property package does not contain conc_mass_comp or conc_mass_phase_comp.")
-
+            raise PropertyPackageError(
+                f"Inlet concentration of {self._toc_comp} not found. Property package does not contain conc_mass_comp or conc_mass_phase_comp."
+            )
 
         self.ozone_flow_mass = Var(
             initialize=1,
