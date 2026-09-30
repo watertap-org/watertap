@@ -15,7 +15,7 @@ This module contains the default values of all the required
 parameters.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 

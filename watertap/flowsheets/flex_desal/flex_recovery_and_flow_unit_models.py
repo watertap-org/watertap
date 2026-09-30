@@ -21,7 +21,6 @@ from pyomo.environ import (
     Param,
     RangeSet,
     Var,
-    exp,
     units as pyunits,
 )
 
