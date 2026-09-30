@@ -36,6 +36,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import OzoneZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -375,3 +376,27 @@ def test_costing():
     assert (
         pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 11077920.85
     )
+
+
+@pytest.mark.component
+def test_with_mcas():
+    m = ConcreteModel()
+    m.db = Database()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=[
+            "toc",
+        ],
+        ignore_neutral_charge=True,
+        mw_data={"toc": 12e-3},
+        material_flow_basis="mass",
+    )
+
+    m.fs.unit = OzoneZO(property_package=m.fs.properties, database=m.db)
+
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(100)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "toc"].fix(0.00033735)
+    m.fs.unit.load_parameters_from_database()
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+    assert check_optimal_termination(results)

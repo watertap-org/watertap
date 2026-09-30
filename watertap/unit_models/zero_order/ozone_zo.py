@@ -15,7 +15,7 @@ This module contains a zero-order representation of a Ozone reactor unit.
 
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, ZeroOrderBaseData
 
@@ -94,12 +94,18 @@ class OzoneZOData(ZeroOrderBaseData):
 
         @self.Constraint(doc="Ozone consumption constraint")
         def ozone_consumption_constraint(b):
+            if hasattr(b.properties_in[0], "conc_mass_comp"):
+                inlet_conc_toc = b.properties_in[0].conc_mass_comp["toc"]
+            elif hasattr(b.properties_in[0], "conc_mass_phase_comp"):
+                inlet_conc_toc = b.properties_in[0].conc_mass_phase_comp["Liq", "toc"]
+            else:
+                raise PropertyPackageError("Inlet concentration of TOC not found")
             return (
                 b.ozone_consumption
                 == (
                     (
                         pyunits.convert(
-                            b.properties_in[0].conc_mass_comp["toc"],
+                            inlet_conc_toc,
                             to_units=pyunits.mg / pyunits.liter,
                         )
                         + self.concentration_time / self.contact_time
