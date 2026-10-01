@@ -18,6 +18,7 @@ from pyomo.environ import (
     check_optimal_termination,
     value,
 )
+from idaes.core import FlowsheetBlockData, UnitModelBlockData
 from idaes.core.util.initialization import solve_indexed_blocks
 
 from watertap.property_models.seawater_prop_pack import SeawaterStateBlockData
@@ -130,3 +131,80 @@ def calculate_operating_pressure(
     op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * over_pressure_factor
 
     return op_pressure
+
+
+def _list_um_vars_to_fix(vars):
+    """
+    List variables for a unit model that should be fixed for simulation.
+
+    Args:
+        vars: dict of variable names and Pyomo variables
+
+    Returns:
+        list of Pyomo variables to fix to define the unit model for simulation
+    """
+    name_width = max(len("Name"), max((len(str(name)) for name in vars), default=0))
+    var_width = max(
+        len("Variable in Unit"),
+        max((len(str(var)) for var in vars.values()), default=0),
+    )
+    fixed_width = len("Currently Fixed")
+    bounds_width = max(
+        len("Bounds"),
+        max((len(str(var.bounds)) for var in vars.values()), default=0),
+    )
+    units_width = max(
+        len("Units"),
+        max((len(str(var.get_units())) for var in vars.values()), default=0),
+    )
+
+    print("\n", "Suggested variables to fix for simulation:")
+    print(
+        f"{'Name':<{name_width}} {'Variable in Unit':<{var_width}} {'Currently Fixed':<{fixed_width}} {'Bounds':<{bounds_width}} {'Units':<{units_width}}"
+    )
+    print(
+        f"{'-' * name_width:<{name_width}} {'-' * var_width:<{var_width}} {'-' * fixed_width:<{fixed_width}} {'-' * bounds_width:<{bounds_width}} {'-' * units_width:<{units_width}}"
+    )
+
+    for name, var in vars.items():
+        fixed_flag = var.fixed
+        bounds = var.bounds
+        units = var.get_units()
+        print(
+            f"{name:<{name_width}} {str(var):<{var_width}} {str(fixed_flag):<{fixed_width}} {str(bounds):<{bounds_width}} {str(units):<{units_width}}"
+        )
+    print("\n")
+
+
+def list_fs_vars_to_fix(fs):
+    """
+    List variables for unit models on a flowsheet that should be fixed for
+    simulation.
+
+    Args:
+        fs: flowsheet object or unit model object
+
+    Returns:
+        list of unit model names for which list_vars_to_fix was called
+    """
+    if isinstance(fs, FlowsheetBlockData):
+        units = [u for u in fs.component_objects() if isinstance(u, UnitModelBlockData)]
+    elif isinstance(fs, UnitModelBlockData):
+        units = [fs]
+    else:
+        raise TypeError(
+            f"Expected a FlowsheetBlockData or UnitModelBlockData instance, but got {type(fs).__name__!r}."
+        )
+
+    units_with_method = []
+    for unit in units:
+        list_method = getattr(unit, "list_vars_to_fix", None)
+        if callable(list_method):
+            print(f"\nUnit model: {unit.name}")
+            list_method()
+            units_with_method.append(unit.name)
+
+    if not units_with_method:
+        print("No unit models on the provided object define a list_vars_to_fix method.")
+
+    return units_with_method

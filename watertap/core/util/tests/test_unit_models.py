@@ -26,7 +26,10 @@ from watertap.property_models.NaCl_T_dep_prop_pack import (
 )
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
-from watertap.core.util.unit_models import calculate_operating_pressure
+from watertap.core.util.unit_models import (
+    calculate_operating_pressure,
+    list_fs_vars_to_fix,
+)
 from watertap.unit_models import ReverseOsmosis0D, ReverseOsmosis1D
 from watertap.core.solvers import get_solver
 
@@ -205,6 +208,7 @@ def build_ro1d_mcas_model():
     return m
 
 
+# Tests for calculate_operating_pressure function
 @pytest.mark.component
 def test_calculate_operating_pressure_sw():
 
@@ -362,3 +366,19 @@ def test_calculate_operating_pressure_errors():
             water_recovery_mass=0.998,
             over_pressure_factor=10010,
         )
+
+
+# Test for _list_um_vars_to_fix function
+@pytest.mark.unit
+def test_list_um_vars_to_fix():
+    m = build_ro0d_model()
+    m.fs.RO.list_vars_to_fix()
+    # _list_um_vars_to_fix function is called within the list_vars_to_fix method
+
+
+# Test for list_fs_vars_to_fix_function
+@pytest.mark.unit
+def test_list_fs_vars_to_fix():
+    # TODO: test with more complex flowsheet with multiple unit models once vars_to_fix method is defined for more unit models.
+    m = build_ro0d_model()
+    list_fs_vars_to_fix(m.fs)
