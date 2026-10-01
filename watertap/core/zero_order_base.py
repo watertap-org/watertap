@@ -284,6 +284,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
             )
 
         if index is not None:
+            # NOTE: convert index to lowercase for consistency with database keys (e.g., "toc" instead of "TOC")
+            index = index.lower()
             try:
                 pdata = pdata[index]
             except KeyError:
