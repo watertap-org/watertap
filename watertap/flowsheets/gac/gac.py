@@ -236,8 +236,7 @@ def optimize(m, solver=None):
 
 
 def add_costing(m, cost_contactor_type="pressure"):
-    m.fs.costing = WaterTAPCosting()
-    m.fs.costing.base_currency = pyo.units.USD_2021
+    m.fs.costing = WaterTAPCosting(base_currency_year=2021)
     m.fs.gac.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
         costing_method_arguments={"contactor_type": cost_contactor_type},

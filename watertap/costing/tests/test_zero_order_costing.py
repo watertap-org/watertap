@@ -13,6 +13,9 @@
 Tests for general zero-order costing methods
 """
 
+import os
+import re
+import yaml
 import pytest
 
 from pyomo.environ import (
@@ -37,6 +40,7 @@ from idaes.core.util.model_statistics import (
     number_unfixed_variables,
 )
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 
 from watertap.costing.zero_order_costing import (
     ZeroOrderCosting,
@@ -332,6 +336,8 @@ class TestWorkflow:
         m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.costing = ZeroOrderCosting()
+        # NOTE: setting base_currency in this way is discouraged
+        # It is recommended to set the base_currency through the case study definition file
         m.fs.costing.base_currency = pyunits.USD_2020
 
         return m
@@ -495,3 +501,254 @@ class TestWorkflow:
         assert pytest.approx(0.231345, rel=1e-5) == value(
             model.fs.costing.electricity_intensity
         )
+
+
+@pytest.mark.component
+def test_watertap_costing_config_zo():
+
+    here = os.path.dirname(os.path.abspath(__file__))
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2001)
+    # check that passing base_currency_year when it is also defined in
+    # yaml will use the base_currency from yaml
+    assert m.fs.costing.config.base_currency_year == 2001
+    assert m.fs.costing.base_currency == pyunits.MUSD_2018
+
+    cs = _load_case_study_definition(m.fs.costing)
+
+    # Create a temporary case study yaml without base_currency and/or base_period
+    cs.pop("base_currency", None)
+    temp_path1 = f"{here}/no_base_currency_base_period.yaml"
+    with open(temp_path1, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path1, base_currency_year=2000, base_period="day"
+    )
+    m.fs.costing.cost_process()
+
+    # Check that the base_currency_year from the config is used
+    assert m.fs.costing.config.base_currency_year == 2000
+    assert m.fs.costing.base_currency == pyunits.USD_2000
+    # Check that base_period will be used from yaml despite being in config
+    assert m.fs.costing.config.base_period == "day"
+    assert m.fs.costing.base_period == pyunits.year
+    assert pyunits.get_units(m.fs.costing.total_capital_cost) == pyunits.get_units(
+        pyunits.USD_2000
+    )
+    assert pyunits.get_units(m.fs.costing.total_operating_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.year
+    )
+    assert pyunits.get_units(m.fs.costing.electricity_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.kWh
+    )
+    assert pyunits.get_units(m.fs.costing.plant_lifetime) == pyunits.get_units(
+        pyunits.year
+    )
+    assert pyunits.get_units(m.fs.costing.capital_recovery_factor) == pyunits.get_units(
+        pyunits.year**-1
+    )
+    assert pyunits.get_units(m.fs.costing.salaries_percent_FCI) == pyunits.get_units(
+        pyunits.year**-1
+    )
+    assert pyunits.get_units(
+        m.fs.costing.maintenance_costs_percent_FCI
+    ) == pyunits.get_units(pyunits.year**-1)
+    assert pyunits.get_units(
+        m.fs.costing.laboratory_fees_percent_FCI
+    ) == pyunits.get_units(pyunits.year**-1)
+    assert pyunits.get_units(
+        m.fs.costing.insurance_and_taxes_percent_FCI
+    ) == pyunits.get_units(pyunits.year**-1)
+
+    cs.pop("base_period", None)
+    with open(temp_path1, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path1, base_currency_year=2000, base_period="day"
+    )
+    m.fs.costing.cost_process()
+
+    # Check that the base_currency_year and base_period from the config is used
+    assert m.fs.costing.config.base_currency_year == 2000
+    assert m.fs.costing.base_currency == pyunits.USD_2000
+    assert m.fs.costing.config.base_period == "day"
+    assert m.fs.costing.base_period == pyunits.day
+    assert pyunits.get_units(m.fs.costing.total_capital_cost) == pyunits.get_units(
+        pyunits.USD_2000
+    )
+    assert pyunits.get_units(m.fs.costing.total_operating_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.day
+    )
+    assert pyunits.get_units(m.fs.costing.electricity_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.kWh
+    )
+    assert pyunits.get_units(m.fs.costing.plant_lifetime) == pyunits.get_units(
+        pyunits.day
+    )
+    assert pyunits.get_units(m.fs.costing.capital_recovery_factor) == pyunits.get_units(
+        pyunits.day**-1
+    )
+    assert pyunits.get_units(m.fs.costing.salaries_percent_FCI) == pyunits.get_units(
+        pyunits.day**-1
+    )
+    assert pyunits.get_units(
+        m.fs.costing.maintenance_costs_percent_FCI
+    ) == pyunits.get_units(pyunits.day**-1)
+    assert pyunits.get_units(
+        m.fs.costing.laboratory_fees_percent_FCI
+    ) == pyunits.get_units(pyunits.day**-1)
+    assert pyunits.get_units(
+        m.fs.costing.insurance_and_taxes_percent_FCI
+    ) == pyunits.get_units(pyunits.day**-1)
+
+    # Check invalid base_currency_year and base_period configurations
+    with pytest.raises(
+        ConfigurationError,
+        match="Base currency year must be between 1990 and 2023, but got 1492",
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path1, base_currency_year=1492
+        )
+
+    # base_period must be a valid pyunit
+    with pytest.raises(
+        ConfigurationError,
+        match="cheese is not a valid unit.",
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path1, base_period="cheese"
+        )
+
+    # if base_period is a valid pyunit, it must be a unit of time
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_period configuration must be a unit of time but got kilogram [mass]."
+        ),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path1, base_period="kilogram"
+        )
+
+    # Check that you can't re-set base_currency or base_period
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path1, base_currency_year=2000, base_period="month"
+    )
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_currency and base_period are already set: base_currency = USD_2000, base_period = month"
+        ),
+    ):
+        m.fs.costing.validate_watertap_costing_config()
+
+    os.remove(temp_path1)
+
+    # cs.pop("base_currency", None)
+
+    # Test invalid base currency year as string
+    cs["base_currency"] = "FOO_42"
+    temp_path2 = f"{here}/invalid_base_currency_year.yaml"
+
+    with open(temp_path2, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("Base currency year must be between 1990 and 2023, but got 42"),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path2,
+            base_currency_year=2000,
+            base_period="year",
+        )
+
+    # Test invalid base currency year as int
+    cs["base_currency"] = 4200
+    with open(temp_path2, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "Base currency year must be between 1990 and 2023, but got 4200"
+        ),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path2,
+            base_currency_year=2000,
+            base_period="decade",
+        )
+
+    # Test *valid* base_currency entry as int
+    cs["base_currency"] = 2022
+    with open(temp_path2, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path2,
+        base_currency_year=2000,
+    )
+    # Check that base_currency gets set via the int provided in the case study yaml
+    assert m.fs.costing.config.base_currency_year == 2000
+    assert m.fs.costing.base_currency == pyunits.USD_2022
+
+    os.remove(temp_path2)
+
+    # Test valid base_currency but invalid base_period unit
+    cs["base_currency"] = "USD_2020"
+    cs["base_period"] = "sandwich"
+    temp_path3 = f"{here}/invalid_base_period.yaml"
+
+    with open(temp_path3, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("sandwich is not a valid unit."),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
+
+    cs["base_period"] = "kilogram"
+
+    with open(temp_path3, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_period configuration must be a unit of time but got kilogram [mass]."
+        ),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
+
+    os.remove(temp_path3)
+
+
+# test_watertap_costing_config_zo()
