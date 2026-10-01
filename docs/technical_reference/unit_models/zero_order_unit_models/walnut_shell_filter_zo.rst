@@ -1,3 +1,5 @@
+.. _walnut_shell_filter_zo:
+
 Walnut Shell Filter (ZO)
 ========================
 

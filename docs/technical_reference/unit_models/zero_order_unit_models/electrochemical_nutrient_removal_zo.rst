@@ -1,3 +1,5 @@
+.. _electrochemical_nutrient_removal_zo:
+
 Electrochemical Nutrient Removal (ZO)
 =====================================
 

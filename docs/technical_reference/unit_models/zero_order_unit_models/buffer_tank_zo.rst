@@ -1,3 +1,5 @@
+.. _buffer_tank_zo:
+
 Buffer Tank (ZO)
 ================
 
