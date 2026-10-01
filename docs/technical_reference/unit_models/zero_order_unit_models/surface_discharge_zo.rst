@@ -1,3 +1,5 @@
+.. _surface_discharge_zo:
+
 Surface Discharge (ZO)
 ======================
 

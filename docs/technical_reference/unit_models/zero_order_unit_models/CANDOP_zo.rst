@@ -1,3 +1,5 @@
+.. _CANDOP_zo:
+
 CANDO-P (ZO)
 ============
 

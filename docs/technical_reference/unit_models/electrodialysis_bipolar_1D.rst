@@ -1,3 +1,5 @@
+.. _ED_bipolar_1D:
+
 Bipolar Electrodialysis (1D)
 ============================
 

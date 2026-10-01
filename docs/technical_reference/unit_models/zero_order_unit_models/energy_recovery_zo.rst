@@ -1,3 +1,5 @@
+.. _energy_recovery_zo:
+
 Energy Recovery (ZO)
 ====================
 

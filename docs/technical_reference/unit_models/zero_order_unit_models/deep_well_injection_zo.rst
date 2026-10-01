@@ -1,3 +1,5 @@
+.. _deep_well_injection_zo:
+
 Deep Well Injection (ZO)
 ========================
 

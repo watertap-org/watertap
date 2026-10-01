@@ -1,3 +1,5 @@
+.. _blending_reservoir_zo:
+
 Blending Reservoir (ZO)
 =======================
 

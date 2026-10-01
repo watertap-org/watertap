@@ -1,3 +1,5 @@
+.. _sw_onshore_intake_zo:
+
 Seawater Onshore Intake (ZO)
 ============================
 

@@ -11,7 +11,7 @@ Calculate Operating Pressure
 
 .. code-block:: python
 
-   from watertap.core.util import calculate_operating_pressure
+   from watertap.core.util.unit_models import calculate_operating_pressure
 
 This function will estimate the operating pressure of a unit model based on the osmotic pressure of the inlet stream. It can accept the following arguments:
 
@@ -33,7 +33,7 @@ An example usage is provided below.
    from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
    from watertap.unit_models import ReverseOsmosis0D
    from watertap.core.solvers import get_solver
-   from watertap.core.util import calculate_operating_pressure
+   from watertap.core.util.unit_models import calculate_operating_pressure
 
     # Create a state block with the desired inlet conditions
     m = ConcreteModel()

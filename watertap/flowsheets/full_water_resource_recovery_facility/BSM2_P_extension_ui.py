@@ -14,7 +14,6 @@ GUI configuration for the extended BSM2 flowsheet.
 """
 
 from pyomo.environ import units as pyunits
-from pyomo.environ import TransformationFactory
 
 import idaes.logger as idaeslog
 
@@ -26,7 +25,7 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     initialize_system,
     solve,
     add_costing,
-    scale_system,
+    set_scaling,
 )
 
 # Set up logger
@@ -3871,59 +3870,47 @@ def build_flowsheet(build_options=None, **kwargs):
         m = build(bio_P=bioP)
 
         set_operating_conditions(m, bio_P=bioP)
-
+        set_scaling(m)
         initialize_system(m, bio_P=bioP)
 
         add_costing(m)
         m.fs.costing.initialize()
 
-        scale_system(m, bio_P=bioP)
-        scaling = TransformationFactory("core.scale_model")
-        scaled_model = scaling.create_using(m, rename=False)
-
-        solve(scaled_model)
+        solve(m)
 
         # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-        scaled_model.fs.R5.KLa.fix(24.0 / 24)
-        scaled_model.fs.R6.KLa.fix(24.0 / 24)
-        scaled_model.fs.R7.KLa.fix(8.4 / 24)
-        scaled_model.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        scaled_model.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        scaled_model.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R5.KLa.fix(240 / 24)
+        m.fs.R6.KLa.fix(240 / 24)
+        m.fs.R7.KLa.fix(84 / 24)
+        m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
         # Resolve with controls in place
-        solve(scaled_model)
-
-        scaling.propagate_solution(scaled_model, m)
+        solve(m)
 
     else:
         m = build(bio_P=False)
 
         set_operating_conditions(m, bio_P=False)
-
+        set_scaling(m)
         initialize_system(m, bio_P=False)
 
         add_costing(m)
         m.fs.costing.initialize()
 
-        scale_system(m, bio_P=False)
-        scaling = TransformationFactory("core.scale_model")
-        scaled_model = scaling.create_using(m, rename=False)
-
-        solve(scaled_model)
+        solve(m)
 
         # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-        scaled_model.fs.R5.KLa.fix(24.0 / 24)
-        scaled_model.fs.R6.KLa.fix(24.0 / 24)
-        scaled_model.fs.R7.KLa.fix(8.4 / 24)
-        scaled_model.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        scaled_model.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        scaled_model.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R5.KLa.fix(240 / 24)
+        m.fs.R6.KLa.fix(240 / 24)
+        m.fs.R7.KLa.fix(84 / 24)
+        m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
         # Resolve with controls in place
-        solve(scaled_model)
-
-        scaling.propagate_solution(scaled_model, m)
+        solve(m)
 
     return m
 

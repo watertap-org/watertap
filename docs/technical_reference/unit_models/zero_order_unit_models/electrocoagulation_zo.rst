@@ -1,3 +1,5 @@
+.. _electrocoagulation_zo:
+
 Electrocoagulation (ZO)
 =======================
 

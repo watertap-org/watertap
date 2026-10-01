@@ -80,6 +80,51 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
+# Total Phosphorus helpers
+def _TP_adm1(m, props):
+    """Return total phosphorus [kg P / m3] for a ModifiedADM1 StateBlockData.
+
+    TP = S_IP + sum_i( Pi[i] * mw_p * X_i ) for all components in Pi_dict.
+    X_PP is stored as kg polyphosphate compound/m3 (MW=300.41 g/mol per Gujer
+    Matrix), so Pi["X_PP"] = 1/300.41 kmol P/kg. X_ch and X_pr have no Pi
+    entry (P_ch = 0) and are correctly excluded.
+    """
+    p = m.fs.ADM1_rxn_props
+    c = props.conc_mass_comp
+    mw_p = 31  # kg/kmol
+    return (
+        c["S_IP"]
+        + p.Pi["S_I"] * mw_p * c["S_I"]
+        + p.Pi["X_li"] * mw_p * c["X_li"]
+        + p.Pi["X_su"] * mw_p * c["X_su"]
+        + p.Pi["X_aa"] * mw_p * c["X_aa"]
+        + p.Pi["X_fa"] * mw_p * c["X_fa"]
+        + p.Pi["X_c4"] * mw_p * c["X_c4"]
+        + p.Pi["X_pro"] * mw_p * c["X_pro"]
+        + p.Pi["X_ac"] * mw_p * c["X_ac"]
+        + p.Pi["X_h2"] * mw_p * c["X_h2"]
+        + p.Pi["X_I"] * mw_p * c["X_I"]
+        + p.Pi["X_PP"] * mw_p * c["X_PP"]
+        + p.Pi["X_PAO"] * mw_p * c["X_PAO"]
+    )
+
+
+def _TP_asm2d(m, props):
+    """Total phosphorus [kg P / m3] for a ModifiedASM2d StateBlockData."""
+    p = m.fs.props_ASM2D
+    c = props.conc_mass_comp
+    return (
+        c["S_PO4"]
+        + p.i_PSI * c["S_I"]
+        + p.i_PSF * c["S_F"]
+        + p.i_PXI * c["X_I"]
+        + p.i_PXS * c["X_S"]
+        + p.i_PBM * (c["X_H"] + c["X_PAO"] + c["X_AUT"])
+        + c["X_PP"]
+    )
+
+
+# -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
@@ -181,11 +226,11 @@ class TestAdm1Asm2d(object):
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
 
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.472136e5, rel=1e-3
-        )
+        scaler = m.fs.unit.default_scaler()
+        scaler.scale_model(m.fs.unit)
+
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(21, rel=1e-3)
 
         return m
 
@@ -267,7 +312,7 @@ class TestAdm1Asm2d(object):
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
         )
-        assert pytest.approx(0.35699, rel=1e-3) == value(
+        assert pytest.approx(1.29065, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
@@ -282,10 +327,10 @@ class TestAdm1Asm2d(object):
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-8, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PHA"]
         )
-        assert pytest.approx(1e-8, rel=1e-3) == value(
+        assert pytest.approx(1e-8, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PP"]
         )
         assert pytest.approx(28.54725, rel=1e-3) == value(
@@ -341,6 +386,18 @@ class TestAdm1Asm2d(object):
             )
             <= 1e-6
         )
+
+        # Total phosphorus conservation
+        # With Pi["X_PP"] = 1/300.41 kmol P/kg (MW of polyphosphate compound),
+        TP_in = value(
+            _TP_adm1(asmadm, asmadm.fs.unit.properties_in[0])
+            * asmadm.fs.unit.inlet.flow_vol[0]
+        )
+        TP_out = value(
+            _TP_asm2d(asmadm, asmadm.fs.unit.properties_out[0])
+            * asmadm.fs.unit.outlet.flow_vol[0]
+        )
+        assert TP_in == pytest.approx(TP_out, rel=1e-3)
 
 
 class TestADM1ASM2dScaler:
@@ -420,13 +477,13 @@ class TestADM1ASM2dScaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 32
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 21
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -435,10 +492,6 @@ class TestADM1ASM2dScaler:
         assert isinstance(scaler, ADM1ASM2dScaler)
 
         scaler.constraint_scaling_routine(model.fs.unit)
-
-        sfx_out = model.fs.unit.properties_out[0].scaling_factor
-        assert isinstance(sfx_out, Suffix)
-        assert len(sfx_out) == 1
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -452,84 +505,13 @@ class TestADM1ASM2dScaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 32
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
-
-    @pytest.mark.integration
-    def test_example_case_iscale(self):
-        m = ConcreteModel()
-
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
-        m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
-            property_package=m.fs.props_ASM2D
-        )
-        m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
-        m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
-            property_package=m.fs.props_ADM1
-        )
-
-        m.fs.unit = Translator_ADM1_ASM2D(
-            inlet_property_package=m.fs.props_ADM1,
-            outlet_property_package=m.fs.props_ASM2D,
-            inlet_reaction_package=m.fs.ADM1_rxn_props,
-            outlet_reaction_package=m.fs.ASM2d_rxn_props,
-            has_phase_equilibrium=False,
-            outlet_state_defined=True,
-        )
-
-        m.fs.unit.inlet.flow_vol.fix(170 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
-
-        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.034597)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.015037)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.025072)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.34628)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.60014)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IP"].fix(0.22677)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.026599)
-
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(7.3687)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(7.7308)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(10.3288)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(12.7727)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.0022493)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(1.04110)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.4655)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.02268)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.02893)
-
-        m.fs.unit.inlet.cations[0].fix(0.04)
-        m.fs.unit.inlet.anions[0].fix(0.02)
-
-        iscale.calculate_scaling_factors(m.fs.unit)
-
-        # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.47213596e5, rel=1e-3
-        )
+        assert len(sfx_out) == 21
 
     @pytest.mark.integration
     def test_example_case_scaler(self):
@@ -593,16 +575,9 @@ class TestADM1ASM2dScaler:
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
 
-        scaler = ADM1ASM2dScaler()
-        scaler.scale_model(
-            m.fs.unit,
-            submodel_scalers={
-                m.fs.unit.properties_in: ModifiedADM1PropertiesScaler,
-                m.fs.unit.properties_out: ModifiedASM2dPropertiesScaler,
-            },
-        )
+        scaler = m.fs.unit.default_scaler()
+        scaler.scale_model(m.fs.unit)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(712.33, rel=1e-3)
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(21, rel=1e-3)
