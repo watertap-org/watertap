@@ -134,7 +134,7 @@ The following modifications to the IX flowsheet are planned for development:
 Code Documentation
 ------------------
 
-* :mod:`watertap.examples.flowsheets.ion_exchange`
+* :mod:`watertap.flowsheets.ion_exchange`
 
 References
 ----------

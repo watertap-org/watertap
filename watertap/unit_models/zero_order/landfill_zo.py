@@ -55,7 +55,7 @@ class LandfillZOData(ZeroOrderBaseData):
         def total_mass_constraint(b, t):
             return b.total_mass[t] == sum(
                 pyunits.convert(
-                    b.inlet.flow_mass_comp[t, m], to_units=pyunits.kg / pyunits.hr
+                    b.properties[t].flow_mass_comp[m], to_units=pyunits.kg / pyunits.hr
                 )
                 for m in b.config.property_package.component_list
             )
