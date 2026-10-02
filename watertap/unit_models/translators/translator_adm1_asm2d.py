@@ -419,7 +419,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.Xch_AD1[t] * blk.config.inlet_reaction_package.Ci["X_ch"]
                 + (blk.Xpr_AD1[t] * blk.config.inlet_reaction_package.Ci["X_pr"])
                 + (blk.Xli_AD1[t] * blk.config.inlet_reaction_package.Ci["X_li"])
-                - blk.config.outlet_reaction_package.i_CXS
+                - blk.config.outlet_property_package.i_CXS
                 / mw_c
                 * (blk.Xch_AD1[t] + blk.Xpr_AD1[t] + blk.Xli_AD1[t])
                 + blk.properties_in[t].conc_mass_comp["S_su"]
@@ -428,7 +428,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 * blk.config.inlet_reaction_package.Ci["S_aa"]
                 + blk.properties_in[t].conc_mass_comp["S_fa"]
                 * blk.config.inlet_reaction_package.Ci["S_fa"]
-                - blk.config.outlet_reaction_package.i_CSF
+                - blk.config.outlet_property_package.i_CSF
                 / mw_c
                 * (
                     blk.properties_in[t].conc_mass_comp["S_su"]
@@ -442,7 +442,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 + blk.properties_in[t].conc_mass_comp["S_pro"]
                 * blk.config.inlet_reaction_package.Ci["S_pro"]
                 + blk.Sac_AD1[t] * blk.config.inlet_reaction_package.Ci["S_ac"]
-                - blk.config.outlet_reaction_package.i_CSA
+                - blk.config.outlet_property_package.i_CSA
                 / mw_c
                 * (
                     blk.properties_in[t].conc_mass_comp["S_va"]
@@ -458,12 +458,12 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         def SIN_AD2(blk, t):
             return (
                 blk.Xpr_AD1[t] * blk.config.inlet_reaction_package.Ni["X_pr"]
-                - blk.config.outlet_reaction_package.i_NXS
+                - blk.config.outlet_property_package.i_NXS
                 / mw_n
                 * (blk.Xch_AD1[t] + blk.Xpr_AD1[t] + blk.Xli_AD1[t])
                 + blk.properties_in[t].conc_mass_comp["S_aa"]
                 * blk.config.inlet_reaction_package.Ni["S_aa"]
-                - blk.config.outlet_reaction_package.i_NSF
+                - blk.config.outlet_property_package.i_NSF
                 / mw_n
                 * (
                     blk.properties_in[t].conc_mass_comp["S_su"]
@@ -480,10 +480,10 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 self.XPP_AD1
                 + blk.Xch_AD1[t] * blk.config.inlet_reaction_package.P_ch
                 + blk.Xli_AD1[t] * blk.config.inlet_reaction_package.Pi["X_li"]
-                - blk.config.outlet_reaction_package.i_PXS
+                - blk.config.outlet_property_package.i_PXS
                 / mw_p
                 * (blk.Xch_AD1[t] + blk.Xpr_AD1[t] + blk.Xli_AD1[t])
-                - blk.config.outlet_reaction_package.i_PSF
+                - blk.config.outlet_property_package.i_PSF
                 / mw_p
                 * (
                     blk.properties_in[t].conc_mass_comp["S_su"]

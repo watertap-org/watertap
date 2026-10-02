@@ -65,7 +65,7 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Treated.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Treated.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Treated.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            2.653e-5, rel=1e-4
+            2.654e-5, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_F"]) == pytest.approx(
             2.7466e-4, rel=1e-4
@@ -77,7 +77,7 @@ class TestASM2DFlowsheet:
             7.886e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            4.425e-3, rel=1e-4
+            4.4256e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             1.88e-3, rel=1e-4
@@ -124,7 +124,7 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Sludge.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Sludge.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            2.65295e-5, rel=1e-4
+            2.654e-5, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_F"]) == pytest.approx(
             2.74656e-4, rel=1e-4
