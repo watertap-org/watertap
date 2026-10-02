@@ -1,3 +1,5 @@
+.. _tramp_oil_tank_zo:
+
 Tramp Oil Tank (ZO)
 ===================
 

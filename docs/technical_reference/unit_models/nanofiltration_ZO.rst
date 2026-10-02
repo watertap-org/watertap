@@ -1,4 +1,4 @@
-.. _nanofiltration_ZO:
+.. _NF_ZO:
 
 Nanofiltration (ZO)
 ====================

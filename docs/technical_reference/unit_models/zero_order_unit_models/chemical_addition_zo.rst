@@ -1,3 +1,5 @@
+.. _chemical_addition_zo:
+
 Chemical Addition (ZO)
 ======================
 

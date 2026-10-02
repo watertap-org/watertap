@@ -1,3 +1,5 @@
+.. _co2_addition_zo:
+
 CO2 Addition (ZO)
 =================
 

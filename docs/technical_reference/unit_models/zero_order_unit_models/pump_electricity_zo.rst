@@ -1,3 +1,5 @@
+.. _pump_electricity_zo:
+
 Pump Electricity (ZO)
 =====================
 

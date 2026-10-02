@@ -1,3 +1,5 @@
+.. _hydrothermal_gasification_zo:
+
 Hydrothermal Gasification (ZO)
 ==============================
 
