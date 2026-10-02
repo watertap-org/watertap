@@ -28,6 +28,9 @@ Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 """
 
+from contextlib import contextmanager
+from enum import Enum
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
@@ -37,6 +40,7 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     check_optimal_termination,
+    value,
     log,
     Suffix,
     NonNegativeReals,
@@ -288,6 +292,42 @@ class ADScaler(CustomScalerBase):
         )
 
 
+class ADInitializationMethod(Enum):
+    # Original routine: simplified-chemistry solve from the default guess.
+    standard = 0
+    # Healthy-root routine for the standard ADM1 property package (BSM2).
+    healthy_root_adm1 = 1
+    # Healthy-root routine for the modified ADM1 property package (BSM2-P).
+    healthy_root_modified_adm1 = 2
+    # Pick one of the two healthy-root routines from the liquid property package.
+    healthy_root_auto = 3
+
+
+def _methanogen_reaction_keys(reaction_package):
+    """Return the acetoclastic and hydrogenotrophic methanogenesis reaction keys
+    for an ADM1-family reaction package, detected from the rate-reaction
+    stoichiometry (S_ac -> CH4 and S_h2 -> CH4). Package-agnostic: works for both
+    standard ADM1 (R11/R12) and modified ADM1 (R10/R11) without hard-coded keys.
+    """
+    st = reaction_package.rate_reaction_stoichiometry
+    keys = []
+    for target, coeff_ok in (("S_ac", lambda v: v == -1), ("S_h2", lambda v: v < 0)):
+        keys.extend(
+            sorted(
+                {
+                    r
+                    for (r, ph, c) in st
+                    if ph == "Liq"
+                    and c == target
+                    and coeff_ok(value(st[(r, ph, c)]))
+                    and (r, "Liq", "S_ch4") in st
+                    and value(st[(r, "Liq", "S_ch4")]) > 0
+                }
+            )
+        )
+    return keys
+
+
 @declare_process_block_class("AD")
 class ADData(UnitModelBlockData):
     """
@@ -496,6 +536,62 @@ and used when constructing these,
 see reaction package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "initialization_method",
+        ConfigValue(
+            default=ADInitializationMethod.standard,
+            domain=In(ADInitializationMethod),
+            description="Initialization strategy for the digester",
+            doc="""The ADM1 digester has a washout root (no methanogen biomass,
+no CH4) and a methane-producing ("healthy") root, and a cold solve can land on
+the washout root. The healthy-root methods seed the methanogen biomass so the
+solve lands on the healthy root.
+**default** - ADInitializationMethod.standard.
+**Valid values:** {
+**ADInitializationMethod.standard** - original routine, no seeding,
+**ADInitializationMethod.healthy_root_adm1** - healthy-root routine for the
+standard ADM1 package (full seed, two-stage solve with methanogen pH inhibition
+relaxed first),
+**ADInitializationMethod.healthy_root_modified_adm1** - healthy-root routine for
+the modified ADM1 package (reduced seed, simplified-chemistry solve followed by
+a full-equation solve),
+**ADInitializationMethod.healthy_root_auto** - choose between the two healthy-root
+routines from the liquid property package (modified ADM1 if S_IP is a component,
+otherwise ADM1).}""",
+        ),
+    )
+
+    # Healthy-root seeds for the digester liquid outlet (kg/m3). Only components
+    # present in the liquid property package are applied.
+    _HEALTHY_SEED_ADM1 = {
+        "S_su": 0.012,
+        "S_aa": 0.005,
+        "S_fa": 0.10,
+        "S_va": 0.012,
+        "S_bu": 0.013,
+        "S_pro": 0.017,
+        "S_ac": 0.20,
+        "S_h2": 2e-7,
+        "S_ch4": 0.055,
+        "X_ch": 0.03,
+        "X_pr": 0.10,
+        "X_li": 0.03,
+        "X_su": 0.5,
+        "X_aa": 1.0,
+        "X_fa": 0.3,
+        "X_c4": 0.4,
+        "X_pro": 0.15,
+        "X_ac": 0.8,
+        "X_h2": 0.35,
+        "X_c": 3.0,
+    }
+    _HEALTHY_SEED_MODIFIED_ADM1 = {
+        "S_ac": 0.20,
+        "S_h2": 2e-7,
+        "S_ch4": 0.055,
+        "X_ac": 0.8,
+        "X_h2": 0.35,
+    }
 
     def build(self):
         """
@@ -1150,17 +1246,17 @@ see reaction package for documentation.}""",
                 ),
             )
 
-    # TO DO: fix initialization
-    def initialize_build(
+    def _initialize_standard(
         self,
         liquid_state_args=None,
         vapor_state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        healthy_seed=None,
     ):
         """
-        Initialization routine for anaerobic digester unit model.
+        Shared function for the ADM1 and modified-ADM1 healthy-root routines.
 
         Keyword Arguments:
             liquid_state_args : a dict of arguments to be passed to the
@@ -1231,6 +1327,14 @@ see reaction package for documentation.}""",
             v.unfix()
 
         init_log.info_high("Initialization Step 2 Complete.")
+
+        # Seed the healthy (methane-producing) root, if requested
+        if healthy_seed is not None:
+            props_out = self.liquid_phase.properties_out[0]
+            for c, val in healthy_seed.items():
+                if c in props_out.conc_mass_comp:
+                    props_out.conc_mass_comp[c].set_value(val)
+
         # ---------------------------------------------------------------------
         # # Solve unit model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1277,6 +1381,9 @@ see reaction package for documentation.}""",
         self.Ch4_Henrys_law.activate()
         self.H2_Henrys_law.activate()
 
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solverobj.solve(self, tee=slc.tee, options={"ma27_pivtol": 1e-2})
+
         if not check_optimal_termination(results):
             raise InitializationError(
                 f"{self.name} failed to initialize successfully. Please check "
@@ -1284,6 +1391,164 @@ see reaction package for documentation.}""",
             )
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
+    def _resolve_initialization_method(self):
+        method = self.config.initialization_method
+        if method is ADInitializationMethod.healthy_root_auto:
+            if "S_IP" in self.config.liquid_property_package.component_list:
+                return ADInitializationMethod.healthy_root_modified_adm1
+            return ADInitializationMethod.healthy_root_adm1
+        return method
+
+    @contextmanager
+    def _fixed_inlet(self):
+        fixed = []
+        try:
+            for var in self.inlet.vars.values():
+                for idx in var:
+                    if not var[idx].fixed:
+                        var[idx].fix()
+                        fixed.append(var[idx])
+            props_in = self.liquid_phase.properties_in[0]
+            for nm in ("anions", "cations"):
+                v = getattr(props_in, nm, None)
+                if v is not None and not v.fixed:
+                    v.fix()
+                    fixed.append(v)
+            yield
+        finally:
+            for v in fixed:
+                v.unfix()
+
+    def _warn_if_washed_out(self, init_log):
+        props_out = self.liquid_phase.properties_out[0]
+        xm = [
+            value(props_out.conc_mass_comp[c])
+            for c in ("X_ac", "X_h2")
+            if c in props_out.conc_mass_comp
+        ]
+        if xm and max(xm) < 1e-6:
+            init_log.warning(
+                f"{self.name} initialized onto the methanogen washout root "
+                f"(X_ac, X_h2 < 1e-6 kg/m3); expect no methane production."
+            )
+
+    def _initialize_healthy_root_adm1(self, outlvl, solver, optarg):
+        """
+        Healthy-root routine for the standard ADM1 package. Seeds the full
+        liquid outlet, then solves in two stages: methanogen pH inhibition is
+        relaxed (I fixed to 1) so the seeded biomass establishes, then the true
+        inhibition is restored and the unit is re-solved.
+        """
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        options = {"max_iter": 3000, "bound_push": 1e-8}
+        options.update(optarg or {})
+        solverobj = get_solver(solver, options)
+
+        rblk = self.liquid_phase.reactions[0]
+        keys = _methanogen_reaction_keys(self.config.reaction_package)
+        if not keys:
+            init_log.warning(
+                f"{self.name}: no methanogenesis reactions were detected in the "
+                f"reaction package; pH inhibition will not be relaxed."
+            )
+
+        with self._fixed_inlet():
+            if degrees_of_freedom(self) != 0:
+                raise InitializationError(
+                    f"{self.name} degrees of freedom were not 0 at the beginning "
+                    f"of initialization. DoF = {degrees_of_freedom(self)}"
+                )
+
+            # Seed the healthy root (biomass + near-neutral pH)
+            props_out = self.liquid_phase.properties_out[0]
+            for c, val in self._HEALTHY_SEED_ADM1.items():
+                if c in props_out.conc_mass_comp:
+                    props_out.conc_mass_comp[c].set_value(val)
+            rblk.S_H.set_value(6e-8)
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                # Relax methanogen pH inhibition
+                for r in keys:
+                    rblk.I_fun[r].deactivate()
+                    rblk.I[r].fix(1.0)
+                results = solverobj.solve(self, tee=slc.tee)
+                init_log.info_high(
+                    "Initialization Stage 1 {}.".format(idaeslog.condition(results))
+                )
+
+                # Restore true inhibition
+                for r in keys:
+                    rblk.I[r].unfix()
+                    rblk.I_fun[r].activate()
+                results = solverobj.solve(self, tee=slc.tee)
+
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
+        self._warn_if_washed_out(init_log)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
+    def initialize_build(
+        self,
+        liquid_state_args=None,
+        vapor_state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
+        """
+        Initialization routine for anaerobic digester unit model. The routine
+        used is selected by the ``initialization_method`` config option (see
+        ADInitializationMethod).
+
+        Keyword Arguments:
+            liquid_state_args : a dict of arguments to be passed to the
+                liquid property packages to provide an initial state for
+                initialization (see documentation of the specific property
+                package) (default = none).
+            vapor_state_args : a dict of arguments to be passed to the
+                vapor property package to provide an initial state for
+                initialization (see documentation of the specific property
+                package) (default = none).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default IDAES solver)
+
+        Returns:
+            None
+        """
+        method = self._resolve_initialization_method()
+
+        if method is ADInitializationMethod.healthy_root_adm1:
+            self._initialize_healthy_root_adm1(outlvl, solver, optarg)
+        elif method is ADInitializationMethod.healthy_root_modified_adm1:
+            with self._fixed_inlet():
+                self._initialize_standard(
+                    liquid_state_args=liquid_state_args,
+                    vapor_state_args=vapor_state_args,
+                    outlvl=outlvl,
+                    solver=solver,
+                    optarg=optarg,
+                    healthy_seed=self._HEALTHY_SEED_MODIFIED_ADM1,
+                )
+            self._warn_if_washed_out(
+                idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+            )
+        else:
+            self._initialize_standard(
+                liquid_state_args=liquid_state_args,
+                vapor_state_args=vapor_state_args,
+                outlvl=outlvl,
+                solver=solver,
+                optarg=optarg,
+            )
 
     @property
     def default_costing_method(self):

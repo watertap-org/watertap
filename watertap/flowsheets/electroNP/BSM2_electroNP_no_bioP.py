@@ -77,7 +77,7 @@ from watertap.unit_models.translators.translator_adm1_asm2d import (
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
 )
-from watertap.unit_models.anaerobic_digester import AD
+from watertap.unit_models.anaerobic_digester import AD, ADInitializationMethod
 from watertap.unit_models.dewatering import (
     DewateringUnit,
     ActivatedSludgeModelType as dewater_type,
@@ -251,6 +251,7 @@ def build_flowsheet(has_electroNP=False):
         reaction_package=m.fs.rxn_props_ADM1,
         has_heat_transfer=True,
         has_pressure_change=False,
+        initialization_method=ADInitializationMethod.healthy_root_auto,
     )
 
     # ADM1-ASM2d translator
@@ -719,7 +720,7 @@ def initialize_system(m, has_electroNP=False):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+        unit.initialize(outlvl=idaeslog.WARNING)
 
     seq.run(m, function)
 

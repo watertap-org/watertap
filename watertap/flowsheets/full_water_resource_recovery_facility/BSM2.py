@@ -23,7 +23,7 @@ __author__ = "Alejandro Garciadiego, Adam Atia, Marcus Holly, Chenyu Wang, Ben K
 import pyomo.environ as pyo
 
 from pyomo.network import Arc, SequentialDecomposition
-from watertap.unit_models.anaerobic_digester import AD, ADScaler
+from watertap.unit_models.anaerobic_digester import AD, ADScaler, ADInitializationMethod
 from watertap.unit_models.thickener import Thickener, ThickenerScaler
 from watertap.unit_models.dewatering import DewateringUnit, DewatererScaler
 from watertap.unit_models.cstr import CSTR, CSTRScaler
@@ -45,7 +45,6 @@ from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
 )
-from idaes.core.util.exceptions import InitializationError
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
@@ -236,6 +235,7 @@ def build():
         reaction_package=m.fs.ADM1_rxn_props,
         has_heat_transfer=True,
         has_pressure_change=False,
+        initialization_method=ADInitializationMethod.healthy_root_auto,
     )
 
     m.fs.adm_asm = Translator_ADM1_ASM1(
@@ -1053,10 +1053,10 @@ def initialize_system(m):
     )
 
     def function(unit):
-        try:
+        if unit is m.fs.RADM:
+            unit.initialize(unit, outlvl=idaeslog.DEBUG)
+        else:
             initializer.initialize(unit, output_level=_log.debug)
-        except InitializationError:
-            pass
 
     seq.run(m, function)
 
