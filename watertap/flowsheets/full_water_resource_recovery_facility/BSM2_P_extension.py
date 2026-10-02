@@ -465,7 +465,7 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(26.6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(15 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(57.45 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(25.19 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(84 * pyo.units.g / pyo.units.m**3)
@@ -474,7 +474,7 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
         51.5262 * pyo.units.g / pyo.units.m**3
     )
-    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(10 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(5.652 * pyo.units.g / pyo.units.m**3)
@@ -586,15 +586,26 @@ def set_scaling(m):
     adm1_rxn_scaler = m.fs.rxn_props_ADM1.default_reaction_scaler_class()
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
-    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e1
+    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e3
+    for c in m.fs.props_ASM2D.component_list:
+        asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
 
     asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
 
-    adm1_scaler.default_scaling_factors["flow_vol"] = 1e1
-
+    adm1_scaler.default_scaling_factors["flow_vol"] = 1e3
+    for c in m.fs.props_ADM1.component_list:
+        adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
     adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
 
-    adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_h2]"] = 1e-4
+    # asm2d_scaler.default_scaling_factors["flow_vol"] = 1e1
+    #
+    # asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
+    #
+    # adm1_scaler.default_scaling_factors["flow_vol"] = 1e1
+    #
+    # adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
+    #
+    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_h2]"] = 1e-4
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
     m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
@@ -764,9 +775,7 @@ class ADHealthyRootInitializer(InitializerBase):
     @property
     def _healthy_seed(self):
         return (
-            self._HEALTHY_SEED_BIO_P
-            if self.config.bio_P
-            else self._HEALTHY_SEED_NO_BIO_P
+            self._HEALTHY_SEED_BIO_P if self.config.bio_P else self._HEALTHY_SEED_BIO_P
         )
 
     def fix_initialization_states(self, model):
@@ -1096,10 +1105,8 @@ def initialize_system(m, bio_P=False, solver=None):
     ad_initializer = ADHealthyRootInitializer(bio_P=bio_P)
 
     def function(unit):
-        # unit.initialize(outlvl=idaeslog.WARNING)
         if unit is m.fs.AD:
             ad_initializer.initialize(unit, output_level=_log.debug)
-            # unit.initialize(outlvl=idaeslog.WARNING)
         else:
             unit.initialize(outlvl=idaeslog.WARNING)
 
@@ -1395,5 +1402,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-
-    m.fs.AD.display()

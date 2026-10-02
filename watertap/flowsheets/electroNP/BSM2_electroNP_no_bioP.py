@@ -988,7 +988,7 @@ def solve(m, solver=None):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(has_electroNP=True)
+    m, results = main(has_electroNP=False)
     if m.fs.has_electroNP is False:
         stream_table = create_stream_table_dataframe(
             {
