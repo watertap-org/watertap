@@ -28,14 +28,12 @@ __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
-from pyomo.common.config import ConfigValue
 
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
     UnitModelBlockData,
 )
-from idaes.core.util.exceptions import InitializationError
 from idaes.models.unit_models import (
     Feed,
     Separator,
@@ -56,7 +54,6 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
-from idaes.core.initialization.initializer_base import InitializerBase
 from watertap.unit_models.aeration_tank import (
     AerationTank,
     ElectricityConsumption,
@@ -84,7 +81,7 @@ from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
 )
-from watertap.unit_models.anaerobic_digester import AD
+from watertap.unit_models.anaerobic_digester import AD, ADInitializationMethod
 from watertap.unit_models.cstr import CSTR
 from watertap.unit_models.dewatering import (
     DewateringUnit,
@@ -270,6 +267,7 @@ def build(bio_P=False):
         reaction_package=m.fs.rxn_props_ADM1,
         has_heat_transfer=True,
         has_pressure_change=False,
+        initialization_method=ADInitializationMethod.healthy_root_auto,
     )
 
     # ADM1-ASM2d translator
@@ -537,250 +535,6 @@ def set_scaling(m):
                 )
 
 
-def _methanogen_reaction_keys(reaction_package):
-    """Return the acetoclastic and hydrogenotrophic methanogenesis reaction keys
-    for an ADM1-family reaction package, detected from the rate-reaction
-    stoichiometry (S_ac -> CH4 and S_h2 -> CH4). Package-agnostic: works for both
-    standard ADM1 (R11/R12) and modified ADM1 (R10/R11) so the same initializer
-    serves BSM2 and the P-extension without hard-coded keys.
-    """
-    st = reaction_package.rate_reaction_stoichiometry
-    keys = []
-    for target, coeff_ok in (("S_ac", lambda v: v == -1), ("S_h2", lambda v: v < 0)):
-        keys.extend(
-            sorted(
-                {
-                    r
-                    for (r, ph, c) in st
-                    if ph == "Liq"
-                    and c == target
-                    and coeff_ok(pyo.value(st[(r, ph, c)]))
-                    and (r, "Liq", "S_ch4") in st
-                    and pyo.value(st[(r, "Liq", "S_ch4")]) > 0
-                }
-            )
-        )
-    return keys
-
-
-class ADHealthyRootInitializer(InitializerBase):
-    """Initialize an anaerobic digester onto its methanogenically-active
-    ("healthy") steady state instead of the trivial washout root.
-
-    The ADM1 digester is bistable on a typical sludge feed: a washout root
-    (pH ~4.6, zero methanogen biomass, no CH4) and a healthy root (pH ~7,
-    methane-producing) both satisfy the steady-state equations, and a cold solve
-    converges to washout because X_ac = X_h2 = 0 are exact fixed points. This
-    initializer instead solves the (inlet-fixed) unit in two stages: relax the
-    methanogen pH-inhibition so seeded biomass establishes, then restore the true
-    inhibition, at which point the healthy root holds. It is self-scaling (uses
-    the unit's ADScaler on a scaled clone) so it is valid during flowsheet
-    initialization, before global scaling is applied.
-    """
-
-    CONFIG = InitializerBase.CONFIG()
-
-    _HEALTHY_SEED = {
-        "S_ac": 0.20,
-        "S_h2": 2e-7,
-        "S_ch4": 0.055,
-        "X_ac": 0.8,
-        "X_h2": 0.35,
-    }
-
-    @property
-    def _healthy_seed(self):
-        return self._HEALTHY_SEED
-
-    def fix_initialization_states(self, model):
-        return
-
-    def restore_model_state(self, model):
-        return
-
-    def initialization_routine(
-        self, model, liquid_state_args=None, vapor_state_args=None, **kwargs
-    ):
-
-        # ---------------------------------------------------------------
-        # Solver
-        # ---------------------------------------------------------------
-        solver = kwargs.get("solver", None)
-        optarg = kwargs.get("optarg", None)
-
-        if optarg is None:
-            optarg = {}
-
-        solverobj = get_solver(solver, optarg)
-
-        # ---------------------------------------------------------------
-        # Check DOF
-        # ---------------------------------------------------------------
-        if degrees_of_freedom(model) != 0:
-            raise InitializationError(
-                f"{model.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(model)}"
-            )
-
-        # ---------------------------------------------------------------
-        # Logging
-        # ---------------------------------------------------------------
-        init_log = idaeslog.getInitLogger(
-            model.name, kwargs.get("outlvl", idaeslog.NOTSET), tag="unit"
-        )
-        solve_log = idaeslog.getSolveLogger(
-            model.name, kwargs.get("outlvl", idaeslog.NOTSET), tag="unit"
-        )
-
-        # ---------------------------------------------------------------
-        # Initialize liquid phase
-        #
-        # This is the same basic operation performed by AD.initialize_build().
-        # The important difference is that we provide state_args containing
-        # the healthy methane-producing state.
-        # ---------------------------------------------------------------
-        for t, v in model.liquid_phase.properties_out[0].conc_mass_comp.items():
-            v.fix()
-
-        flags = model.liquid_phase.initialize(
-            outlvl=kwargs.get("outlvl", idaeslog.NOTSET),
-            optarg=kwargs.get("optarg", None),
-            solver=kwargs.get("solver", None),
-            state_args=liquid_state_args,
-            hold_state=True,
-        )
-
-        # ---------------------------------------------------------------
-        # Initialize vapor phase
-        # ---------------------------------------------------------------
-        for t, v in model.vapor_phase[0].conc_mass_comp.items():
-            v.fix()
-
-        model.vapor_phase.initialize(
-            outlvl=kwargs.get("outlvl", idaeslog.NOTSET),
-            optarg=kwargs.get("optarg", None),
-            solver=kwargs.get("solver", None),
-            state_args=vapor_state_args,
-            hold_state=False,
-        )
-
-        for t, v in model.vapor_phase[0].conc_mass_comp.items():
-            v.unfix()
-
-        init_log.info_high("Initialization Step 2 Complete.")
-
-        # ---------------------------------------------------------------
-        # Set healthy initial guesses
-        # ---------------------------------------------------------------
-
-        # Release the temporary concentration fixing
-        for t, v in model.liquid_phase.properties_out[0].conc_mass_comp.items():
-            v.unfix()
-
-        props = model.liquid_phase.properties_out[0]
-
-        for c, value in self._healthy_seed.items():
-            props.conc_mass_comp[c].set_value(value)
-
-        # ---------------------------------------------------------------
-        # Simplify AD chemistry, exactly as default initialization does
-        # ---------------------------------------------------------------
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-
-            rblk = model.liquid_phase.reactions[0.0]
-
-            rblk.pKW.fix()
-            rblk.pK_a_co2.fix()
-            rblk.pK_a_IN.fix()
-
-            rblk.Dissociation.deactivate()
-            rblk.CO2_acid_base_equilibrium.deactivate()
-            rblk.IN_acid_base_equilibrium.deactivate()
-
-            model.KH_co2.fix()
-            model.KH_ch4.fix()
-            model.KH_h2.fix()
-
-            model.CO2_Henrys_law.deactivate()
-            model.Ch4_Henrys_law.deactivate()
-            model.H2_Henrys_law.deactivate()
-
-            # -----------------------------------------------------------
-            # Solve simplified AD
-            # -----------------------------------------------------------
-            results = solverobj.solve(
-                model,
-                tee=slc.tee,
-                options={"ma27_pivtol": 1e-2},
-            )
-
-            if not pyo.check_optimal_termination(results):
-                init_log.warning(
-                    f"Trouble solving unit model {model.name}, " "trying one more time"
-                )
-
-                results = solverobj.solve(
-                    model,
-                    tee=slc.tee,
-                    options={"ma27_pivtol": 1e-2},
-                )
-
-        init_log.info_high(
-            "Initialization Step 3 {}.".format(idaeslog.condition(results))
-        )
-
-        # ---------------------------------------------------------------
-        # Restore model
-        # ---------------------------------------------------------------
-        model.liquid_phase.release_state(
-            flags,
-            outlvl=kwargs.get("outlvl", idaeslog.NOTSET),
-        )
-
-        rblk.pKW.unfix()
-        rblk.pK_a_co2.unfix()
-        rblk.pK_a_IN.unfix()
-
-        rblk.Dissociation.activate()
-        rblk.CO2_acid_base_equilibrium.activate()
-        rblk.IN_acid_base_equilibrium.activate()
-
-        model.KH_co2.unfix()
-        model.KH_ch4.unfix()
-        model.KH_h2.unfix()
-
-        model.CO2_Henrys_law.activate()
-        model.Ch4_Henrys_law.activate()
-        model.H2_Henrys_law.activate()
-
-        results = solverobj.solve(
-            model,
-            tee=slc.tee,
-            options={"ma27_pivtol": 1e-2},
-        )
-
-        if not pyo.check_optimal_termination(results):
-            init_log.warning(
-                f"Trouble solving unit model {model.name}, " "trying one more time"
-            )
-
-            results = solverobj.solve(
-                model,
-                tee=slc.tee,
-                options={"ma27_pivtol": 1e-2},
-            )
-
-        if not pyo.check_optimal_termination(results):
-            raise InitializationError(
-                f"{model.name} failed to initialize successfully. "
-                "Please check the output logs for more information."
-            )
-
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
-
-        return results
-
-
 def initialize_system(m, bio_P=False, solver=None):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
@@ -906,13 +660,8 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
-    ad_initializer = ADHealthyRootInitializer()
-
     def function(unit):
-        if unit is m.fs.AD:
-            ad_initializer.initialize(unit, output_level=_log.debug)
-        else:
-            unit.initialize(outlvl=idaeslog.WARNING)
+        unit.initialize(outlvl=idaeslog.WARNING)
 
     seq.run(m, function)
 
@@ -1184,7 +933,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {

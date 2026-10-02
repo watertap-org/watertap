@@ -3869,7 +3869,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         m = build(bio_P=bioP)
 
-        set_operating_conditions(m, bio_P=bioP)
+        set_operating_conditions(m)
         set_scaling(m)
         initialize_system(m, bio_P=bioP)
 
@@ -3892,7 +3892,7 @@ def build_flowsheet(build_options=None, **kwargs):
     else:
         m = build(bio_P=False)
 
-        set_operating_conditions(m, bio_P=False)
+        set_operating_conditions(m)
         set_scaling(m)
         initialize_system(m, bio_P=False)
 
