@@ -17,7 +17,7 @@ import pandas as pd
 from pyomo.environ import ConcreteModel, Var, Constraint
 from watertap.core.wt_database import Database
 from idaes.core import FlowsheetBlock
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 import watertap.unit_models.zero_order as zo
 from watertap.core.tests.test_zero_order_base import DerivedZOBase
 from watertap.core import build_pt, build_sido, build_siso, build_sido_reactive
@@ -34,7 +34,7 @@ def grab_unit_components(unit_class, i):
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = WaterParameterBlock(
+    m.fs.props = ZOParameterBlock(
         solute_list=[
             "toc",
             "tss",
@@ -155,7 +155,7 @@ def grab_unit_components_feed(unit_class):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = WaterParameterBlock(
+    m.fs.props = ZOParameterBlock(
         solute_list=[
             "toc",
             "tkn",

@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import AerationBasinZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.core.solvers import get_solver
 
@@ -48,7 +48,7 @@ class TestAerationBasinZO_no_default:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["viruses_enteric", "bod"])
+        m.fs.params = ZOParameterBlock(solute_list=["viruses_enteric", "bod"])
 
         m.fs.unit = AerationBasinZO(property_package=m.fs.params, database=m.db)
 
@@ -168,7 +168,7 @@ class TestAerationBasinZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["viruses_enteric", "bod", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["viruses_enteric", "bod", "foo"])
 
         m.fs.unit = AerationBasinZO(property_package=m.fs.params, database=m.db)
 
@@ -306,7 +306,7 @@ class Test_AerationBasin_ZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["viruses_enteric"])
+        m.fs.params = ZOParameterBlock(solute_list=["viruses_enteric"])
 
         m.fs.unit = AerationBasinZO(property_package=m.fs.params, database=db)
 
@@ -337,7 +337,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2014

@@ -15,6 +15,9 @@ unit models. Zero-order models do not track temperature and pressure, or any
 form of energy flow.
 """
 
+from pyomo.environ import Expression, Param, PositiveReals, units as pyunits, Var
+from pyomo.common.config import ConfigValue
+
 from idaes.core import (
     EnergyBalanceType,
     MaterialBalanceType,
@@ -31,9 +34,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
-from pyomo.environ import Expression, Param, PositiveReals, units as pyunits, Var
-from pyomo.common.config import ConfigValue
-
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
@@ -41,10 +41,10 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("WaterParameterBlock")
-class WaterParameterBlockData(PhysicalParameterBlock):
+@declare_process_block_class("ZOParameterBlock")
+class ZOParameterData(PhysicalParameterBlock):
     """
-    Property Parameter Block Class
+    Zero-Order Property Parameter Block Class
 
     Defines component and phase lists, along with base units and constant
     parameters.
@@ -79,7 +79,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = WaterStateBlock
+        self._state_block_class = ZOStateBlock
 
         self.Liq = LiquidPhase()
 
@@ -152,7 +152,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         )
 
 
-class _WaterStateBlock(StateBlock):
+class _ZOStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -244,8 +244,8 @@ class _WaterStateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class("WaterStateBlock", block_class=_WaterStateBlock)
-class WaterStateBlockData(StateBlockData):
+@declare_process_block_class("ZOStateBlock", block_class=_ZOStateBlock)
+class ZOStateBlockData(StateBlockData):
     """
     General purpose StateBlock for Zero-Order unit models.
     """
