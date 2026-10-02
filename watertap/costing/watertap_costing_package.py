@@ -22,6 +22,11 @@ from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
 
 import idaes.logger as idaeslog
 
+from watertap.core.util import (
+    export_block_data_to_csv,
+    block_data_to_df,
+    get_block_data,
+)
 from watertap.core.util.misc import is_constant_up_to_units
 from watertap.costing.unit_models.mixer import cost_mixer
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
@@ -694,6 +699,32 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         else:
             # all other cases are handled in the base class
             super().register_flow_type(flow_type, cost)
+
+    def export_results_to_csv(self, save_as=None, **kwargs):
+        """
+        Export the contents of the costing block to a csv.
+        Args:
+            save_as (str, optional): The file path to save the csv file. Default is "cwd/watertap_model_results.csv".
+            **kwargs: Additional keyword arguments passed to `export_block_data_to_csv`.
+        Returns:
+            pd.DataFrame: A DataFrame containing the exported costing data.
+        """
+        return export_block_data_to_csv(self, save_as=save_as, **kwargs)
+
+    def display_results(self):
+        """
+        Display the contents of the costing block in a tabular format.
+        """
+        blk_data = get_block_data(self)
+        blk_df = block_data_to_df(blk_data)
+        blk_df["model_component"] = blk_df["model_component"].apply(
+            lambda x: x.replace(self.name + ".", "")
+        )
+        print(
+            blk_df.sort_values(
+                "model_component", key=lambda s: s.str.lower()
+            ).to_string(index=False),
+        )
 
 
 @declare_process_block_class("WaterTAPCosting")
