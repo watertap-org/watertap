@@ -28,6 +28,7 @@ __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
+from pyomo.common.config import ConfigValue
 
 from idaes.core import (
     FlowsheetBlock,
@@ -105,20 +106,93 @@ _log = idaeslog.getLogger(__name__)
 
 
 def print_ad_state(m, label):
-    liq = m.fs.AD.liquid_phase.properties_out[0]
-    vap = m.fs.AD.vapor_phase[0]
-
     print(f"\n========== {label} ==========")
-    print("AD inlet S_ac:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_ac"]))
-    print("AD inlet S_h2:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_h2"]))
+    # rblk = m.fs.AD.liquid_phase.reactions[0]
+    #
+    # km = pyo.value(rblk.params.k_m_h2)
+    # Ks = pyo.value(rblk.params.K_S_h2)
+    # kd = pyo.value(rblk.params.k_dec_X_h2)
+    # Y = pyo.value(rblk.params.Y_h2)
+    #
+    # I = pyo.value(rblk.I["R11"])
+    # I_h2s = pyo.value(rblk.I_h2s_h2)
+    #
+    # print("km:", km)
+    # print("Ks:", Ks)
+    # print("kd:", kd)
+    # print("Y:", Y)
+    # print("I:", I)
+    # print("I_h2s:", I_h2s)
+    #
+    # # Required Monod factor for zero net X_h2 growth
+    # f_required = kd / (Y * km * I * I_h2s)
+    #
+    # # Solve f = S/(Ks+S) for S
+    # S_required = f_required * Ks / (1 - f_required)
+    #
+    # print("Required Monod factor:", f_required)
+    # print("Required S_h2:", S_required)
 
-    print("AD liquid S_ch4:", pyo.value(liq.conc_mass_comp["S_ch4"]))
-    print("AD liquid X_ac:", pyo.value(liq.conc_mass_comp["X_ac"]))
-    print("AD liquid X_h2:", pyo.value(liq.conc_mass_comp["X_h2"]))
+    # for name in ["pH", "S_H"]:
+    #     if hasattr(rblk, name):
+    #         print(name, pyo.value(getattr(rblk, name)))
+    #
+    # print("S_h2:", pyo.value(
+    #     m.fs.AD.liquid_phase.properties_out[0].conc_mass_comp["S_h2"]
+    # ))
+    #
+    # print("X_h2:", pyo.value(
+    #     m.fs.AD.liquid_phase.properties_out[0].conc_mass_comp["X_h2"]
+    # ))
+    #
+    # print("R11:", pyo.value(m.fs.AD.liquid_phase.rate_reaction_extent[0, "R11"]))
 
-    print("AD vapor S_ch4:", pyo.value(vap.conc_mass_comp["S_ch4"]))
+    # print("AD inlet S_ac:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_ac"]))
+    # print("AD inlet S_h2:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_h2"]))
+    #
+    # props = m.fs.AD.liquid_phase.properties_out[0]
+    # for c in ["S_ac", "S_h2", "S_ch4", "X_ac", "X_h2"]:
+    #     print(f"AD liquid {c}:", pyo.value(props.conc_mass_comp[c]))
+    #
+    # print(
+    #     "AD vapor S_ch4:",
+    #     pyo.value(m.fs.AD.vapor_phase[0].conc_mass_comp["S_ch4"])
+    # )
 
-    print("AD vapor CH4 flow:", pyo.value(vap.get_material_flow_terms("Vap", "S_ch4")))
+    # props = m.fs.AD.liquid_phase.properties_out[0]
+    #
+    # for c in [
+    #     "S_ac",
+    #     "S_h2",
+    #     "S_ch4",
+    #     "X_ac",
+    #     "X_h2",
+    # ]:
+    #     print(c, props.conc_mass_comp[c].value)
+    #
+    # print("\nReaction rates:")
+    # rblk = m.fs.AD.liquid_phase.reactions[0.0]
+    #
+    # for r in m.fs.AD.liquid_phase.rate_reaction_extent:
+    #     print(
+    #         r,
+    #         "rate =", m.fs.AD.liquid_phase.rate_reaction_extent[r].value,
+    #     )
+
+    # liq = m.fs.AD.liquid_phase.properties_out[0]
+    # vap = m.fs.AD.vapor_phase[0]
+    #
+    # print(f"\n========== {label} ==========")
+    # print("AD inlet S_ac:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_ac"]))
+    # print("AD inlet S_h2:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_h2"]))
+    #
+    # print("AD liquid S_ch4:", pyo.value(liq.conc_mass_comp["S_ch4"]))
+    # print("AD liquid X_ac:", pyo.value(liq.conc_mass_comp["X_ac"]))
+    # print("AD liquid X_h2:", pyo.value(liq.conc_mass_comp["X_h2"]))
+    #
+    # print("AD vapor S_ch4:", pyo.value(vap.conc_mass_comp["S_ch4"]))
+    #
+    # print("AD vapor CH4 flow:", pyo.value(vap.get_material_flow_terms("Vap", "S_ch4")))
 
 
 def main(bio_P=False):
@@ -130,16 +204,21 @@ def main(bio_P=False):
     initialize_system(m, bio_P=bio_P)
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    print_ad_state(m, "AFTER INITIALIZATION")
+    props = m.fs.AD.liquid_phase.properties_out[0]
+
+    # for comp in ("X_h2", "X_ac"):
+    #     props.conc_mass_comp[comp].setlb(1e-6)
+
+    # print_ad_state(m, "AFTER INITIALIZATION")
 
     add_costing(m)
     m.fs.costing.initialize()
 
-    print_ad_state(m, "BEFORE 1ST SOLVE")
+    # print_ad_state(m, "BEFORE 1ST SOLVE")
 
     results = solve(m)
 
-    print_ad_state(m, "AFTER 1ST SOLVE")
+    # print_ad_state(m, "AFTER 1ST SOLVE")
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
@@ -150,11 +229,11 @@ def main(bio_P=False):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-    print_ad_state(m, "BEFORE 2ND SOLVE")
+    # print_ad_state(m, "BEFORE 2ND SOLVE")
 
     results = solve(m)
 
-    print_ad_state(m, "AFTER 2ND SOLVE")
+    # print_ad_state(m, "AFTER 2ND SOLVE")
 
     display_costing(m)
     display_performance_metrics(m)
@@ -605,16 +684,38 @@ class ADHealthyRootInitializer(InitializerBase):
 
     CONFIG = InitializerBase.CONFIG()
 
-    # _HEALTHY_SEED = {
+    CONFIG.declare(
+        "bio_P",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Use the bio-P (BSM2-P) seed values for the healthy root",
+            doc="If True, seed the digester with the bio-P healthy-root values; "
+            "otherwise use the standard (no bio-P) values.",
+        ),
+    )
+
+    _HEALTHY_SEED_BIO_P = {
+        "S_ac": 0.20,
+        "S_h2": 2e-7,
+        "S_ch4": 0.055,
+        "X_ac": 0.8,
+        "X_h2": 0.35,
+    }
+
+    # _HEALTHY_SEED_BIO_P = {
+    #     # soluble components
     #     "S_su": 0.012,
     #     "S_aa": 0.005,
     #     "S_fa": 0.10,
     #     "S_va": 0.012,
     #     "S_bu": 0.013,
     #     "S_pro": 0.017,
-    #     "S_ac": 0.20,
-    #     "S_h2": 2e-7,
-    #     "S_ch4": 0.055,
+    #     "S_ac": 0.30,
+    #     "S_h2": 1e-7,
+    #     "S_ch4": 0.03,
+    #
+    #     # particulate components
     #     "X_ch": 0.03,
     #     "X_pr": 0.10,
     #     "X_li": 0.03,
@@ -623,18 +724,50 @@ class ADHealthyRootInitializer(InitializerBase):
     #     "X_fa": 0.3,
     #     "X_c4": 0.4,
     #     "X_pro": 0.15,
-    #     "X_ac": 0.8,
-    #     "X_h2": 0.35,
+    #     "X_ac": 0.14,
+    #     "X_h2": 1e-6,
     #     "X_c": 3.0,
     # }
 
-    _HEALTHY_SEED = {
-        "S_ac": 0.20,
-        "S_h2": 2e-7,
-        "S_ch4": 0.055,
-        "X_ac": 0.8,
-        "X_h2": 0.35,
+    # _HEALTHY_SEED_NO_BIO_P = {
+    #     "S_ac": 2.5e-3,
+    #     "S_h2": 7e-8,
+    #     "S_ch4": 6.8e-2,
+    #     "X_ac": 1e-8,
+    #     "X_h2": 2.5e-2,
+    # }
+
+    _HEALTHY_SEED_NO_BIO_P = {
+        # soluble components
+        "S_su": 0.012,
+        "S_aa": 0.005,
+        "S_fa": 0.10,
+        "S_va": 0.012,
+        "S_bu": 0.013,
+        "S_pro": 0.017,
+        "S_ac": 0.0025,
+        "S_h2": 7e-8,
+        "S_ch4": 0.068,
+        # particulate components
+        "X_ch": 0.03,
+        "X_pr": 0.10,
+        "X_li": 0.03,
+        "X_su": 0.5,
+        "X_aa": 1.0,
+        "X_fa": 0.3,
+        "X_c4": 0.4,
+        "X_pro": 0.15,
+        "X_ac": 1e-6,
+        "X_h2": 0.025,
     }
+
+    @property
+    def _healthy_seed(self):
+        return (
+            self._HEALTHY_SEED_BIO_P
+            if self.config.bio_P
+            else self._HEALTHY_SEED_NO_BIO_P
+        )
 
     def fix_initialization_states(self, model):
         return
@@ -731,7 +864,9 @@ class ADHealthyRootInitializer(InitializerBase):
 
         props = model.liquid_phase.properties_out[0]
 
-        for c, value in self._HEALTHY_SEED.items():
+        seed = self._healthy_seed
+
+        for c, value in seed.items():
             props.conc_mass_comp[c].set_value(value)
 
         # ---------------------------------------------------------------
@@ -804,6 +939,23 @@ class ADHealthyRootInitializer(InitializerBase):
         model.CO2_Henrys_law.activate()
         model.Ch4_Henrys_law.activate()
         model.H2_Henrys_law.activate()
+
+        results = solverobj.solve(
+            model,
+            tee=slc.tee,
+            options={"ma27_pivtol": 1e-2},
+        )
+
+        if not pyo.check_optimal_termination(results):
+            init_log.warning(
+                f"Trouble solving unit model {model.name}, " "trying one more time"
+            )
+
+            results = solverobj.solve(
+                model,
+                tee=slc.tee,
+                options={"ma27_pivtol": 1e-2},
+            )
 
         if not pyo.check_optimal_termination(results):
             raise InitializationError(
@@ -941,7 +1093,7 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
-    ad_initializer = ADHealthyRootInitializer()
+    ad_initializer = ADHealthyRootInitializer(bio_P=bio_P)
 
     def function(unit):
         # unit.initialize(outlvl=idaeslog.WARNING)
@@ -1221,7 +1373,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
