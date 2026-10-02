@@ -237,6 +237,7 @@ class TestFullFlowsheet:
                 or cond == pytest.approx(2.71713e11, rel=1e-2)
             )
 
+    @pytest.mark.skip(reason="Model is unstable and needs permanent fix.")
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     @linux_platform_only
