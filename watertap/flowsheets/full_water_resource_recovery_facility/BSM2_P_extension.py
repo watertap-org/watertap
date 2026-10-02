@@ -105,120 +105,19 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 
 
-def print_ad_state(m, label):
-    print(f"\n========== {label} ==========")
-    # rblk = m.fs.AD.liquid_phase.reactions[0]
-    #
-    # km = pyo.value(rblk.params.k_m_h2)
-    # Ks = pyo.value(rblk.params.K_S_h2)
-    # kd = pyo.value(rblk.params.k_dec_X_h2)
-    # Y = pyo.value(rblk.params.Y_h2)
-    #
-    # I = pyo.value(rblk.I["R11"])
-    # I_h2s = pyo.value(rblk.I_h2s_h2)
-    #
-    # print("km:", km)
-    # print("Ks:", Ks)
-    # print("kd:", kd)
-    # print("Y:", Y)
-    # print("I:", I)
-    # print("I_h2s:", I_h2s)
-    #
-    # # Required Monod factor for zero net X_h2 growth
-    # f_required = kd / (Y * km * I * I_h2s)
-    #
-    # # Solve f = S/(Ks+S) for S
-    # S_required = f_required * Ks / (1 - f_required)
-    #
-    # print("Required Monod factor:", f_required)
-    # print("Required S_h2:", S_required)
-
-    # for name in ["pH", "S_H"]:
-    #     if hasattr(rblk, name):
-    #         print(name, pyo.value(getattr(rblk, name)))
-    #
-    # print("S_h2:", pyo.value(
-    #     m.fs.AD.liquid_phase.properties_out[0].conc_mass_comp["S_h2"]
-    # ))
-    #
-    # print("X_h2:", pyo.value(
-    #     m.fs.AD.liquid_phase.properties_out[0].conc_mass_comp["X_h2"]
-    # ))
-    #
-    # print("R11:", pyo.value(m.fs.AD.liquid_phase.rate_reaction_extent[0, "R11"]))
-
-    # print("AD inlet S_ac:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_ac"]))
-    # print("AD inlet S_h2:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_h2"]))
-    #
-    # props = m.fs.AD.liquid_phase.properties_out[0]
-    # for c in ["S_ac", "S_h2", "S_ch4", "X_ac", "X_h2"]:
-    #     print(f"AD liquid {c}:", pyo.value(props.conc_mass_comp[c]))
-    #
-    # print(
-    #     "AD vapor S_ch4:",
-    #     pyo.value(m.fs.AD.vapor_phase[0].conc_mass_comp["S_ch4"])
-    # )
-
-    # props = m.fs.AD.liquid_phase.properties_out[0]
-    #
-    # for c in [
-    #     "S_ac",
-    #     "S_h2",
-    #     "S_ch4",
-    #     "X_ac",
-    #     "X_h2",
-    # ]:
-    #     print(c, props.conc_mass_comp[c].value)
-    #
-    # print("\nReaction rates:")
-    # rblk = m.fs.AD.liquid_phase.reactions[0.0]
-    #
-    # for r in m.fs.AD.liquid_phase.rate_reaction_extent:
-    #     print(
-    #         r,
-    #         "rate =", m.fs.AD.liquid_phase.rate_reaction_extent[r].value,
-    #     )
-
-    # liq = m.fs.AD.liquid_phase.properties_out[0]
-    # vap = m.fs.AD.vapor_phase[0]
-    #
-    # print(f"\n========== {label} ==========")
-    # print("AD inlet S_ac:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_ac"]))
-    # print("AD inlet S_h2:", pyo.value(m.fs.AD.inlet.conc_mass_comp[0, "S_h2"]))
-    #
-    # print("AD liquid S_ch4:", pyo.value(liq.conc_mass_comp["S_ch4"]))
-    # print("AD liquid X_ac:", pyo.value(liq.conc_mass_comp["X_ac"]))
-    # print("AD liquid X_h2:", pyo.value(liq.conc_mass_comp["X_h2"]))
-    #
-    # print("AD vapor S_ch4:", pyo.value(vap.conc_mass_comp["S_ch4"]))
-    #
-    # print("AD vapor CH4 flow:", pyo.value(vap.get_material_flow_terms("Vap", "S_ch4")))
-
-
 def main(bio_P=False):
     m = build(bio_P=bio_P)
-    set_operating_conditions(m, bio_P=bio_P)
+    set_operating_conditions(m)
     set_scaling(m)
 
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
     initialize_system(m, bio_P=bio_P)
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    props = m.fs.AD.liquid_phase.properties_out[0]
-
-    # for comp in ("X_h2", "X_ac"):
-    #     props.conc_mass_comp[comp].setlb(1e-6)
-
-    # print_ad_state(m, "AFTER INITIALIZATION")
-
     add_costing(m)
     m.fs.costing.initialize()
 
-    # print_ad_state(m, "BEFORE 1ST SOLVE")
-
     results = solve(m)
-
-    # print_ad_state(m, "AFTER 1ST SOLVE")
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
@@ -229,11 +128,7 @@ def main(bio_P=False):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-    # print_ad_state(m, "BEFORE 2ND SOLVE")
-
     results = solve(m)
-
-    # print_ad_state(m, "AFTER 2ND SOLVE")
 
     display_costing(m)
     display_performance_metrics(m)
@@ -455,7 +350,7 @@ def build(bio_P=False):
     return m
 
 
-def set_operating_conditions(m, bio_P=False):
+def set_operating_conditions(m):
     # Feed Water Conditions - https://app.box.com/file/1382757507815?s=57odttsb1hsqfcx218hzwg7emwjp79sb
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
@@ -597,16 +492,6 @@ def set_scaling(m):
         adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
     adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
 
-    # asm2d_scaler.default_scaling_factors["flow_vol"] = 1e1
-    #
-    # asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
-    #
-    # adm1_scaler.default_scaling_factors["flow_vol"] = 1e1
-    #
-    # adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
-    #
-    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_h2]"] = 1e-4
-
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
     m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
@@ -695,18 +580,7 @@ class ADHealthyRootInitializer(InitializerBase):
 
     CONFIG = InitializerBase.CONFIG()
 
-    CONFIG.declare(
-        "bio_P",
-        ConfigValue(
-            default=False,
-            domain=bool,
-            description="Use the bio-P (BSM2-P) seed values for the healthy root",
-            doc="If True, seed the digester with the bio-P healthy-root values; "
-            "otherwise use the standard (no bio-P) values.",
-        ),
-    )
-
-    _HEALTHY_SEED_BIO_P = {
+    _HEALTHY_SEED = {
         "S_ac": 0.20,
         "S_h2": 2e-7,
         "S_ch4": 0.055,
@@ -714,69 +588,9 @@ class ADHealthyRootInitializer(InitializerBase):
         "X_h2": 0.35,
     }
 
-    # _HEALTHY_SEED_BIO_P = {
-    #     # soluble components
-    #     "S_su": 0.012,
-    #     "S_aa": 0.005,
-    #     "S_fa": 0.10,
-    #     "S_va": 0.012,
-    #     "S_bu": 0.013,
-    #     "S_pro": 0.017,
-    #     "S_ac": 0.30,
-    #     "S_h2": 1e-7,
-    #     "S_ch4": 0.03,
-    #
-    #     # particulate components
-    #     "X_ch": 0.03,
-    #     "X_pr": 0.10,
-    #     "X_li": 0.03,
-    #     "X_su": 0.5,
-    #     "X_aa": 1.0,
-    #     "X_fa": 0.3,
-    #     "X_c4": 0.4,
-    #     "X_pro": 0.15,
-    #     "X_ac": 0.14,
-    #     "X_h2": 1e-6,
-    #     "X_c": 3.0,
-    # }
-
-    # _HEALTHY_SEED_NO_BIO_P = {
-    #     "S_ac": 2.5e-3,
-    #     "S_h2": 7e-8,
-    #     "S_ch4": 6.8e-2,
-    #     "X_ac": 1e-8,
-    #     "X_h2": 2.5e-2,
-    # }
-
-    _HEALTHY_SEED_NO_BIO_P = {
-        # soluble components
-        "S_su": 0.012,
-        "S_aa": 0.005,
-        "S_fa": 0.10,
-        "S_va": 0.012,
-        "S_bu": 0.013,
-        "S_pro": 0.017,
-        "S_ac": 0.0025,
-        "S_h2": 7e-8,
-        "S_ch4": 0.068,
-        # particulate components
-        "X_ch": 0.03,
-        "X_pr": 0.10,
-        "X_li": 0.03,
-        "X_su": 0.5,
-        "X_aa": 1.0,
-        "X_fa": 0.3,
-        "X_c4": 0.4,
-        "X_pro": 0.15,
-        "X_ac": 1e-6,
-        "X_h2": 0.025,
-    }
-
     @property
     def _healthy_seed(self):
-        return (
-            self._HEALTHY_SEED_BIO_P if self.config.bio_P else self._HEALTHY_SEED_BIO_P
-        )
+        return self._HEALTHY_SEED
 
     def fix_initialization_states(self, model):
         return
@@ -791,7 +605,6 @@ class ADHealthyRootInitializer(InitializerBase):
         # ---------------------------------------------------------------
         # Solver
         # ---------------------------------------------------------------
-        outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
         solver = kwargs.get("solver", None)
         optarg = kwargs.get("optarg", None)
 
@@ -799,13 +612,6 @@ class ADHealthyRootInitializer(InitializerBase):
             optarg = {}
 
         solverobj = get_solver(solver, optarg)
-
-        # ---------------------------------------------------------------
-        # Healthy initial state
-        # ---------------------------------------------------------------
-        # liquid_state_args = {
-        #     "conc_mass_comp": self._HEALTHY_SEED.copy(),
-        # }
 
         # ---------------------------------------------------------------
         # Check DOF
@@ -873,9 +679,7 @@ class ADHealthyRootInitializer(InitializerBase):
 
         props = model.liquid_phase.properties_out[0]
 
-        seed = self._healthy_seed
-
-        for c, value in seed.items():
+        for c, value in self._healthy_seed.items():
             props.conc_mass_comp[c].set_value(value)
 
         # ---------------------------------------------------------------
@@ -1102,7 +906,7 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
-    ad_initializer = ADHealthyRootInitializer(bio_P=bio_P)
+    ad_initializer = ADHealthyRootInitializer()
 
     def function(unit):
         if unit is m.fs.AD:
@@ -1380,7 +1184,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {

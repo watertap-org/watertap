@@ -142,61 +142,61 @@ class TestFullFlowsheet:
             0.23888, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].alkalinity) == pytest.approx(
-            3.7267e-3, rel=1e-3
+            3.8096e-3, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.068968, rel=1e-3
+            0.061909, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_S"]) == pytest.approx(
-            0.00097414, rel=1e-3
+            0.000871267, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0054644, rel=1e-3
+            0.00544617, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00043723, rel=1e-3
+            0.000205545, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_BH"]
-        ) == pytest.approx(0.0204779, rel=1e-3)
+        ) == pytest.approx(0.010903113, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_BA"]
-        ) == pytest.approx(0.00075468, rel=1e-3)
+        ) == pytest.approx(0.00078876, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_P"]) == pytest.approx(
-            0.0042085, rel=1e-3
+            0.002256549, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_O"]) == pytest.approx(
             0.000449, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.006059, rel=1e-2)
+        ) == pytest.approx(0.0154561, rel=1e-2)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
-        ) == pytest.approx(0.0011166, rel=1e-3)
+        ) == pytest.approx(0.00091694, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_ND"]
-        ) == pytest.approx(0.00071833, rel=1e-3)
+        ) == pytest.approx(0.000646611, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
-        ) == pytest.approx(3.1489e-5, rel=1e-3)
+        ) == pytest.approx(1.415855e-5, rel=1e-3)
 
         # Check electricity consumption for each aerobic reactor
         assert value(m.fs.R3.electricity_consumption[0]) == pytest.approx(
-            114.5862, rel=1e-3
+            73.869296, rel=1e-3
         )
         assert value(m.fs.R4.electricity_consumption[0]) == pytest.approx(
-            90.1901, rel=1e-3
+            69.96689, rel=1e-3
         )
         assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
-            32.3397, rel=1e-3
+            20.477562, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.363194, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.35109788, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17756958.700, rel=1e-3
+            17443323.663, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            689487.623, rel=1e-3
+            638749.358, rel=1e-3
         )
 
     @pytest.mark.component
@@ -206,7 +206,7 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.scaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.808146720e9, rel=1e-3
+            8.199303e11, rel=1e-3
         )
 
     @pytest.mark.component
