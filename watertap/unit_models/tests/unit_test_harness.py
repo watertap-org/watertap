@@ -131,7 +131,7 @@ class UnitTestHarness(abc.ABC):
             unit=blk,
             solver=blk._test_objs.solver,
             optarg=blk._test_objs.optarg,
-            outlvl=idaeslog.DEBUG,
+            outlvl=idaeslog.WARNING,
         )
 
     @pytest.mark.component

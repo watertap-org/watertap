@@ -418,7 +418,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         )
         self.enth_mass_param_B6 = Var(
             within=Reals,
-            initialize=-4.41733,
+            initialize=-4.41733e1,
             units=enth_mass_units * t_inv_units**2,
             doc="Specific enthalpy parameter B6",
         )
@@ -442,7 +442,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         )
         self.enth_mass_param_B10 = Var(
             within=Reals,
-            initialize=9.72801,
+            initialize=9.72801e1,
             units=enth_mass_units * t_inv_units**2,
             doc="Specific enthalpy parameter B10",
         )
