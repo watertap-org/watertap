@@ -53,7 +53,6 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
-from watertap.property_models import ZOParameterBlock
 from watertap.unit_models.zero_order import (
     SWOnshoreIntakeZO,
     ChemicalAdditionZO,
