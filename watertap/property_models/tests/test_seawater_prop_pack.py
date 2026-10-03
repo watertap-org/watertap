@@ -473,7 +473,7 @@ class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
 
 
 @pytest.mark.component
-class TestNaClCalculateState_2(PropertyCalculateStateTest):
+class TestSeawaterCalculateState_2(PropertyCalculateStateTest):
     def configure(self):
         self.prop_pack = props.SeawaterParameterBlock
         self.param_args = {}
@@ -498,7 +498,7 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
 
 
 @pytest.mark.component
-class TestNaClCalculateState_3(PropertyCalculateStateTest):
+class TestSeawaterCalculateState_3(PropertyCalculateStateTest):
     def configure(self):
         self.prop_pack = props.SeawaterParameterBlock
         self.param_args = {}
