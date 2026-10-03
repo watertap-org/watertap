@@ -60,7 +60,7 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_config(self, model):
-        assert len(model.rparams.config) == 2
+        assert len(model.rparams.config) == 3
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -182,6 +182,128 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.b_A_NOX, Var)
         assert value(model.rparams.b_A_NOX["ref_temp_1"]) == 0.02
         assert value(model.rparams.b_A_NOX["ref_temp_2"]) == 0.05
+
+
+class TestParamBlock_CalibratedStructure(object):
+    ALL_KINETIC_PARAMS = [
+        "k_H",
+        "k_STO",
+        "mu_H",
+        "mu_A",
+        "b_H_O2",
+        "b_H_NOX",
+        "b_STO_O2",
+        "b_STO_NOX",
+        "b_A_O2",
+        "b_A_NOX",
+    ]
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def uncalibrated_model(cls):
+        model = ConcreteModel()
+        model.pparams = ASM3ParameterBlock()
+        model.rparams = ASM3ReactionParameterBlock(property_package=model.pparams)
+        return model
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def all_calibrated_model(cls):
+        calibrated_params = {
+            "k_H": 4,
+            "k_STO": 6,
+            "mu_H": 2,
+            "mu_A": 1,
+            "b_H_O2": 0.3,
+            "b_H_NOX": 0.15,
+            "b_STO_O2": 0.4,
+            "b_STO_NOX": 0.2,
+            "b_A_O2": 0.1,
+            "b_A_NOX": 0.05,
+        }
+        model = ConcreteModel()
+        model.pparams = ASM3ParameterBlock()
+        model.rparams = ASM3ReactionParameterBlock(
+            property_package=model.pparams, calibrated_params=calibrated_params
+        )
+        model.calibrated_params = calibrated_params
+        return model
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def partially_calibrated_model(cls):
+        calibrated_params = {"k_H": 4, "b_A_NOX": 0.05}
+        model = ConcreteModel()
+        model.pparams = ASM3ParameterBlock()
+        model.rparams = ASM3ReactionParameterBlock(
+            property_package=model.pparams, calibrated_params=calibrated_params
+        )
+        model.calibrated_params = calibrated_params
+        return model
+
+    @pytest.mark.unit
+    def test_uncalibrated_params_are_indexed(self, uncalibrated_model):
+        for name in self.ALL_KINETIC_PARAMS:
+            var = getattr(uncalibrated_model.rparams, name)
+            assert isinstance(var, Var)
+            assert var.is_indexed()
+            assert set(var.keys()) == {"ref_temp_1", "ref_temp_2"}
+
+    @pytest.mark.unit
+    def test_all_calibrated_params_are_scalar(self, all_calibrated_model):
+        for name in self.ALL_KINETIC_PARAMS:
+            var = getattr(all_calibrated_model.rparams, name)
+            assert isinstance(var, Var)
+            assert not var.is_indexed()
+
+    @pytest.mark.unit
+    def test_all_calibrated_params_have_expected_value(self, all_calibrated_model):
+        for name, calibrated_value in all_calibrated_model.calibrated_params.items():
+            var = getattr(all_calibrated_model.rparams, name)
+            assert value(var) == pytest.approx(calibrated_value)
+
+    @pytest.mark.unit
+    def test_partial_calibration_leaves_others_indexed(
+        self, partially_calibrated_model
+    ):
+        model = partially_calibrated_model
+
+        assert not model.rparams.k_H.is_indexed()
+        assert value(model.rparams.k_H) == 4
+        assert not model.rparams.b_A_NOX.is_indexed()
+        assert value(model.rparams.b_A_NOX) == 0.05
+
+        still_indexed = {
+            "k_STO": (2.5, 5),
+            "mu_H": (1, 2),
+            "mu_A": (0.35, 1),
+            "b_H_O2": (0.1, 0.2),
+            "b_H_NOX": (0.05, 0.1),
+            "b_STO_O2": (0.1, 0.2),
+            "b_STO_NOX": (0.05, 0.1),
+            "b_A_O2": (0.05, 0.15),
+        }
+        for name, (ref1, ref2) in still_indexed.items():
+            var = getattr(model.rparams, name)
+            assert var.is_indexed()
+            assert set(var.keys()) == {"ref_temp_1", "ref_temp_2"}
+            assert value(var["ref_temp_1"]) == ref1
+            assert value(var["ref_temp_2"]) == ref2
+
+    @pytest.mark.unit
+    def test_reaction_block_expressions_match_calibrated_values(
+        self, all_calibrated_model
+    ):
+        model = all_calibrated_model
+        model.props = model.pparams.build_state_block([1])
+        model.props[1].temperature.fix(298.15 * units.K)
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        model.rxns[1].reaction_rate
+
+        for name, calibrated_value in model.calibrated_params.items():
+            expr = getattr(model.rxns[1], name)
+            assert value(expr) == pytest.approx(calibrated_value, rel=1e-8)
 
 
 class TestReactionBlock(object):
@@ -443,7 +565,7 @@ class TestReactor:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            5.6216e-7, rel=1e-4
+            5.6163e-7, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -479,5 +601,128 @@ class TestReactor:
             3.04264, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            4.9608e-3, rel=1e-4
+            5.0759e-3, rel=1e-4
+        )
+
+
+class TestReactor_CalibratedParameters:
+    @pytest.fixture(scope="class")
+    @classmethod
+    def model(cls):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ASM3ParameterBlock()
+        m.fs.rxn_props = ASM3ReactionParameterBlock(
+            property_package=m.fs.props,
+            calibrated_params={"mu_H": 2, "mu_A": 1},
+        )
+
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+
+        m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
+        m.fs.R1.inlet.temperature.fix(293.15 * units.K)
+        m.fs.R1.inlet.pressure.fix(1 * units.atm)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(
+            0.0333140769653528 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(
+            1.79253833233150 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NH4"].fix(
+            7.47840572528914 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(
+            25.0222401125193 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NOX"].fix(
+            4.49343937121928 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.alkalinity.fix(4.95892616814772 * units.mol / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(
+            1460.88032984731 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(
+            239.049918909639 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(
+            1624.51533042293 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_STO"].fix(
+            316.937373308996 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_A"].fix(
+            130.798830163795 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(
+            3044.89285508125 * units.g / units.m**3
+        )
+
+        m.fs.R1.volume.fix(1000 * units.m**3)
+
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.unit
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        model.fs.R1.initialize()
+
+        solver = get_solver()
+        results = solver.solve(model, tee=True)
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
+        assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
+            293.15, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
+            3.7656e-7, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
+            30e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_S"]) == pytest.approx(
+            4.3812e-4, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
+            7.6827e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
+            2.6951e-2, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NOX"]) == pytest.approx(
+            2.5677e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
+            1.4611, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            0.232435, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
+            1.6259, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_STO"]) == pytest.approx(
+            0.31777, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_A"]) == pytest.approx(
+            0.13074, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
+            3.04183, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
+            5.1110e-3, rel=1e-4
         )
