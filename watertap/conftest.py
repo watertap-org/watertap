@@ -10,13 +10,38 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import contextlib
+from collections import defaultdict
+import csv
 import enum
 from pathlib import Path
 from typing import Container, Optional, Callable
 
 import pytest
+from _pytest.config.argparsing import Parser
 from _pytest.nodes import Item
 from _pytest.config import Config
+from _pytest.terminal import TerminalReporter
+
+_FILE_DURATIONS = defaultdict(lambda: {"duration": 0.0, "tests": 0})
+_TEST_DURATIONS = defaultdict(
+    lambda: {
+        "file": "",
+        "test": "",
+        "markers": "",
+        "setup": 0.0,
+        "call": 0.0,
+        "teardown": 0.0,
+        "outcome": "passed",
+    }
+)
+
+
+def _normalized_test_path(nodeid: str) -> str:
+    return nodeid.partition("::")[0].replace("\\", "/")
+
+
+def _item_markers(item: Item) -> str:
+    return ",".join(sorted({marker.name for marker in item.iter_markers()}))
 
 
 class MarkerSpec(enum.Enum):
@@ -61,6 +86,131 @@ def pytest_configure(config: Config):
     for marker_spec in MarkerSpec:
         config.addinivalue_line(
             "markers", f"{marker_spec.name}: {marker_spec.description}"
+        )
+
+    if config.getoption("--file-durations", default=False):
+        _FILE_DURATIONS.clear()
+        _TEST_DURATIONS.clear()
+
+
+def pytest_addoption(parser: Parser):
+    parser.addoption(
+        "--file-durations",
+        action="store_true",
+        default=False,
+        help=(
+            "Show elapsed pytest runtime grouped by test file and write timing "
+            "CSV reports."
+        ),
+    )
+    parser.addoption(
+        "--durations-report-dir",
+        action="store",
+        default="pytest-duration-reports",
+        help="Directory where --file-durations writes timing CSV reports.",
+    )
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item: Item, call):
+    del call
+    outcome = yield
+    report = outcome.get_result()
+    config = item.config
+    if not config.getoption("--file-durations"):
+        return
+
+    filename = _normalized_test_path(report.nodeid)
+    _FILE_DURATIONS[filename]["duration"] += report.duration
+    if report.when == "setup":
+        _FILE_DURATIONS[filename]["tests"] += 1
+
+    test_duration = _TEST_DURATIONS[report.nodeid]
+    test_duration["file"] = filename
+    test_duration["test"] = report.location[2]
+    test_duration["markers"] = _item_markers(item)
+    test_duration[report.when] += report.duration
+
+    if report.failed:
+        test_duration["outcome"] = "failed"
+    elif hasattr(report, "wasxfail") and report.outcome == "passed":
+        test_duration["outcome"] = "xpassed"
+    elif hasattr(report, "wasxfail") and report.outcome == "skipped":
+        test_duration["outcome"] = "xfailed"
+    elif report.skipped and test_duration["outcome"] == "passed":
+        test_duration["outcome"] = "skipped"
+
+
+def _write_duration_reports(config: Config):
+    report_dir = Path(config.getoption("--durations-report-dir"))
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    with (report_dir / "file_durations.csv").open("w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["file", "total_seconds", "tests"])
+        for filename, stats in sorted(
+            _FILE_DURATIONS.items(),
+            key=lambda item: item[1]["duration"],
+            reverse=True,
+        ):
+            writer.writerow([filename, f"{stats['duration']:.6f}", stats["tests"]])
+
+    with (report_dir / "test_durations.csv").open("w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "nodeid",
+                "file",
+                "test",
+                "markers",
+                "setup_seconds",
+                "call_seconds",
+                "teardown_seconds",
+                "total_seconds",
+                "outcome",
+            ]
+        )
+        for nodeid, stats in sorted(
+            _TEST_DURATIONS.items(),
+            key=lambda item: item[1]["setup"] + item[1]["call"] + item[1]["teardown"],
+            reverse=True,
+        ):
+            total = stats["setup"] + stats["call"] + stats["teardown"]
+            writer.writerow(
+                [
+                    nodeid,
+                    stats["file"],
+                    stats["test"],
+                    stats["markers"],
+                    f"{stats['setup']:.6f}",
+                    f"{stats['call']:.6f}",
+                    f"{stats['teardown']:.6f}",
+                    f"{total:.6f}",
+                    stats["outcome"],
+                ]
+            )
+
+
+def pytest_terminal_summary(
+    terminalreporter: TerminalReporter, exitstatus: int, config: Config
+):
+    del exitstatus
+    if not config.getoption("--file-durations"):
+        return
+
+    if not _FILE_DURATIONS:
+        return
+
+    _write_duration_reports(config)
+
+    terminalreporter.write_sep("=", "slowest test files")
+    terminalreporter.write_line(f"{'seconds':>10}  {'tests':>5}  file")
+
+    for filename, stats in sorted(
+        _FILE_DURATIONS.items(), key=lambda item: item[1]["duration"], reverse=True
+    ):
+        terminalreporter.write_line(
+            f"{stats['duration']:10.2f}  {stats['tests']:5d}  {filename}"
         )
 
 
