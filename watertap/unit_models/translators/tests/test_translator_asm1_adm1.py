@@ -519,7 +519,7 @@ class TestASM1ADM1Scaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
@@ -552,7 +552,7 @@ class TestASM1ADM1Scaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
@@ -701,5 +701,5 @@ class TestASM1ADM1Scaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.11581e5, rel=1e-3
+            6.12877e5, rel=1e-3
         )

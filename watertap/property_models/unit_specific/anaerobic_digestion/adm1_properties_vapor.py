@@ -148,8 +148,8 @@ class ADM1VaporPropertiesScaler(CustomScalerBase):
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
         for c in model.params.component_list:
             self.scale_variable_by_default(model.pressure_sat[c], overwrite=overwrite)
-        for c in model.params.solute_set:
-            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
+        for idx, var in model.conc_mass_comp.items():
+            self.scale_variable_by_default(var, overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(
