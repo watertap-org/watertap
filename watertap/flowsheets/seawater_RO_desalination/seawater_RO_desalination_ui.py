@@ -16,6 +16,7 @@ from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination impor
     initialize_system,
     solve,
     add_costing,
+    scale_model,
 )
 from pyomo.environ import units as pyunits
 
@@ -42,11 +43,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.properties[0].flow_vol,
-        name="Feed volume flow",
-        ui_units=pyunits.m**3 / pyunits.day,
-        display_units="m3/day",
-        rounding=2,
+        obj=fs.flow_vol,
+        name="Feed flow rate",
+        ui_units=pyunits.Mgallons / pyunits.day,
+        display_units="MGD",
+        rounding=3,
         description="Inlet volumetric flowrate",
         is_input=True,
         input_category="Feed",
@@ -54,10 +55,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "tds"],
+        obj=fs.conc_mass_tds,
         name="Feed TDS concentration",
-        ui_units=pyunits.mg / pyunits.L,
-        display_units="mg/L",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
         rounding=2,
         description="Total dissolved solids concentration",
         is_input=True,
@@ -65,11 +66,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Feed",
     )
+
     exports.add(
-        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "tss"],
+        obj=fs.conc_mass_tss,
         name="Feed TSS concentration",
-        ui_units=pyunits.mg / pyunits.L,
-        display_units="mg/L",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
         rounding=2,
         description="Total suspended solids concentration",
         is_input=True,
@@ -241,7 +243,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.desalination.RO.B_comp[0, "tds"],
+        obj=fs.desalination.RO.B_comp[0, "TDS"],
         name="RO salt permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
         display_units="LMH",
@@ -511,7 +513,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.municipal.properties[0].flow_mass_comp["tds"],
+        obj=fs.municipal.properties[0].flow_mass_comp["TDS"],
         name="Municipal TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -522,7 +524,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.municipal.properties[0].conc_mass_phase_comp["Liq", "tds"],
+        obj=fs.municipal.properties[0].conc_mass_phase_comp["Liq", "TDS"],
         name="Municipal TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -556,7 +558,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].flow_mass_comp["tds"],
+        obj=fs.landfill.properties[0].flow_mass_comp["TDS"],
         name="Landfill TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -567,7 +569,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "tds"],
+        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "TDS"],
         name="Landfill TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -578,7 +580,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].flow_mass_comp["tss"],
+        obj=fs.landfill.properties[0].flow_mass_comp["TSS"],
         name="Landfill TSS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -589,7 +591,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "tss"],
+        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "TSS"],
         name="Landfill TSS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -623,7 +625,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "tds"],
+        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "TDS"],
         name="Disposal TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -634,7 +636,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "tds"],
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "TDS"],
         name="Disposal TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -708,6 +710,7 @@ def build_flowsheet(build_options=None, **kwargs):
     else:
         m = build(erd_type="pressure_exchanger")
 
+    scale_model(m)
     set_operating_conditions(m)
     initialize_system(m)
     # Solve flowsheet after initializing system
@@ -723,5 +726,6 @@ def build_flowsheet(build_options=None, **kwargs):
 
 def solve_flowsheet(flowsheet=None):
     fs = flowsheet
+
     results = solve(fs)
     return results

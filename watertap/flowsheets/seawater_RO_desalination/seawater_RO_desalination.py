@@ -16,12 +16,13 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     Block,
+    Var,
+    Constraint,
 )
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
@@ -68,14 +69,27 @@ from watertap.unit_models.zero_order import (
     LandfillZO,
 )
 from watertap.costing.zero_order_costing import ZeroOrderCosting
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-def main(erd_type="pressure_exchanger", RO_1D=False):
-    m = build(erd_type=erd_type, RO_1D=RO_1D)
+def main(erd_type="pressure_exchanger", RO_1D=False, **kwargs):
 
+    flow_vol = kwargs.get("flow_vol", 0.3092)
+    conc_mass_tds = kwargs.get("conc_mass_tds", 35)
+    conc_mass_tss = kwargs.get("conc_mass_tss", 0.03)
+
+    m = build(
+        erd_type=erd_type,
+        RO_1D=RO_1D,
+        flow_vol=flow_vol,
+        conc_mass_tds=conc_mass_tds,
+        conc_mass_tss=conc_mass_tss,
+    )
+
+    scale_model(m)
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     initialize_system(m)
@@ -83,9 +97,11 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
     assert_degrees_of_freedom(m, 0)
 
     solve(
-        m, checkpoint=f" solve flowsheet after initializing {erd_type} system", tee=True
+        m,
+        checkpoint=f" initializing {erd_type} system",
+        tee=False,
     )
-    display_results(m)
+    # display_results(m)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -97,31 +113,68 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
     return m
 
 
-def build(erd_type=None, RO_1D=False):
-    # flowsheet set up
+def build(
+    erd_type=None, RO_1D=False, flow_vol=0.3092, conc_mass_tds=35, conc_mass_tss=0.03
+):
+
+    # Define flow conditions and attach to model
+
+    rho = 1023.027 * pyunits.kg / pyunits.m**3
     m = ConcreteModel()
+    m.flow_vol = flow_vol * pyunits.m**3 / pyunits.s
+
+    m.flow_mass_water = pyunits.convert(
+        m.flow_vol * rho, to_units=pyunits.kg / pyunits.s
+    )
+    m.conc_mass_tds = conc_mass_tds * pyunits.g / pyunits.liter
+    m.flow_mass_tds = pyunits.convert(
+        m.flow_vol * m.conc_mass_tds, to_units=pyunits.kg / pyunits.s
+    )
+    m.conc_mass_tss = conc_mass_tss * pyunits.g / pyunits.liter
+    m.flow_mass_tss = pyunits.convert(
+        m.flow_vol * m.conc_mass_tss, to_units=pyunits.kg / pyunits.s
+    )
+    m.temperature = 298.15 * pyunits.K
+    m.pressure = 1 * pyunits.bar
+
     m.db = Database()
     m.erd_type = erd_type
 
     m.fs = FlowsheetBlock(dynamic=False)
 
+    m.fs.rho = Var(initialize=rho, units=pyunits.kg / pyunits.m**3)
+    m.fs.rho.fix()
+
+    m.fs.flow_vol = Var(initialize=flow_vol, units=pyunits.m**3 / pyunits.s)
+    m.fs.flow_vol.fix()
+
+    m.fs.conc_mass_tds = Var(initialize=conc_mass_tds, units=pyunits.g / pyunits.L)
+    m.fs.conc_mass_tds.fix()
+
+    m.fs.conc_mass_tss = Var(initialize=conc_mass_tss, units=pyunits.g / pyunits.L)
+    m.fs.conc_mass_tss.fix()
+
     m.fs.properties = MCASParameterBlock(
-        solute_list=["tds", "tss"],
-        diffusivity_data={("Liq", "tds"): 1.47e-9, ("Liq", "tss"): 1e-9},
-        mw_data={"tds": 31.4e-3, "tss": 100e-3},
+        solute_list=["TDS", "TSS"],
+        diffusivity_data={("Liq", "TDS"): 1.47e-9, ("Liq", "TSS"): 1e-9},
+        mw_data={"TDS": 31.4e-3, "TSS": 100e-3},
         material_flow_basis=MaterialFlowBasis.mass,
         ignore_neutral_charge=True,
         density_calculation=DensityCalculation.seawater,
     )
 
-    # block structure
+    # Block structure
     prtrt = m.fs.pretreatment = Block()
     desal = m.fs.desalination = Block()
     psttrt = m.fs.posttreatment = Block()
 
-    # unit models
+    # Unit models
     m.fs.feed = Feed(property_package=m.fs.properties)
-    # pretreatment
+    # Touch properties to calculate_state and scale properly
+    m.fs.feed.properties[0].flow_vol_phase
+    m.fs.feed.properties[0].conc_mass_phase_comp
+
+    # Pretreatment
     prtrt.intake = SWOnshoreIntakeZO(property_package=m.fs.properties, database=m.db)
     prtrt.ferric_chloride_addition = ChemicalAdditionZO(
         property_package=m.fs.properties,
@@ -146,7 +199,7 @@ def build(erd_type=None, RO_1D=False):
         property_package=m.fs.properties, database=m.db
     )
 
-    # desalination
+    # Desalination
     desal.P1 = Pump(property_package=m.fs.properties)
     if RO_1D:
         desal.RO = ReverseOsmosis1D(
@@ -164,8 +217,6 @@ def build(erd_type=None, RO_1D=False):
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
         )
-    desal.RO.width.setub(5000)
-    desal.RO.area.setub(20000)
     if erd_type == "pressure_exchanger":
         desal.S1 = Separator(
             property_package=m.fs.properties, outlet_list=["P1", "PXR"]
@@ -186,7 +237,7 @@ def build(erd_type=None, RO_1D=False):
             "".format(erd_type)
         )
 
-    # posttreatment
+    # Posttreatment
     psttrt.storage_tank_2 = StorageTankZO(
         property_package=m.fs.properties, database=m.db
     )
@@ -203,14 +254,14 @@ def build(erd_type=None, RO_1D=False):
         property_package=m.fs.properties, database=m.db
     )
 
-    # product and disposal
+    # Product and disposal
     m.fs.municipal = MunicipalDrinkingZO(
         property_package=m.fs.properties, database=m.db
     )
     m.fs.landfill = LandfillZO(property_package=m.fs.properties, database=m.db)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
-    # connections
+    # Connections
     m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.intake.inlet)
     prtrt.s01 = Arc(
         source=prtrt.intake.outlet, destination=prtrt.ferric_chloride_addition.inlet
@@ -286,24 +337,46 @@ def build(erd_type=None, RO_1D=False):
     )
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # scaling
-    # set unit model values
+    return m
+
+
+def scale_model(m):
+
+    desal = m.fs.desalination
+
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp",
+        1 / value(m.flow_mass_water),
+        index=("Liq", "H2O"),
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp",
+        1 / value(m.flow_mass_tds),
+        index=("Liq", "TDS"),
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp",
+        1 / value(m.flow_mass_tss),
+        index=("Liq", "TSS"),
+    )
+
     iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-5)
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
-    if erd_type == "pressure_exchanger":
+
+    if m.erd_type == "pressure_exchanger":
         iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
         iscale.set_scaling_factor(desal.PXR.feed_side.work, 1e-5)
         iscale.set_scaling_factor(desal.PXR.brine_side.work, 1e-5)
-    elif erd_type == "pump_as_turbine":
+
+    elif m.erd_type == "pump_as_turbine":
         iscale.set_scaling_factor(desal.ERD.control_volume.work, 1e-5)
 
-    if erd_type == "pressure_exchanger":
+    if m.erd_type == "pressure_exchanger":
         desal.S1.mixed_state[0].flow_vol_phase
         desal.RO.feed_side.properties[0, 1].flow_vol_phase
+
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
-
-    return m
 
 
 def set_operating_conditions(m):
@@ -311,160 +384,153 @@ def set_operating_conditions(m):
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
 
-    # ---specifications---
-    # feed
-    flow_vol = 0.3092 * pyunits.m**3 / pyunits.s
-    conc_mass_tds = 35 * pyunits.kg / pyunits.m**3
-    conc_mass_tss = 0.03 * pyunits.kg / pyunits.m**3
-    temperature = 298 * pyunits.K
-    pressure = 1e5 * pyunits.Pa
-
-    m.fs.feed.temperature[0].fix(temperature)
-    m.fs.feed.pressure[0].fix(pressure)
-    iscale.set_scaling_factor(
-        m.fs.feed.properties[0].flow_vol_phase["Liq"], value(10 / flow_vol)
-    )
-    iscale.set_scaling_factor(
-        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "tds"],
-        value(10 / conc_mass_tds),
-    )
-    iscale.set_scaling_factor(
-        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "tss"],
-        value(10 / conc_mass_tss),
-    )
-
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("conc_mass_phase_comp", ("Liq", "tds")): conc_mass_tds,
-            ("conc_mass_phase_comp", ("Liq", "tss")): conc_mass_tss,
-            ("flow_vol_phase", "Liq"): flow_vol,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): m.conc_mass_tds,
+            ("conc_mass_phase_comp", ("Liq", "TSS")): m.conc_mass_tss,
+            ("flow_vol_phase", "Liq"): m.flow_vol,
+            ("temperature", None): m.temperature,
+            ("pressure", None): m.pressure,
         },
-        hold_state=True,
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp",
-        1 / value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]),
-        index=("Liq", "H2O"),
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp",
-        1 / value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "tds"]),
-        index=("Liq", "tds"),
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp",
-        1 / value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "tss"]),
-        index=("Liq", "tss"),
+        hold_state=False,
     )
 
-    iscale.calculate_scaling_factors(m)
+    m.fs.feed.properties[0].pressure.fix()
+    m.fs.feed.properties[0].temperature.fix()
+    # re-fix density after calculating state
+    rho = value(m.fs.feed.properties[0].dens_mass_phase["Liq"])
+    m.fs.rho.fix(rho)
 
-    # ---pretreatment---
-    # intake
+    m.fs.feed.flow_mass_water_constr = Constraint(
+        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        == pyunits.convert(m.fs.flow_vol * m.fs.rho, to_units=pyunits.kg / pyunits.s)
+    )
+    m.fs.feed.flow_mass_tds_constr = Constraint(
+        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+        == pyunits.convert(
+            m.fs.flow_vol * m.fs.conc_mass_tds, to_units=pyunits.kg / pyunits.s
+        )
+    )
+    m.fs.feed.flow_mass_tss_constr = Constraint(
+        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TSS"]
+        == pyunits.convert(
+            m.fs.flow_vol * m.fs.conc_mass_tss, to_units=pyunits.kg / pyunits.s
+        )
+    )
+
+    # ---Pretreatment---
+    # Intake
     m.db.get_unit_operation_parameters("sw_onshore_intake")
     prtrt.intake.load_parameters_from_database()
-    # ferric chloride
+    # Ferric chloride
     m.db.get_unit_operation_parameters("chemical_addition")
     prtrt.ferric_chloride_addition.load_parameters_from_database()
     prtrt.ferric_chloride_addition.chemical_dosage.fix(20)
 
-    # chlorination
+    # Chlorination
     m.db.get_unit_operation_parameters("chlorination")
     prtrt.chlorination.load_parameters_from_database(use_default_removal=True)
 
-    # static mixer
+    # Static mixer
     m.db.get_unit_operation_parameters("static_mixer")
     prtrt.static_mixer.load_parameters_from_database(use_default_removal=True)
 
-    # storage tank
+    # Storage tank
     m.db.get_unit_operation_parameters("storage_tank")
     prtrt.storage_tank_1.load_parameters_from_database(use_default_removal=True)
     prtrt.storage_tank_1.storage_time.fix(2)
 
-    # media filtration
+    # Media filtration
     m.db.get_unit_operation_parameters("media_filtration")
     prtrt.media_filtration.load_parameters_from_database(use_default_removal=True)
 
-    # backwash handling
+    # Backwash handling
     m.db.get_unit_operation_parameters("backwash_solids_handling")
     prtrt.backwash_handling.load_parameters_from_database(use_default_removal=True)
 
-    # anti-scalant
+    # Anti-scalant
     prtrt.anti_scalant_addition.load_parameters_from_database()
     prtrt.anti_scalant_addition.chemical_dosage.fix(5)
-    for u in (prtrt.ferric_chloride_addition, prtrt.anti_scalant_addition):
-        iscale.set_scaling_factor(u.chemical_flow_vol, 1e6)
-        iscale.constraint_scaling_transform(u.chemical_flow_vol_constraint, 1e6)
 
-    # cartridge filtration
+    # Cartridge filtration
     m.db.get_unit_operation_parameters("cartridge_filtration")
     prtrt.cartridge_filtration.load_parameters_from_database(use_default_removal=True)
 
-    # ---desalination---
-    # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
+    # ---Desalination---
+    # Pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     desal.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = 70e5 * pyunits.Pa
     desal.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
-    # RO unit
+    # RO Unit
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     desal.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    desal.RO.B_comp[0, "tss"].fix(1e-10)  # membrane salt permeability coefficient [m/s]
+    desal.RO.B_comp[0, "TSS"].fix(1e-10)  # membrane salt permeability coefficient [m/s]
 
     desal.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.feed_side.spacer_porosity.fix(0.9)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    desal.RO.width.fix(1000)  # stage width [m]
-    desal.RO.area.fix(
-        flow_vol * 4.5e4 * pyunits.s / pyunits.m
-    )  # stage area [m2] TODO: replace with actual area
-    m.fs.desalination.RO.recovery_mass_phase_comp.setlb(None)
-    m.fs.desalination.RO.flux_mass_phase_comp.setlb(None)
-    if m.erd_type == "pressure_exchanger":
-        # splitter (no degrees of freedom)
 
-        # pressure exchanger, 1 degree of freedom (efficiency)
+    # NOTE: 3234.153 parameter comes from original SW desal flowsheet
+    # which had a flow rate of 0.3092 and resulted in stage width of 1000 m
+    # 1000 / 0.3092 = 3234.153
+    width_guess = value(m.flow_vol) * 3234.153
+    if width_guess > desal.RO.width.ub:
+        desal.RO.width.setub(value(width_guess) * 2)
+    desal.RO.width.fix(width_guess)  # stage width [m]
+
+    # NOTE: 45000 parameter comes from original SW desal flowsheet
+    # which had a flow rate of 0.3092 and resulted in total area of 13914 m2
+    # 13914 / 0.3092 = 45000
+    area_guess = value(m.flow_vol) * 45000  # rough estimate for stage area [m2]
+    if area_guess > desal.RO.area.ub:
+        desal.RO.area.setub(value(area_guess) * 2)
+    # stage area [m2] TODO: replace with actual area
+    desal.RO.area.fix(area_guess)
+
+    desal.RO.recovery_mass_phase_comp.setlb(0)
+    desal.RO.flux_mass_phase_comp.setlb(0)
+
+    if m.erd_type == "pressure_exchanger":
+        # Splitter (no degrees of freedom)
+
+        # Pressure exchanger, 1 degree of freedom (efficiency)
         desal.PXR.efficiency_pressure_exchanger.fix(0.95)
 
-        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
+        # Pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
         desal.P2.efficiency_pump.fix(0.80)
 
-        # mixer, no degrees of freedom
+        # Mixer, no degrees of freedom
     elif m.erd_type == "pump_as_turbine":
         # ERD, 2 degrees of freedom (efficiency, outlet pressure)
         desal.ERD.efficiency_pump.fix(0.95)
-        desal.ERD.control_volume.properties_out[0].pressure.fix(
-            101325
-        )  # atmospheric pressure [Pa]
+        # Atmospheric pressure [Pa]
+        desal.ERD.control_volume.properties_out[0].pressure.fix(101325)
 
-    # ---posttreatment---
-    # storage tank 2
+    # ---Posttreatment---
+    # Storage tank 2
     psttrt.storage_tank_2.load_parameters_from_database(use_default_removal=True)
     psttrt.storage_tank_2.storage_time.fix(1)
 
-    # uv aop
+    # UV/AOP
     m.db.get_unit_operation_parameters("uv_aop")
     psttrt.uv_aop.load_parameters_from_database(use_default_removal=True)
-    psttrt.uv_aop.uv_reduced_equivalent_dose.fix(
-        350
-    )  # TODO: check this was the right thing to fix
-    psttrt.uv_aop.uv_transmittance_in.fix(
-        0.95
-    )  # TODO: check this was the right thing to fix
+    psttrt.uv_aop.uv_reduced_equivalent_dose.fix(350)
+    psttrt.uv_aop.uv_transmittance_in.fix(0.95)
 
-    # co2 addition
+    # CO2 addition
     m.db.get_unit_operation_parameters("co2_addition")
     psttrt.co2_addition.load_parameters_from_database(use_default_removal=True)
 
-    # lime
+    # Lime
     psttrt.lime_addition.load_parameters_from_database()
     psttrt.lime_addition.chemical_dosage.fix(2.3)
 
-    # storage tank 3
+    # Storage tank 3
     psttrt.storage_tank_3.load_parameters_from_database(use_default_removal=True)
     psttrt.storage_tank_3.storage_time.fix(1)
 
-    # ---product and disposal---
+    # ---Product and disposal---
     m.db.get_unit_operation_parameters("municipal_drinking")
     m.fs.municipal.load_parameters_from_database()
 
@@ -472,21 +538,57 @@ def set_operating_conditions(m):
     m.fs.landfill.load_parameters_from_database()
 
 
+def initialize_pretreatment(m):
+    prtrt = m.fs.pretreatment
+
+    prtrt.intake.initialize()
+    propagate_state(prtrt.s01)
+    prtrt.ferric_chloride_addition.initialize()
+    propagate_state(prtrt.s02)
+    prtrt.chlorination.initialize()
+    propagate_state(prtrt.s03)
+    prtrt.static_mixer.initialize()
+    propagate_state(prtrt.s04)
+    prtrt.storage_tank_1.initialize()
+    propagate_state(prtrt.s05)
+    prtrt.media_filtration.initialize()
+    propagate_state(prtrt.s06)
+    prtrt.backwash_handling.initialize()
+    propagate_state(prtrt.s07)
+    prtrt.anti_scalant_addition.initialize()
+    propagate_state(prtrt.s08)
+    prtrt.cartridge_filtration.initialize()
+
+
+def initialize_posttreatment(m):
+    psttrt = m.fs.posttreatment
+
+    psttrt.storage_tank_2.initialize()
+    propagate_state(psttrt.s01)
+    psttrt.uv_aop.initialize()
+    propagate_state(psttrt.s02)
+    psttrt.co2_addition.initialize()
+    propagate_state(psttrt.s03)
+    psttrt.lime_addition.initialize()
+    propagate_state(psttrt.s04)
+    psttrt.storage_tank_3.initialize()
+
+
 def initialize_system(m):
+
     prtrt = m.fs.pretreatment
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
 
-    # initialize feed
-    solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
+    # Initialize feed
+    solve(m.fs.feed, checkpoint=" initializing feed")
 
-    # initialize pretreatment
+    # Initialize pretreatment
     propagate_state(m.fs.s_feed)
-    flags = fix_state_vars(prtrt.intake.properties)
-    solve(prtrt, checkpoint="solve flowsheet after initializing pre-treatment")
-    revert_state_vars(prtrt.intake.properties, flags)
 
-    # initialize desalination
+    initialize_pretreatment(m)
+
+    # Initialize desalination
     propagate_state(prtrt.s_09)
 
     if m.erd_type == "pressure_exchanger":
@@ -532,7 +634,7 @@ def initialize_system(m):
         flags = fix_state_vars(desal.S1.mixed_state)
         solve(
             desal,
-            checkpoint=f"solve flowsheet after initializing desalination with {m.erd_type}",
+            checkpoint=f" initializing desalination with {m.erd_type}",
         )
         revert_state_vars(desal.S1.mixed_state, flags)
     else:
@@ -543,12 +645,10 @@ def initialize_system(m):
         desal.ERD.initialize()
         propagate_state(m.fs.s_disposal)
 
-    # initialize posttreatment
     propagate_state(desal.s_permeate_to_storage)
 
-    flags = fix_state_vars(psttrt.storage_tank_2.properties)
-    solve(psttrt, checkpoint="solve flowsheet after initializing post-treatment")
-    revert_state_vars(psttrt.storage_tank_2.properties, flags)
+    # Initialize posttreatment
+    initialize_posttreatment(m)
 
     propagate_state(m.fs.s_municipal)
     m.fs.municipal.initialize()
@@ -693,31 +793,68 @@ def add_costing(m):
 
 
 def display_costing(m):
-    m.fs.costing.total_capital_cost.display()
-    m.fs.costing.total_operating_cost.display()
-    m.fs.costing.LCOW.display()
-    m.fs.costing.specific_energy_consumption.display()
 
-    print("\nUnit Capital Costs\n")
+    header = "{:<35} | {:<20} | {:<25}"
+    row_fmt = "{:<35} | {:<20,.2f} | {:<25}"
+    divider = "-" * 87
+
+    # System costing
+    print(divider)
+    print(header.format("Overall Metric", "Value", "Units"))
+    print(divider)
+    print(
+        row_fmt.format(
+            "Total Capital Cost",
+            value(m.fs.costing.total_capital_cost),
+            str(pyunits.get_units(m.fs.costing.total_operating_cost)),
+        )
+    )
+    print(
+        row_fmt.format(
+            "Total Operating Cost",
+            value(m.fs.costing.total_operating_cost),
+            str(pyunits.get_units(m.fs.costing.total_operating_cost)),
+        )
+    )
+    print(
+        row_fmt.format(
+            "LCOW", value(m.fs.costing.LCOW), str(pyunits.get_units(m.fs.costing.LCOW))
+        )
+    )
+    print(
+        row_fmt.format(
+            "Specific Energy Consumption",
+            value(m.fs.costing.specific_energy_consumption),
+            str(pyunits.get_units(m.fs.costing.specific_energy_consumption)),
+        )
+    )
+    print(divider + "\n")
+
+    # Capital cost by unit process
+    print(divider)
+    print(header.format("Unit Process", f"CAPEX", "Units"))
+    print(divider)
     for u in m.fs.costing._registered_unit_costing:
-        print(
-            u.name,
-            " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=m.fs.costing.base_currency)),
-        )
+        cost_val = value(u.capital_cost)
+        p_name = u.name.split(".")[-2]
+        u_str = str(pyunits.get_units(u.capital_cost))
+        print(row_fmt.format(p_name, cost_val, u_str))
+    print(divider + "\n")
 
-    print("\nUtility Costs\n")
-    for f in m.fs.costing.used_flows:
+    # Operating costs by material/energy flow
+    print(divider)
+    print(header.format("Material/Energy Flow", "Value", "Units"))
+    print(divider)
+    for used_flow in m.fs.costing.used_flows:
+        flow_val = value(m.fs.costing.aggregate_flow_costs[used_flow])
         print(
-            f,
-            " :   ",
-            value(
-                pyunits.convert(
-                    m.fs.costing.aggregate_flow_costs[f],
-                    to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-                )
-            ),
+            row_fmt.format(
+                used_flow,
+                flow_val,
+                str(pyunits.get_units(m.fs.costing.aggregate_flow_costs[used_flow])),
+            )
         )
+    print(divider)
 
 
 if __name__ == "__main__":
