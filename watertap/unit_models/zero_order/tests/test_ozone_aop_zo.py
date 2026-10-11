@@ -87,7 +87,7 @@ class TestOzoneAOPZO_with_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="toc must be in solute list for Ozonation or Ozone/AOP",
+            match="A TOC component was not found in the solute list",
         ):
             model.fs.unit = OzoneAOPZO(
                 property_package=model.fs.params, database=model.db
@@ -241,8 +241,8 @@ class TestOzoneAOPZO_w_o_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="toc must be in solute list for Ozonation or Ozone/AOP",
-        ):
+                match="A TOC component was not found in the solute list",        
+                ):
             model.fs.unit = OzoneAOPZO(
                 property_package=model.fs.params, database=model.db
             )

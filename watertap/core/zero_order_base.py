@@ -284,10 +284,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
             )
 
         if index is not None:
-            # NOTE: convert index to lowercase for consistency with database keys (e.g., "toc" instead of "TOC")
-            index = index.lower()
             try:
-                pdata = pdata[index]
+                pdata = pdata[self._get_data_key(pdata, index)]            
             except KeyError:
                 if pname == "removal_frac_mass_comp" and use_default_removal:
                     try:
@@ -324,6 +322,26 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
         parameter.fix(val * units)
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
+    
+    @staticmethod
+    def _get_data_key(pdata, index):
+        """
+        Find the key in a database entry that corresponds to index. An exact
+        match is used if present; otherwise a unique case-insensitive match is
+        accepted (e.g. component "TOC" matches database key "toc").
+
+        Raises:
+            KeyError if no exact or unique case-insensitive match exists
+        """
+        if index in pdata:
+            return index
+        if isinstance(index, str):
+            matches = [
+                k for k in pdata if isinstance(k, str) and k.lower() == index.lower()
+            ]
+            if len(matches) == 1:
+                return matches[0]
+        raise KeyError(index)
 
     def get_inlet_flow(self, t):
         return self._get_Q(t)
