@@ -22,6 +22,19 @@ Running the notebooks
 
     |Binder launch button|
 
+WaterTAP Academy
+----------------
+WaterTAP Academy is an initiative through NAWI to provide a structured and interactive set of learning resources for new WaterTAP users. It includes guided lessons and exercises that 
+help users build a solid foundation in using WaterTAP effectively. 
+The resources for previous years WaterTAP Academy sessions are available on Github.
+
+* `WaterTAP Academy 2025 resources <https://github.com/watertap-org/watertap/tree/main/tutorials/watertap_academy_2025>`_
+
+Recordings from these sessions can be found on the NAWI channel:
+
+* `WaterTAP Academy 2025 recordings <nawi_channel>`_
+    
+
 Additional resources
 --------------------
 
