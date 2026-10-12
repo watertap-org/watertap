@@ -23,7 +23,11 @@ def _case_params(case_numbers):
     return [
         pytest.param(
             case_num,
-            marks=(pytest.mark.volatile if case_num in _PR_REPRESENTATIVE_CASES else pytest.mark.nightly),
+            marks=(
+                pytest.mark.volatile
+                if case_num in _PR_REPRESENTATIVE_CASES
+                else pytest.mark.nightly
+            ),
             id=f"case_{case_num}",
         )
         for case_num in case_numbers
