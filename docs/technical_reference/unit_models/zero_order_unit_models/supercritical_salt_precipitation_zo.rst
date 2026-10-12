@@ -1,3 +1,5 @@
+.. _supercritical_salt_precipitation_zo:
+
 Supercritical Salt Precipitation (ZO)
 =====================================
 

@@ -1,3 +1,5 @@
+.. _sludge_tank_zo:
+
 Sludge Tank (ZO)
 ================
 

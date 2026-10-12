@@ -391,6 +391,7 @@ class TestAerationTankScaler:
     @pytest.mark.component
     def test_variable_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
 
         assert isinstance(scaler, AerationTankScaler)
 
@@ -418,11 +419,12 @@ class TestAerationTankScaler:
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
         # Scaling factors for volume and oxygen mass transfer
-        assert len(sfx_cv) == 2
+        assert len(sfx_cv) == 10
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
 
         assert isinstance(scaler, AerationTankScaler)
 
@@ -445,6 +447,7 @@ class TestAerationTankScaler:
     @pytest.mark.component
     def test_scale_model(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
 
         assert isinstance(scaler, AerationTankScaler)
 
@@ -472,7 +475,7 @@ class TestAerationTankScaler:
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
         # Scaling factors for volume, oxygen mass transfer and other control volume variables/constraints
-        assert len(sfx_cv) == 32
+        assert len(sfx_cv) == 40
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
@@ -627,6 +630,7 @@ class TestAerationTankScaler:
         sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-3)
 
         scaler = AerationTankScaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
         scaler.scale_model(
             m.fs.unit,
             submodel_scalers={
@@ -640,7 +644,7 @@ class TestAerationTankScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.1526931e7, rel=1e-3
+            5.12596365e8, rel=1e-3
         )
 
 
