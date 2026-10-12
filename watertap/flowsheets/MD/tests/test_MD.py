@@ -142,6 +142,7 @@ class TestMDContinuousRecirculation:
     def test_main_0D(self):
         main(MD_1D=False)
 
+    @pytest.mark.nightly
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_main_1D(self):

@@ -184,6 +184,7 @@ def build_hand_surrogate():
     return m
 
 
+@pytest.mark.nightly
 class TestGACHandSurrogate(UnitTestHarness):
     def configure(self):
         m = build_hand_surrogate()
@@ -279,6 +280,7 @@ def build_hand_surrogate_no_ss():
     return m
 
 
+@pytest.mark.nightly
 class TestGACHandSurrogateNoSS(UnitTestHarness):
     def configure(self):
         m = build_hand_surrogate_no_ss()
@@ -384,6 +386,7 @@ def build_crittenden():
     return m
 
 
+@pytest.mark.nightly
 class TestGACCrittenden(UnitTestHarness):
     def configure(self):
         m = build_crittenden()
@@ -488,6 +491,7 @@ def build_crittenden_surrogate():
     return m
 
 
+@pytest.mark.nightly
 class TestGACCrittendenSurrogate(UnitTestHarness):
     def configure(self):
         m = build_crittenden_surrogate()
@@ -619,6 +623,7 @@ def build_multicomponent():
     return m
 
 
+@pytest.mark.nightly
 class TestGACMultiComponent(UnitTestHarness):
     def configure(self):
         m = build_multicomponent()
@@ -747,6 +752,7 @@ def build_multicomponent_surrogate():
     return m
 
 
+@pytest.mark.nightly
 class TestGACMultiComponentSurrogate(UnitTestHarness):
     def configure(self):
         m = build_multicomponent_surrogate()

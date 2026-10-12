@@ -16,13 +16,21 @@ from watertap.flowsheets.dye_desalination.dye_sweep import (
     run_analysis,
 )
 
-# test the first 11 case studies that can be run with or without RO
-pytest_parameterize_NF = list(range(1, 12))
-# then test case studies 12-20 that can only run with RO
-pytest_parameterize_RO = list(range(12, 20))
+_PR_REPRESENTATIVE_CASES = {1, 6, 11, 12, 16, 19}
 
 
-@pytest.mark.parametrize("case_num", pytest_parameterize_NF)
+def _case_params(case_numbers):
+    return [
+        pytest.param(
+            case_num,
+            marks=(pytest.mark.volatile if case_num in _PR_REPRESENTATIVE_CASES else pytest.mark.nightly),
+            id=f"case_{case_num}",
+        )
+        for case_num in case_numbers
+    ]
+
+
+@pytest.mark.parametrize("case_num", _case_params(range(1, 12)))
 @pytest.mark.integration
 def test_dye_sweep(case_num, tmp_path):
     cwd = os.getcwd()
@@ -41,7 +49,7 @@ def test_dye_sweep(case_num, tmp_path):
     return
 
 
-@pytest.mark.parametrize("case_num", pytest_parameterize_RO)
+@pytest.mark.parametrize("case_num", _case_params(range(12, 20)))
 @pytest.mark.integration
 def test_dye_sweep2(case_num, tmp_path):
     cwd = os.getcwd()

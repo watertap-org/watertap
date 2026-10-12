@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from pyomo.environ import ConcreteModel
+import pytest
 
 from watertap.core.solvers import get_solver
 
@@ -495,6 +496,7 @@ def build_temperature_polarization_calculated_concentration_polarization_fixed()
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_calculated_concentration_polarization_fixed(
     UnitTestHarness
 ):
@@ -595,6 +597,7 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_calculated_concentration_polarization_calculated_K_fixed(
     UnitTestHarness
 ):
@@ -699,6 +702,7 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_calculated_concentration_polarization_calculated_K_calculated(
     UnitTestHarness
 ):
@@ -806,6 +810,7 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_calculated_concentration_polarization_calculated_K_calculated_pressure_fixed_per_unit_length(
     UnitTestHarness
 ):
@@ -913,6 +918,7 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_calculated_concentration_polarization_calculated_K_calculated_pressure_calculated(
     UnitTestHarness
 ):
@@ -1169,6 +1175,7 @@ def build_temperature_polarization_calculated_hot_vmd():
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_calculated_hot_vmd(
     UnitTestHarness
 ):
@@ -1253,6 +1260,7 @@ def build_temperature_polarization_concentration_polarization_calculated_hot_vmd
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_concentration_polarization_calculated_hot_vmd(
     UnitTestHarness
 ):
@@ -1340,6 +1348,7 @@ def build_temperature_polarization_concentration_polarization_pressure_calculate
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd(
     UnitTestHarness
 ):
@@ -1572,6 +1581,7 @@ def build_temperature_polarization_concentration_polarization_pressure_calculate
     return m
 
 
+@pytest.mark.nightly
 class TestMembraneDisillation1D_temperature_polarization_concentration_polarization_pressure_calculated_pgmd(
     UnitTestHarness
 ):

@@ -461,6 +461,7 @@ def build_cp_mod_fixed():
     return m
 
 
+@pytest.mark.nightly
 class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
     def configure(self):
         m = build_cp_mod_fixed()
@@ -575,6 +576,7 @@ def build_cp_calculated_kf_fixed():
     return m
 
 
+@pytest.mark.nightly
 class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
     def configure(self):
         m = build_cp_calculated_kf_fixed()
@@ -688,6 +690,7 @@ def build_cp_calculated_kf_calculated():
     return m
 
 
+@pytest.mark.nightly
 class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
     def configure(self):
         m = build_cp_calculated_kf_calculated()
@@ -803,6 +806,7 @@ def build_friction_factor_spiral_wound():
     return m
 
 
+@pytest.mark.nightly
 class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
     def configure(self):
         m = build_friction_factor_spiral_wound()
@@ -918,6 +922,7 @@ def build_cp_calculated_kf_calculated_pdrop_fixed_by_dx():
     return m
 
 
+@pytest.mark.nightly
 class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
     UnitTestHarness
 ):
@@ -1035,6 +1040,7 @@ def build_cp_calculated_kf_calculated_pdrop_fixed_by_stage():
     return m
 
 
+@pytest.mark.nightly
 class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
     UnitTestHarness
 ):

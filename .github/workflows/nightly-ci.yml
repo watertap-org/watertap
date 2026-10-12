@@ -154,7 +154,7 @@ jobs:
         job-name: tests
     - name: Test with pytest
       run: |
-        pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
+        pytest --test-cadence=all --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
     - name: Upload pytest duration reports as job artifact
       if: always()
       uses: actions/upload-artifact@v7
@@ -224,7 +224,7 @@ jobs:
         echo '::endgroup::'
     - name: Run pytest
       run: |
-        pytest --pyargs watertap
+        pytest --test-cadence=all --pyargs watertap
 
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})

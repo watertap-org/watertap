@@ -20,9 +20,12 @@ from watertap.flowsheets.lsrro.multi_sweep import run_case
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
-# NOTE: we used to test up to 5 stages, but those are
-#       excluded by the rule below, so no point in running
-_test_cases = list(range(1, 3))
+# Keep the smallest representative case on PRs and defer the longer variant
+# to nightly.
+_test_cases = [
+    pytest.param(1, marks=pytest.mark.volatile, id="stages_1"),
+    pytest.param(2, marks=pytest.mark.nightly, id="stages_2"),
+]
 
 
 @pytest.mark.parametrize("number_of_stages", _test_cases)

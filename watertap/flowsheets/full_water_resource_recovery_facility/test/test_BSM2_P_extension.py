@@ -382,6 +382,7 @@ class TestScaledBioPFalse:
         )
 
 
+@pytest.mark.nightly
 @pytest.mark.requires_idaes_solver
 class TestScaledBioPTrue:
     @pytest.fixture(scope="class")

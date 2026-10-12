@@ -48,6 +48,8 @@ __author__ = "Johnson Dhanasekaran"
 
 solver = get_solver()
 
+_IV_CURVE_PR_INDX = {0, 3, 6}
+
 
 # -----------------------------------------------------------------------------
 # Start test class
@@ -206,7 +208,21 @@ class Test_membrane_characteristics:
         return m
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("indx", range(7))
+    @pytest.mark.parametrize(
+        "indx",
+        [
+            pytest.param(
+                indx,
+                marks=(
+                    pytest.mark.volatile
+                    if indx in _IV_CURVE_PR_INDX
+                    else pytest.mark.nightly
+                ),
+                id=f"curve_{indx}",
+            )
+            for indx in range(7)
+        ],
+    )
     def test_IV_curve(self, bped, indx):
 
         m = bped
@@ -1143,7 +1159,17 @@ class Test_NMSU_bench_scale:
         return m
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("ctr", range(3))
+    @pytest.mark.parametrize(
+        "ctr",
+        [
+            pytest.param(
+                ctr,
+                marks=(pytest.mark.volatile if ctr != 1 else pytest.mark.nightly),
+                id=f"case_{ctr}",
+            )
+            for ctr in range(3)
+        ],
+    )
     def test_data(
         self,
         bped_1,

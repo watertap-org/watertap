@@ -557,6 +557,7 @@ class TestElectrodialysisCurrentConst:
         )
 
 
+@pytest.mark.nightly
 class TestElectrodialysis_withNeutralSPecies:
     @pytest.fixture(scope="class")
     @classmethod
@@ -790,6 +791,7 @@ class TestElectrodialysis_withNeutralSPecies:
         )
 
 
+@pytest.mark.nightly
 class Test_ED_MembNonohm_On_ConstV:
     @pytest.fixture(scope="class")
     @classmethod
@@ -1023,6 +1025,7 @@ class Test_ED_MembNonohm_On_ConstV:
         )
 
 
+@pytest.mark.nightly
 class Test_ED_MembNonohm_On_DL_On_ConstV:
     @pytest.fixture(scope="class")
     @classmethod
@@ -1241,6 +1244,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         )
 
 
+@pytest.mark.nightly
 class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
     @pytest.fixture(scope="class")
     @classmethod
@@ -1423,6 +1427,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
         )
 
 
+@pytest.mark.nightly
 class Test_ED_MembNonohm_On_DL_On_ConstC:
     @pytest.fixture(scope="class")
     @classmethod
@@ -1641,6 +1646,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         )
 
 
+@pytest.mark.nightly
 class Test_ED_pressure_drop_components:
     @pytest.fixture(scope="class")
     @classmethod

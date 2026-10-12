@@ -44,10 +44,16 @@ def _item_markers(item: Item) -> str:
     return ",".join(sorted({marker.name for marker in item.iter_markers()}))
 
 
+def _item_has_marker(item: Item, marker_name: str) -> bool:
+    return any(marker.name == marker_name for marker in item.iter_markers())
+
+
 class MarkerSpec(enum.Enum):
     unit = "Quick tests that do not require a solver, must run in < 2 s"
     component = "Quick tests that may require a solver"
     integration = "Long duration tests"
+    volatile = "Representative tests that stay on pull requests despite being expensive or sensitive"
+    nightly = "Exhaustive tests that run only in nightly coverage"
     build = "FIXME for building stuff?"
     solver = "Tests that require a solver"
     requires_idaes_solver = (
@@ -95,6 +101,16 @@ def pytest_configure(config: Config):
 
 def pytest_addoption(parser: Parser):
     parser.addoption(
+        "--test-cadence",
+        action="store",
+        choices=("all", "pr"),
+        default="all",
+        help=(
+            "Select the test cadence. 'pr' skips tests marked nightly, while 'all' "
+            "runs the full suite."
+        ),
+    )
+    parser.addoption(
         "--file-durations",
         action="store_true",
         default=False,
@@ -109,6 +125,23 @@ def pytest_addoption(parser: Parser):
         default="pytest-duration-reports",
         help="Directory where --file-durations writes timing CSV reports.",
     )
+
+
+def pytest_collection_modifyitems(config: Config, items: list[Item]):
+    if config.getoption("--test-cadence") != "pr":
+        return
+
+    kept = []
+    deselected = []
+    for item in items:
+        if _item_has_marker(item, "nightly"):
+            deselected.append(item)
+        else:
+            kept.append(item)
+
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = kept
 
 
 @pytest.hookimpl(hookwrapper=True)

@@ -10,28 +10,21 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-"""
-helper for splitting up the LSRRO testing jobs between the GHA runners
-"""
-
-import sys
-import platform
-
-_supported_systems = ["Linux", "Windows"]
-_number_of_python_versions = 3
-_python_version_index = sys.version_info.minor % _number_of_python_versions
-
-_this_platform = platform.system()
-try:
-    _platform_index = _supported_systems.index(_this_platform)
-except ValueError:
-    _platform_index = None
+"""Helpers for selecting representative LSRRO baseline cases."""
 
 
 def get_test_cases_subset(all_test_cases):
-    return [
-        test_case
-        for idx, test_case in enumerate(all_test_cases)
-        if (idx % len(_supported_systems) == _platform_index)
-        and (idx % _number_of_python_versions == _python_version_index)
-    ]
+    """Return one representative case per baseline file.
+
+    The test file uses these as the pull-request subset and sends the remaining
+    combinations to the nightly-only bucket.
+    """
+
+    seen_files = set()
+    subset = []
+    for csv_file, row_index in all_test_cases:
+        if csv_file in seen_files:
+            continue
+        subset.append((csv_file, row_index))
+        seen_files.add(csv_file)
+    return subset

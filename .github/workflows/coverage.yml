@@ -66,7 +66,11 @@ jobs:
           job-name: coverage
       - name: Test with pytest and collect coverage
         run: |
-          pytest --cov=watertap --cov-report=xml --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            pytest --test-cadence=pr --cov=watertap --cov-report=xml --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
+          else
+            pytest --test-cadence=all --cov=watertap --cov-report=xml --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
+          fi
       - name: Upload pytest duration reports as job artifact
         if: always()
         uses: actions/upload-artifact@v7

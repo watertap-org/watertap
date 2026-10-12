@@ -72,11 +72,26 @@ _test_cases = [
     (csv_file, idx) for csv_file, df in _dfs.items() for idx in range(len(df))
 ]
 
-# comment out this line if you want to run the entire baseline
-_test_cases = get_test_cases_subset(_test_cases)
+_representative_test_cases = set(get_test_cases_subset(_test_cases))
 
 
-@pytest.mark.parametrize("csv_file, row_index", _test_cases)
+def _case_params(test_cases):
+    return [
+        pytest.param(
+            csv_file,
+            row_index,
+            marks=(
+                pytest.mark.volatile
+                if (csv_file, row_index) in _representative_test_cases
+                else pytest.mark.nightly
+            ),
+            id=f"{csv_file}:{row_index}",
+        )
+        for csv_file, row_index in test_cases
+    ]
+
+
+@pytest.mark.parametrize("csv_file, row_index", _case_params(_test_cases))
 @pytest.mark.component
 def test_against_paper_analysis(csv_file, row_index):
 
