@@ -1,3 +1,5 @@
+.. _cooling_supply_zo:
+
 Cooling Supply  (ZO)
 ====================
 

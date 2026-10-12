@@ -3,6 +3,10 @@
 ASM1 to ADM1 Translator
 =======================
 
+.. code-block:: python
+
+   from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM1_ADM1
+
 Introduction
 ------------
 

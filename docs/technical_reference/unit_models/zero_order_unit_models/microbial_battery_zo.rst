@@ -1,3 +1,5 @@
+.. _microbial_battery_zo:
+
 Microbial Battery (ZO)
 ======================
 
