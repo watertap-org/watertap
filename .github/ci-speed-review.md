@@ -5,7 +5,7 @@ The saved timing reports are single runs, so these numbers are leads rather than
 | Test file | Slowest PR cell | Phase seconds (setup / call) | Review |
 | --- | --- | ---: | --- |
 | `watertap/unit_models/tests/test_membrane_distillation_1D.py` | linux-py3.10 | 16.5 / 445.9 | Shared harness rebuilds an unused model in two checks; harness change applies. |
-| `watertap/flowsheets/dye_desalination/tests/test_dye_sweep.py` | linux-py3.10 | 0.0 / 217.5 | Each parameter selects a distinct sweep; preserve all 19 cases. |
+| `watertap/flowsheets/dye_desalination/tests/test_dye_sweep.py` | linux-py3.10 | 0.0 / 217.5 | Each parameter selects a distinct sweep; keep six representative cases and the invalid-case check on PRs, and run all cases nightly. |
 | `watertap/unit_models/tests/test_electrodialysis_bipolar_1D.py` | linux-py3.10 | 4.4 / 210.5 | Distinct configurations and six pressure-drop methods; class fixtures already share setup. |
 | `watertap/unit_models/tests/test_osmotically_assisted_reverse_osmosis_1D.py` | linux-py3.10 | 2.7 / 99.0 | Shared harness rebuilds an unused model in two checks; harness change applies. |
 | `watertap/flowsheets/full_water_resource_recovery_facility/test/test_BSM2_P_extension.py` | linux-py3.10 | 63.4 / 25.3 | Class fixture already shares model setup; retain distinct initialization/solve checks. |
@@ -44,7 +44,7 @@ The saved timing reports are single runs, so these numbers are leads rather than
 | `watertap/flowsheets/nf_dspmde/tests/test_nf.py` | linux-py3.10 | 0.0 / 6.0 | Distinct end-to-end run(s); no reusable setup shown. |
 | `watertap/unit_models/tests/test_crystallizer.py` | linux-py3.10 | 0.3 / 4.8 | Shared harness rebuilds an unused model in two checks; harness change applies. |
 
-The common `UnitTestHarness` change removes two unused model builds per harness class. All other cases, assertions, solver checks, tolerances, and failure paths remain on PRs. Files without a measured, repeatable improvement remain unchanged.
+The common `UnitTestHarness` change removes two unused model builds per harness class. The dye sweep selection moves 13 of its 19 valid parameter cases to the scheduled and manual full suite, while retaining three NF cases, three RO cases, and the invalid-case check on PRs. Their saved Linux/Python 3.10 durations total 142.6 seconds; this is an estimate of pytest phase time removed from that cell, not a measured CI wall-time saving. The full coverage job follows the same PR selection, so it does not rerun those 13 cases on PRs. Other tests, assertions, solver checks, tolerances, and failure paths remain on PRs.
 
 ## Local before and after check
 

@@ -16,10 +16,22 @@ from watertap.flowsheets.dye_desalination.dye_sweep import (
     run_analysis,
 )
 
-# test the first 11 case studies that can be run with or without RO
-pytest_parameterize_NF = list(range(1, 12))
-# then test case studies 12-20 that can only run with RO
-pytest_parameterize_RO = list(range(12, 20))
+# Keep representative cost, membrane, and pump cases on PRs. The remaining
+# distinct sweep configurations still run in the scheduled full suite.
+_pr_nf_cases = {1, 4, 10}
+_pr_ro_cases = {12, 16, 19}
+
+
+def _cases_with_nightly_mark(cases, pr_cases):
+    return [
+        case if case in pr_cases else pytest.param(case, marks=pytest.mark.nightly)
+        for case in cases
+    ]
+
+
+# The first 11 case studies can run with or without RO; cases 12-19 require RO.
+pytest_parameterize_NF = _cases_with_nightly_mark(range(1, 12), _pr_nf_cases)
+pytest_parameterize_RO = _cases_with_nightly_mark(range(12, 20), _pr_ro_cases)
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_NF)

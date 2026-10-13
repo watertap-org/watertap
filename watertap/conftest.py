@@ -23,6 +23,7 @@ class MarkerSpec(enum.Enum):
     unit = "Quick tests that do not require a solver, must run in < 2 s"
     component = "Quick tests that may require a solver"
     integration = "Long duration tests"
+    nightly = "Cases run by scheduled and manually dispatched CI workflows"
     build = "FIXME for building stuff?"
     solver = "Tests that require a solver"
     requires_idaes_solver = (

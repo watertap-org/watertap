@@ -34,7 +34,9 @@ defaults:
 env:
   # --color=yes needed for colorized output to be shown in GHA logs
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
-  PYTEST_ADDOPTS: "--color=yes"
+  # Scheduled and manual runs collect every case. PR, push, and merge queue
+  # runs omit the cases marked nightly in every pytest job, including coverage.
+  PYTEST_ADDOPTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--color=yes' || '--color=yes -m "not nightly"' }}
   PIP_PROGRESS_BAR: "off"
   WATERTAP_KERNEL_NAME: watertap-dev
 
