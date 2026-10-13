@@ -72,8 +72,10 @@ _test_cases = [
     (csv_file, idx) for csv_file, df in _dfs.items() for idx in range(len(df))
 ]
 
-# comment out this line if you want to run the entire baseline
-_test_cases = get_test_cases_subset(_test_cases)
+# CI's Linux/Python 3.12 jobs collect every paper-analysis baseline. Other
+# environments retain the historical partition to avoid repeating all cases.
+if os.environ.get("WATERTAP_LSRRO_ALL_CASES") != "1":
+    _test_cases = get_test_cases_subset(_test_cases)
 
 
 @pytest.mark.parametrize("csv_file, row_index", _test_cases)

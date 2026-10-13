@@ -8,6 +8,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
 
 concurrency:
   # NOTE: the value of `group` should be chosen carefully,
@@ -83,7 +86,6 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
-    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -96,6 +98,8 @@ jobs:
           - linux
           - win64
           # - macos
+        # PRs and main use five cells; scheduled and manual runs use all eight.
+        exclude: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '[]' || '[{"os":"win64","python-version":"3.10"},{"os":"win64","python-version":"3.11"},{"os":"win64","python-version":"3.13"}]') }}
         include:
           - os: linux
             os-version: ubuntu-22.04
@@ -103,9 +107,6 @@ jobs:
             os-version: windows-2022
           # - os: macos
           #   os-version: macos-10.15
-          - python-version: '3.10'
-            # limit uploading coverage report for a single Python version in the matrix
-            coverage: true
     steps:
     - uses: actions/checkout@v6
       with:
@@ -144,21 +145,18 @@ jobs:
         python-version: ${{ matrix.python-version }}
         os: ${{ matrix.os }}
         job-name: tests
-    - name: Add coverage report pytest options
-      if: matrix.coverage
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> $GITHUB_ENV
     - name: Test with pytest
+      env:
+        WATERTAP_LSRRO_ALL_CASES: ${{ matrix.os == 'linux' && matrix.python-version == '3.12' && '1' || '0' }}
       run: |
-        pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets
-    - name: Upload coverage report as job artifact
-      if: matrix.coverage
+        pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --junitxml=test-results.xml
+    - name: Upload test results
+      if: always()
       uses: actions/upload-artifact@v7
       with:
-        name: coverage-report-${{ matrix.os }}
-        path: coverage.xml
-        if-no-files-found: error
+        name: test-results-source-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: test-results.xml
+        if-no-files-found: ignore
     - name: Test documentation code
       run: |
         make -C docs doctest -d
@@ -169,32 +167,9 @@ jobs:
       run: |
         make -C docs linkcheck -d
 
-  upload-coverage:
-    name: Upload coverage report (Codecov)
-    needs: [tests]
-    runs-on: ubuntu-latest
-    steps:
-      # the checkout step is needed to have access to codecov.yml
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: coverage-report-*
-      - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v6
-        with:
-          fail_ci_if_error: true
-          verbose: true
-          # NOTE: secrets are not available for pull_request workflows
-          # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
-          # but does require token for other workflows e.g. merge to `main`
-          # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
-          token: ${{ secrets.CODECOV_TOKEN }}
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
-    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -206,6 +181,7 @@ jobs:
         os:
           - linux
           - win64
+        exclude: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '[]' || '[{"os":"win64","python-version":"3.10"},{"os":"win64","python-version":"3.11"},{"os":"win64","python-version":"3.13"}]') }}
         include:
           - os: linux
             os-version: ubuntu-22.04
@@ -253,8 +229,82 @@ jobs:
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
     - name: Run pytest
+      env:
+        WATERTAP_LSRRO_ALL_CASES: ${{ matrix.os == 'linux' && matrix.python-version == '3.12' && '1' || '0' }}
       run: |
-        pytest --pyargs watertap
+        pytest --pyargs watertap --junitxml=test-results.xml
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-results-installed-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: test-results.xml
+        if-no-files-found: ignore
+
+  coverage:
+    name: Coverage (py3.12/linux; informational)
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - uses: conda-incubator/setup-miniconda@v4
+      with:
+        activate-environment: watertap-dev
+        python-version: '3.12'
+        miniforge-version: latest
+        channels: conda-forge
+        conda-remove-defaults: 'true'
+    - name: Install dependencies
+      run: |
+        conda install --quiet --yes pip setuptools wheel pandoc
+        pip install -e ".[dev]"
+        conda install -c conda-forge reaktoro cyipopt
+        idaes get-extensions --extra petsc --verbose
+    - name: Run full suite with WaterTAP coverage
+      env:
+        WATERTAP_LSRRO_ALL_CASES: '1'
+      run: |
+        pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --cov=watertap --cov-report=xml --junitxml=test-results.xml
+    - name: Upload test and coverage results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-results-coverage-linux-py3.12
+        path: |
+          test-results.xml
+          coverage.xml
+        if-no-files-found: ignore
+    - name: Publish coverage to Codecov
+      if: success()
+      uses: codecov/codecov-action@v6
+      with:
+        fail_ci_if_error: true
+        verbose: true
+        files: coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  nightly-summary:
+    name: Nightly failure summary
+    if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    needs: [tests, user-mode-pytest, coverage, pylint, notebooks]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/download-artifact@v8
+      continue-on-error: true
+      with:
+        pattern: test-results-*
+        path: test-results
+    - name: Summarize failed jobs and test results
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_page=100" --paginate > jobs.json
+        python .github/scripts/nightly_summary.py jobs.json test-results >> "$GITHUB_STEP_SUMMARY"
 
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})

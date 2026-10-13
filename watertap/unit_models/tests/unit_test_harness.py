@@ -86,6 +86,15 @@ class UnitTestHarness(abc.ABC):
         blk._test_objs.optarg = self.optarg
         blk._test_objs.unit_solutions = self.unit_solutions
         blk._test_objs.conservation_equality = self.conservation_equality
+        blk._test_objs.default_large = self.default_large
+        blk._test_objs.default_small = self.default_small
+        blk._test_objs.default_zero = self.default_zero
+        blk._test_objs.default_absolute_tolerance = self.default_absolute_tolerance
+        blk._test_objs.default_relative_tolerance = self.default_relative_tolerance
+        blk._test_objs.condition_number = getattr(self, "condition_number", None)
+        blk._test_objs.skip_badly_scaled_vars = getattr(
+            self, "skip_badly_scaled_vars", False
+        )
 
     @abc.abstractmethod
     def configure(self):
@@ -136,10 +145,9 @@ class UnitTestHarness(abc.ABC):
 
     @pytest.mark.component
     def test_conservation(self, frame):
-        self.configure_class()
         m, blk = frame
-
-        conservation = blk._test_objs.conservation_equality
+        config = blk._test_objs
+        conservation = config.conservation_equality
 
         if conservation == {}:
             raise NotImplementedError(
@@ -153,8 +161,8 @@ class UnitTestHarness(abc.ABC):
                 try:
                     assert inlet_expression == pytest.approx(
                         outlet_expression,
-                        abs=self.default_absolute_tolerance,
-                        rel=self.default_relative_tolerance,
+                        abs=config.default_absolute_tolerance,
+                        rel=config.default_relative_tolerance,
                     )
                 except:
                     raise AssertionError(
@@ -169,9 +177,9 @@ class UnitTestHarness(abc.ABC):
 
     @pytest.mark.component
     def test_unit_solutions(self, frame):
-        self.configure_class()
         m, blk = frame
-        solutions = blk._test_objs.unit_solutions
+        config = blk._test_objs
+        solutions = config.unit_solutions
 
         # solve unit
         if blk._test_objs.solver is None:
@@ -182,33 +190,28 @@ class UnitTestHarness(abc.ABC):
             )
         results = opt.solve(blk, tee=True)
 
-        if hasattr(self, "condition_number"):
+        if config.condition_number is not None:
             cond = jacobian_cond(blk)
             if not cond == pytest.approx(
-                self.condition_number,
-                abs=self.default_absolute_tolerance,
-                rel=self.default_relative_tolerance,
+                config.condition_number,
+                abs=config.default_absolute_tolerance,
+                rel=config.default_relative_tolerance,
             ):
                 # Testing to a relative tolerance of 1e-3, so four significant digits should suffice.
                 raise AssertionError(
-                    f"Condition number: Expected {self.condition_number:.4E}, got {cond:.4E} instead"
+                    f"Condition number: Expected {config.condition_number:.4E}, got {cond:.4E} instead"
                 )
-
-        if hasattr(self, "skip_badly_scaled_vars"):
-            skip_badly_scaled_vars = self.skip_badly_scaled_vars
-        else:
-            skip_badly_scaled_vars = False
 
         # check solve
         badly_scaled_vars = list(
             iscale.badly_scaled_var_generator(
                 blk,
-                large=self.default_large,
-                small=self.default_small,
-                zero=self.default_zero,
+                large=config.default_large,
+                small=config.default_small,
+                zero=config.default_zero,
             )
         )
-        if not skip_badly_scaled_vars and len(badly_scaled_vars) > 0:
+        if not config.skip_badly_scaled_vars and len(badly_scaled_vars) > 0:
             lines = [
                 f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
                 for x in badly_scaled_vars
@@ -232,8 +235,8 @@ class UnitTestHarness(abc.ABC):
             if comp_obj is None:
                 comp_obj = pytest.approx(
                     val,
-                    abs=self.default_absolute_tolerance,
-                    rel=self.default_relative_tolerance,
+                    abs=config.default_absolute_tolerance,
+                    rel=config.default_relative_tolerance,
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
