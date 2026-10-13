@@ -1,3 +1,5 @@
+.. _struvite_classifier_zo:
+
 Struvite Classifier (ZO)
 ========================
 

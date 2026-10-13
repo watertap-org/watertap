@@ -1,3 +1,5 @@
+.. _primary_separator_zo:
+
 Primary Separator (ZO)
 ======================
 

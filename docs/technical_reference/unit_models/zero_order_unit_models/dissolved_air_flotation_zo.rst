@@ -1,3 +1,5 @@
+.. _dissolved_air_flotation_zo:
+
 Dissolved Air Flotation (ZO)
 ============================
 
