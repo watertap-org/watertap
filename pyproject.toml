@@ -117,6 +117,9 @@ py-version = "3.10"
 
 "watertap.tools.oli_api.tests" = ["test.dbs"]
 
+[project.entry-points.pytest11]
+watertap = "watertap.pytest_plugin"
+
 [project.entry-points."watertap.flowsheets"]
 nf = "watertap.flowsheets.nf_dspmde.nf_ui"
 bsm2 = "watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui"

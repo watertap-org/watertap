@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Container, Optional, Callable
 
 import pytest
-from _pytest.config.argparsing import Parser
 from _pytest.nodes import Item
 from _pytest.config import Config
 from _pytest.terminal import TerminalReporter
@@ -97,34 +96,6 @@ def pytest_configure(config: Config):
     if config.getoption("--file-durations", default=False):
         _FILE_DURATIONS.clear()
         _TEST_DURATIONS.clear()
-
-
-def pytest_addoption(parser: Parser):
-    parser.addoption(
-        "--test-cadence",
-        action="store",
-        choices=("all", "pr"),
-        default="all",
-        help=(
-            "Select the test cadence. 'pr' skips tests marked nightly, while 'all' "
-            "runs the full suite."
-        ),
-    )
-    parser.addoption(
-        "--file-durations",
-        action="store_true",
-        default=False,
-        help=(
-            "Show elapsed pytest runtime grouped by test file and write timing "
-            "CSV reports."
-        ),
-    )
-    parser.addoption(
-        "--durations-report-dir",
-        action="store",
-        default="pytest-duration-reports",
-        help="Directory where --file-durations writes timing CSV reports.",
-    )
 
 
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
