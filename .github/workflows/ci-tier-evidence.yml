@@ -1,0 +1,63 @@
+name: CI tier evidence
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [labeled, synchronize]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  collect:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'collect-tier-evidence')
+    name: Evidence (py3.12/${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-22.04
+            flags: ""
+          - os: win64
+            runner: windows-2022
+            flags: "--skip-coverage --skip-faults"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          activate-environment: watertap-dev
+          python-version: '3.12'
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
+      - name: Install test and solver dependencies
+        run: |
+          conda install --quiet --yes pip setuptools wheel pandoc
+          pip install -e ".[dev]"
+          conda install -c conda-forge reaktoro cyipopt
+          idaes get-extensions --extra petsc --verbose
+      - name: Verify classifier safeguards
+        run: |
+          python -m unittest discover -s pytest-data/analysis/tests -p 'test_ci_tier_classification.py'
+      - name: Collect timing, coverage, and fault evidence
+        run: |
+          python .github/scripts/collect_ci_tier_evidence.py --output-dir ci-tier-evidence/${{ matrix.os }} ${{ matrix.flags }}
+      - name: Upload evidence, including partial results on failure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-tier-evidence-${{ matrix.os }}
+          path: ci-tier-evidence/${{ matrix.os }}/
+          if-no-files-found: warn

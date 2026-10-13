@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "purpose": "Reviewable historical-fix perturbations. Severity was set before detector results are known.",
+  "faults": [
+    {
+      "id": "asm1_cod_duplicate_xs",
+      "historical_fix": "016caae6",
+      "severity": "high",
+      "severity_rationale": "The perturbation counts X_S twice in the COD expression in asm1_properties.py; commit 016caae6 removed that duplicate term.",
+      "file": "watertap/property_models/unit_specific/activated_sludge/asm1_properties.py",
+      "before": "                + self.conc_mass_comp[\"X_S\"]\n                + self.conc_mass_comp[\"X_I\"]",
+      "after": "                + self.conc_mass_comp[\"X_S\"]\n                + self.conc_mass_comp[\"X_S\"]\n                + self.conc_mass_comp[\"X_I\"]",
+      "test_ids": [
+        "watertap/flowsheets/full_water_resource_recovery_facility/test/test_full_WRRF_with_ASM1_ADM1.py::TestFullFlowsheet::test_square_problem",
+        "watertap/property_models/unit_specific/activated_sludge/tests/test_asm1_thermo.py::TestStateBlock::test_expressions"
+      ]
+    },
+    {
+      "id": "modified_asm2d_r8_nh4_sign",
+      "historical_fix": "42424969",
+      "severity": "high",
+      "severity_rationale": "The perturbation reverses the R8 ammonia stoichiometric coefficient in modified_asm2d_reactions.py; commit 42424969 corrected that sign.",
+      "file": "watertap/property_models/unit_specific/activated_sludge/modified_asm2d_reactions.py",
+      "before": "(\"R8\", \"Liq\", \"S_NH4\"): self.i_NSF,",
+      "after": "(\"R8\", \"Liq\", \"S_NH4\"): -self.i_NSF,",
+      "test_ids": [
+        "watertap/flowsheets/activated_sludge/tests/test_modified_asm2d_flowsheet.py::TestASM2DFlowsheet::test_structure",
+        "watertap/property_models/unit_specific/activated_sludge/tests/test_modified_asm2d_reaction.py::TestReactionBlock::test_rxn_rate"
+      ]
+    },
+    {
+      "id": "davies_natural_log",
+      "historical_fix": "00b53446",
+      "severity": "medium",
+      "severity_rationale": "The perturbation restores natural log in the Davies activity coefficient equation where commit 00b53446 changed it to log10.",
+      "file": "watertap/property_models/multicomp_aq_sol_prop_pack.py",
+      "before": "                return log10(\n                    b.act_coeff_phase_comp[p, j]",
+      "after": "                return log(\n                    b.act_coeff_phase_comp[p, j]",
+      "test_ids": [
+        "watertap/flowsheets/nf_dspmde/tests/test_nf.py::test_main",
+        "watertap/property_models/tests/test_multicomp_aq_sol_prop_pack.py::test_davies_activity_coefficients"
+      ]
+    },
+    {
+      "id": "md_dcmd_flux_driving_force_sign",
+      "historical_fix": null,
+      "severity": "high",
+      "severity_rationale": "The perturbation adds cold-side vapor pressure to hot-side vapor pressure in the DCMD mass-flux equation instead of subtracting it, reversing the model's physical driving-force relationship.",
+      "file": "watertap/unit_models/MD/membrane_distillation_base.py",
+      "before": "b.hot_ch.properties_interface[t, x].pressure_sat\n                    - b.cold_ch.properties_interface[t, x].pressure_sat",
+      "after": "b.hot_ch.properties_interface[t, x].pressure_sat\n                    + b.cold_ch.properties_interface[t, x].pressure_sat",
+      "test_ids": [
+        "watertap/unit_models/tests/test_membrane_distillation_1D.py::TestMembraneDisillation1D::test_initialization",
+        "watertap/unit_models/tests/test_membrane_distillation_1D.py::TestMembraneDisillation1D::test_unit_solutions"
+      ]
+    }
+  ]
+}
