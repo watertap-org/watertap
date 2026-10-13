@@ -34,6 +34,7 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.nightly
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
     @classmethod

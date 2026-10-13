@@ -45,6 +45,12 @@ class UnitRuntimeError(RuntimeError):
 
 
 class UnitTestHarness(abc.ABC):
+    default_large = 1e4
+    default_small = 1e-3
+    default_zero = 1e-10
+    default_absolute_tolerance = 1e-5
+    default_relative_tolerance = 1e-3
+
     def configure_class(self):
         # string for solver, if None use WaterTAP default
         self.solver = None
@@ -56,15 +62,6 @@ class UnitTestHarness(abc.ABC):
 
         # dictionary of expressions for conservation checks
         self.conservation_equality = {}
-
-        # arguments for badly scaled variables
-        self.default_large = 1e4
-        self.default_small = 1e-3
-        self.default_zero = 1e-10
-
-        # arguments for solver tolerance
-        self.default_absolute_tolerance = 1e-5
-        self.default_relative_tolerance = 1e-3
 
         model = self.configure()
         if not hasattr(self, "unit_model_block"):
@@ -136,7 +133,6 @@ class UnitTestHarness(abc.ABC):
 
     @pytest.mark.component
     def test_conservation(self, frame):
-        self.configure_class()
         m, blk = frame
 
         conservation = blk._test_objs.conservation_equality
@@ -169,7 +165,6 @@ class UnitTestHarness(abc.ABC):
 
     @pytest.mark.component
     def test_unit_solutions(self, frame):
-        self.configure_class()
         m, blk = frame
         solutions = blk._test_objs.unit_solutions
 

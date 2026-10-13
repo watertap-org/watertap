@@ -135,6 +135,7 @@ class TestDyewithROFlowsheetwithPretreatment:
         display_costing(m)
 
 
+@pytest.mark.nightly
 class TestDyewithROFlowsheetDefault:
     @pytest.fixture(scope="class")
     @classmethod
@@ -236,6 +237,7 @@ class TestDyewithROFlowsheetDefault:
         display_costing(m)
 
 
+@pytest.mark.nightly
 class TestDyewith0DROFlowsheet:
     @pytest.fixture(scope="class")
     @classmethod
@@ -337,6 +339,7 @@ class TestDyewith0DROFlowsheet:
         display_costing(m)
 
 
+@pytest.mark.nightly
 class TestDyewithROFlowsheetwithDewatering:
     @pytest.fixture(scope="class")
     @classmethod
@@ -441,6 +444,7 @@ class TestDyewithROFlowsheetwithDewatering:
         display_costing(m)
 
 
+@pytest.mark.nightly
 class TestDyewithROFlowsheetwithGAC:
     @pytest.fixture(scope="class")
     @classmethod

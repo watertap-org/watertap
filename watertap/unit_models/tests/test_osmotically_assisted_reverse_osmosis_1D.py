@@ -26,6 +26,8 @@ from watertap.unit_models.reverse_osmosis_base import TransportModel
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.core.solvers import get_solver
+
+_OARO_REPRESENTATIVE_RECOVERIES = {0.15, 0.55}
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
@@ -1203,7 +1205,21 @@ class TestOsmoticallyAssistedReverseOsmosis_Pdrop_calculation(UnitTestHarness):
 class TestOsmoticallyAssistedReverseOsmosis_water_recovery:
     water_recovery_list = [0.15, 0.2, 0.3, 0.4, 0.5, 0.55]
 
-    @pytest.mark.parametrize("water_recovery", water_recovery_list)
+    @pytest.mark.parametrize(
+        "water_recovery",
+        [
+            pytest.param(
+                water_recovery,
+                marks=(
+                    pytest.mark.volatile
+                    if water_recovery in _OARO_REPRESENTATIVE_RECOVERIES
+                    else pytest.mark.nightly
+                ),
+                id=f"recovery_{water_recovery}",
+            )
+            for water_recovery in water_recovery_list
+        ],
+    )
     @pytest.mark.component
     def test_water_recovery_sweep(self, water_recovery):
         """Testing 1D-OARO with PressureChangeType.calculated option."""
