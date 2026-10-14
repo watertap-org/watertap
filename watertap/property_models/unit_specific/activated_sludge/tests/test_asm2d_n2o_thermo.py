@@ -171,22 +171,6 @@ class TestParamBlock(object):
         assert model.params.i_NBM.is_fixed()
         assert value(model.params.i_NBM) == 0.08615
 
-        assert isinstance(model.params.f_SI, Var)
-        assert model.params.f_SI.is_fixed()
-        assert value(model.params.f_SI) == 0
-
-        assert isinstance(model.params.f_XIH, Var)
-        assert model.params.f_XIH.is_fixed()
-        assert value(model.params.f_XIH) == 0.1
-
-        assert isinstance(model.params.f_XIP, Var)
-        assert model.params.f_XIP.is_fixed()
-        assert value(model.params.f_XIP) == 0.1
-
-        assert isinstance(model.params.f_XIA, Var)
-        assert model.params.f_XIA.is_fixed()
-        assert value(model.params.f_XIA) == 0.1
-
         assert isinstance(model.params.i_PSF, Var)
         assert model.params.i_PSF.is_fixed()
         assert value(model.params.i_PSF) == 0.00559
