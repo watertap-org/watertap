@@ -512,7 +512,7 @@ def test_watertap_costing_config_zo():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(base_currency_year=2001)
-    
+
     assert m.fs.costing.config.base_currency_year == 2001
     assert m.fs.costing.base_currency == pyunits.USD_2001
 
@@ -544,10 +544,9 @@ def test_watertap_costing_config_zo():
     )
     m.fs.costing.cost_process()
 
-    
     assert m.fs.costing.config.base_currency_year == 2000
     assert m.fs.costing.base_currency == pyunits.USD_2000
-    
+
     # Check that base_period will be used from yaml despite being in config
     assert m.fs.costing.config.base_period == "year"
     assert m.fs.costing.base_period == pyunits.year

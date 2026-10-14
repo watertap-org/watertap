@@ -150,9 +150,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         # If the base period is not set or specified in the config, use the default base_period year
         elif self.config.base_period is None and self.base_period is None:
-            _log.info(
-                "Base period not specified in config, using default value: 2018"
-            )
+            _log.info("Base period not specified in config, using default value: 2018")
             self.config.base_period = "year"
             self.base_period = pyo.units.year
             self._base_period = self.base_period
@@ -166,7 +164,10 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         """
 
         if getattr(self, "_base_currency_period_defined", None) is True:
-            if self.base_currency is not self._base_currency or self.base_period is not self._base_period:
+            if (
+                self.base_currency is not self._base_currency
+                or self.base_period is not self._base_period
+            ):
                 # Users cannot manually re-set base_currency and base_period
                 msg = "base_currency and base_period are already set:"
                 msg += f" base_currency = {self._base_currency}, base_period = {self._base_period}"

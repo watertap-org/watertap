@@ -125,14 +125,13 @@ def test_watertap_costing_config():
     m.fs.costing = WaterTAPCosting(base_currency_year=2009, base_period="month")
     m.fs.costing.cost_process()
 
-    m.fs.costing.base_currency= pyo.units.USD_2010
+    m.fs.costing.base_currency = pyo.units.USD_2010
     m.fs.costing.add_LCOW(10 * pyo.units.m**3 / pyo.units.s)
-    assert m.fs.costing.base_currency is m.fs.costing._base_currency 
+    assert m.fs.costing.base_currency is m.fs.costing._base_currency
     assert m.fs.costing.config.base_currency_year == 2009
     assert m.fs.costing.base_currency == pyo.units.USD_2009
     assert m.fs.costing.config.base_period == "month"
     assert m.fs.costing.base_period == pyo.units.month
-
 
     # Test that units are reverted correctly to case study yaml values when changing base currency configuration after build
     m = pyo.ConcreteModel()
