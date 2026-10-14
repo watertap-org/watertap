@@ -1,4 +1,4 @@
-.. _howto_ui-api:
+.. _how_to_ui-api:
 
 How to add a flowsheet to the UI
 =================================
