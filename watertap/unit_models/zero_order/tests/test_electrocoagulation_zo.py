@@ -24,7 +24,6 @@ from pyomo.environ import (
     value,
     Var,
     Block,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 

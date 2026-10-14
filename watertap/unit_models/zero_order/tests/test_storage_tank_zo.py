@@ -23,7 +23,6 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 

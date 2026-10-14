@@ -508,12 +508,18 @@ def test_watertap_costing_config_zo():
 
     here = os.path.dirname(os.path.abspath(__file__))
 
+    # Test that passing base_currency_year when it is also defined in yaml will use the base_currency from config argument
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(base_currency_year=2001)
-    # check that passing base_currency_year when it is also defined in
-    # yaml will use the base_currency from yaml
+    
     assert m.fs.costing.config.base_currency_year == 2001
+    assert m.fs.costing.base_currency == pyunits.USD_2001
+
+    # Test where a case_study_definition does not specify base_currency and base_period, use values from default_case_study yaml
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting()
     assert m.fs.costing.base_currency == pyunits.MUSD_2018
 
     cs = _load_case_study_definition(m.fs.costing)
@@ -524,18 +530,26 @@ def test_watertap_costing_config_zo():
     with open(temp_path1, "w", encoding="utf-8") as tf:
         yaml.safe_dump(cs, tf, sort_keys=False)
 
+    # Test where a case_study_definition does not specify base_currency and base_period, use values from watertap_costing package
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path1)
+    assert m.fs.costing.base_currency == pyunits.USD_2018
+
+    # # Check that the base_currency_year from the config is used and base_period default in watertap_costing is applied
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(
-        case_study_definition=temp_path1, base_currency_year=2000, base_period="day"
+        case_study_definition=temp_path1, base_currency_year=2000
     )
     m.fs.costing.cost_process()
 
-    # Check that the base_currency_year from the config is used
+    
     assert m.fs.costing.config.base_currency_year == 2000
     assert m.fs.costing.base_currency == pyunits.USD_2000
+    
     # Check that base_period will be used from yaml despite being in config
-    assert m.fs.costing.config.base_period == "day"
+    assert m.fs.costing.config.base_period == "year"
     assert m.fs.costing.base_period == pyunits.year
     assert pyunits.get_units(m.fs.costing.total_capital_cost) == pyunits.get_units(
         pyunits.USD_2000
@@ -569,6 +583,7 @@ def test_watertap_costing_config_zo():
     with open(temp_path1, "w", encoding="utf-8") as tf:
         yaml.safe_dump(cs, tf, sort_keys=False)
 
+    # Check that the base_currency_year and base_period from the config is used
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(
@@ -576,7 +591,6 @@ def test_watertap_costing_config_zo():
     )
     m.fs.costing.cost_process()
 
-    # Check that the base_currency_year and base_period from the config is used
     assert m.fs.costing.config.base_currency_year == 2000
     assert m.fs.costing.base_currency == pyunits.USD_2000
     assert m.fs.costing.config.base_period == "day"
@@ -656,7 +670,7 @@ def test_watertap_costing_config_zo():
 
     os.remove(temp_path1)
 
-    # cs.pop("base_currency", None)
+    cs.pop("base_currency", None)
 
     # Test invalid base currency year as string
     cs["base_currency"] = "FOO_42"
@@ -707,9 +721,9 @@ def test_watertap_costing_config_zo():
         case_study_definition=temp_path2,
         base_currency_year=2000,
     )
-    # Check that base_currency gets set via the int provided in the case study yaml
+    # Check that base_currency gets set via the int provided in the as config argument
     assert m.fs.costing.config.base_currency_year == 2000
-    assert m.fs.costing.base_currency == pyunits.USD_2022
+    assert m.fs.costing.base_currency == pyunits.USD_2000
 
     os.remove(temp_path2)
 

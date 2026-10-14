@@ -44,7 +44,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     CONFIG.declare(
         "base_currency_year",
         ConfigValue(
-            default=2018,
+            default=None,
             domain=int,
             doc="Base year for currency units. If not provided, default is 2018.",
         ),
@@ -120,10 +120,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             # Mark that the base currency and period have been defined
             self._base_currency_period_defined = True
 
-        # For ZO unit models where a config argument was provided, override the base currency if necessary
-        if self.base_currency is not getattr(
-            pyo.units, f"USD_{self.config.base_currency_year}"
-        ):
+        # For ZO unit models where a config argument was provided, update the base currency to use config argument
+        if self.config.base_currency_year is not None:
             self._check_base_currency_year(self.config.base_currency_year)
             self.base_currency = getattr(
                 pyo.units, f"USD_{self.config.base_currency_year}"
@@ -133,13 +131,31 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             self._base_currency = self.base_currency
             _log.info(f"Setting base_currency from config: {self.base_currency}")
 
-        # For ZO unit models where a config argument was provided, override the base period if necessary
+        # If the base currency year and base currency is not set or specified in the config, use the default base_currency USD_2018
+        elif self.config.base_currency_year is None and self.base_currency is None:
+            _log.info(
+                "Base currency year not specified in config, using default value: 2018"
+            )
+            self.config.base_currency_year = 2018
+            self.base_currency = pyo.units.USD_2018
+            self._base_currency = self.base_currency
+
+        # For ZO unit models where a config argument was provided, update the base period to use config argument
         if self.base_period is not self.config.base_period:
             self._check_base_period(self.config.base_period)
             self.base_period = getattr(pyo.units, self.config.base_period)
             # Assign the base period to the internal variable
             self._base_period = self.base_period
             _log.info(f"Setting base_period from config: {self.config.base_period}")
+
+        # If the base period is not set or specified in the config, use the default base_period year
+        elif self.config.base_period is None and self.base_period is None:
+            _log.info(
+                "Base period not specified in config, using default value: 2018"
+            )
+            self.config.base_period = "year"
+            self.base_period = pyo.units.year
+            self._base_period = self.base_period
 
         self._base_currency_period_defined = True
 
@@ -150,14 +166,15 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         """
 
         if getattr(self, "_base_currency_period_defined", None) is True:
-            # Users cannot manually re-set base_currency and base_period
-            msg = "base_currency and base_period are already set:"
-            msg += f" base_currency = {self._base_currency}, base_period = {self._base_period}"
-            _log.warning(msg)
+            if self.base_currency is not self._base_currency or self.base_period is not self._base_period:
+                # Users cannot manually re-set base_currency and base_period
+                msg = "base_currency and base_period are already set:"
+                msg += f" base_currency = {self._base_currency}, base_period = {self._base_period}"
+                _log.warning(msg)
 
-            # Reassign the base_currency and base_period from the existing attributes
-            self.base_currency = getattr(self, "_base_currency")
-            self.base_period = getattr(self, "_base_period")
+                # Reassign the base_currency and base_period from the existing attributes
+                self.base_currency = getattr(self, "_base_currency")
+                self.base_period = getattr(self, "_base_period")
 
         if (
             getattr(self, "_base_currency", None) is None
