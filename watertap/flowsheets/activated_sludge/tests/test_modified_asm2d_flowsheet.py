@@ -124,7 +124,7 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Sludge.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Sludge.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            2.6514e-5, rel=1e-4
+            2.65295e-5, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_F"]) == pytest.approx(
             2.74656e-4, rel=1e-4

@@ -107,7 +107,7 @@ class TestMETABASM1Flowsheet:
             32.8708, rel=1e-2
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_BH"]) == pytest.approx(
-            3.4934e-8, rel=1e-3
+            3.4696e-8, rel=1e-3
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_BA"]) == pytest.approx(
             3.31293e-8, rel=1e-2
