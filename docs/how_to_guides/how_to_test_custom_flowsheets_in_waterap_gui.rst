@@ -14,7 +14,7 @@ Installation
 Before starting, install Conda, Node.js, npm, and Git, and clone the UI
 repository:
 
-.. code-block:: console
+.. code-block:: python
 
 	git clone https://github.com/prommis/idaes-flowsheet-processor-ui.git
 	cd idaes-flowsheet-processor-ui
@@ -25,7 +25,7 @@ Create the Conda environment
 From the UI repository root, create and activate the
 ``flowsheet-processor-env`` environment:
 
-.. code-block:: console
+.. code-block:: python
 
 	conda env create --file environment.yml && conda activate flowsheet-processor-env
 
@@ -35,7 +35,7 @@ Install the JavaScript dependencies
 Change to the ``frontend`` directory and install the UI dependencies. This
 creates ``frontend/node_modules``:
 
-.. code-block:: console
+.. code-block:: python
 
 	cd frontend
 	npm ci
@@ -45,7 +45,7 @@ Install the IDAES solver dependencies
 
 With ``flowsheet-processor-env`` active, install the IDAES solver dependencies:
 
-.. code-block:: console
+.. code-block:: python
 
 	idaes get-extensions --verbose
 
@@ -54,7 +54,7 @@ Install WaterTAP with default flowsheets (optional)
 
 To use the default WaterTAP flowsheets, install the published package:
 
-.. code-block:: console
+.. code-block:: python
 
 	pip install watertap
 
@@ -66,14 +66,14 @@ Running the UI
 
 Ensure that all dependencies are installed and activate the Conda environment:
 
-.. code-block:: console
+.. code-block:: python
 
 	conda activate flowsheet-processor-env
 
 From the UI repository root, change to ``frontend`` and start the UI in your
 browser. If you are already in ``frontend``, skip the ``cd`` command:
 
-.. code-block:: console
+.. code-block:: python
 
 	cd frontend
 	npm run app-start
@@ -95,7 +95,7 @@ Running WaterTAP flowsheets from a local PR
 
 3. Return to the UI repository's ``frontend`` directory and run:
 
-	.. code-block:: console
+	.. code-block:: python
 
 		npm run app-start
 
