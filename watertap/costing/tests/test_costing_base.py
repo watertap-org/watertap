@@ -14,6 +14,7 @@ import pytest
 
 from pyomo.util.check_units import assert_units_consistent
 import pyomo.environ as pyo
+from pyomo.core.base.units_container import InconsistentUnitsError
 import idaes.core as idc
 
 from watertap.costing.watertap_costing_package import WaterTAPCosting
@@ -148,6 +149,44 @@ def test_breakdowns():
     m.fs.costing.add_specific_electrical_carbon_intensity(
         m.fs.product.properties[0].flow_vol
     )
+    # Tests for performance indices with flow_basis specified and inferred from flow_rate units
+    m.fs.costing.add_levelized_cost(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="LCOP",
+    )
+    m.fs.costing.add_levelized_cost(
+        m.fs.product.properties[0].flow_vol,
+        flow_basis="volumetric",
+        name="LCOT",
+    )
+    m.fs.costing.add_specific_energy_consumption(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="specific_energy_consumption_with_product",
+    )
+    m.fs.costing.add_process_throughput(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="annual_product_generation",
+    )
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="specific_electrical_carbon_intensity_with_product",
+    )
 
     assert_units_consistent(m)
 
@@ -188,31 +227,173 @@ def test_breakdowns():
 
 
 @pytest.mark.component
-def test_breakdowns_with_no_unit():
+def test_units_based_basis_validation():
     m = lsrro.build()
 
-    m.fs.BoosterPumps[:].control_volume.work[0.0].value = 42e6
-    m.fs.EnergyRecoveryDevices[:].control_volume.work[0.0].value = -42e6
-    m.fs.electricity_flow_with_no_unit = pyo.Var(units=pyo.units.kW, initialize=1234)
+    comp = next(iter(m.fs.properties.component_list))
+    mass_flow = m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
 
-    m.fs.costing.cost_flow(m.fs.electricity_flow_with_no_unit, "electricity")
+    # Incompatible explicit flow_basis values now fail at unit conversion time.
+    with pytest.raises(InconsistentUnitsError):
+        m.fs.costing.add_levelized_cost(
+            m.fs.product.properties[0].flow_vol,
+            flow_basis="mass",
+            name="LCOW_mass_basis",
+        )
 
-    m.fs.costing.add_flow_component_breakdown(
-        "electricity",
-        m.fs.product.properties[0].flow_vol,
+    # Incompatible output units are rejected.
+    with pytest.raises(
+        ValueError,
+        match=r"Could not infer flow basis from units",
+    ):
+        m.fs.costing.add_levelized_cost(
+            mass_flow,
+            flow_basis_units=pyo.units.m,
+            name="LCOP_invalid_units",
+        )
+
+    # Flow units that do not match the requested denominator conversion fail.
+    with pytest.raises(
+        InconsistentUnitsError,
+    ):
+        m.fs.costing.add_specific_energy_consumption(
+            flow_basis="volumetric",
+            flow_rate=mass_flow,
+            name="specific_energy_consumption_mismatch",
+        )
+
+    # Matching units continue to work.
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis="mass",
+        name="annual_throughput_ok",
+    )
+
+
+@pytest.mark.component
+def test_flow_basis_units_inference_and_validation():
+    m = lsrro.build()
+
+    mass_flow = sum(
+        m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+        for comp in m.fs.properties.component_list
+    )
+
+    # infer basis from flow_rate units when neither flow_basis nor flow_basis_units is provided
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        name="annual_throughput_inferred_mass",
+    )
+
+    # infer basis from explicit flow_basis_units
+    m.fs.costing.add_specific_energy_consumption(
+        mass_flow,
+        flow_basis_units=pyo.units.kg,
+        name="specific_energy_consumption_flow_basis_units_mass",
+    )
+
+    # flow_basis_units should be behaviorally equivalent to the matching flow_basis
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis="mass",
+        name="annual_throughput_mass_basis",
+    )
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis_units=pyo.units.kg,
+        name="annual_throughput_flow_basis_units_mass",
+    )
+
+    # flow_basis must agree with flow_basis_units when both are provided
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis 'volumetric' is inconsistent with flow_basis_units",
+    ):
+        m.fs.costing.add_levelized_cost(
+            mass_flow,
+            flow_basis="volumetric",
+            flow_basis_units=pyo.units.kg,
+            name="LCOP_invalid_basis_units",
+        )
+
+    assert_units_consistent(m)
+    assert pytest.approx(
+        pyo.value(m.fs.costing.annual_throughput_mass_basis)
+    ) == pyo.value(m.fs.costing.annual_throughput_flow_basis_units_mass)
+
+
+@pytest.mark.component
+def test_flow_basis_units_accepts_convertible_units():
+    m = lsrro.build()
+
+    mass_flow = sum(
+        m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+        for comp in m.fs.properties.component_list
+    )
+    volumetric_flow = m.fs.product.properties[0].flow_vol
+
+    m.fs.costing.add_process_throughput(
+        volumetric_flow,
+        flow_basis_units=pyo.units.m**3,
+        name="annual_throughput_m3",
+    )
+    m.fs.costing.add_process_throughput(
+        volumetric_flow,
+        flow_basis_units=pyo.units.L,
+        name="annual_throughput_L",
+    )
+
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis_units=pyo.units.kg,
+        name="annual_throughput_kg",
+    )
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis_units=pyo.units.g,
+        name="annual_throughput_g",
+    )
+
+    assert_units_consistent(m)
+    assert pytest.approx(
+        pyo.value(m.fs.costing.annual_throughput_L), rel=1e-10
+    ) == 1000 * pyo.value(m.fs.costing.annual_throughput_m3)
+    assert pytest.approx(
+        pyo.value(m.fs.costing.annual_throughput_g), rel=1e-10
+    ) == 1000 * pyo.value(m.fs.costing.annual_throughput_kg)
+
+
+# Test for different period units for add_process_throughput
+@pytest.mark.component
+def test_flow_basis_units_period_units():
+    m = lsrro.build()
+
+    mass_flow = sum(
+        m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+        for comp in m.fs.properties.component_list
+    )
+
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis_units=pyo.units.kg,
+        period=pyo.units.day,
+        name="annual_throughput_kg_per_day",
+    )
+    m.fs.costing.add_process_throughput(
+        mass_flow,
+        flow_basis_units=pyo.units.kg,
         period=pyo.units.year,
-    )
-    assert hasattr(m.fs.costing, "electricity_component")
-    assert (
-        "fs.electricity_flow_with_no_unit"
-        in m.fs.costing.electricity_component.index_set()
+        name="annual_throughput_kg_per_year",
     )
 
-    m.fs.costing.add_flow_component_breakdown(
-        "electricity",
-        m.fs.product.properties[0].flow_vol,
-        name="biff",
-        period=pyo.units.millisecond,
+    days_per_year = pyo.value(
+        pyo.units.convert(
+            1 * pyo.units.year,
+            to_units=pyo.units.day,
+        )
     )
-    assert hasattr(m.fs.costing, "biff_component")
-    assert "fs.electricity_flow_with_no_unit" in m.fs.costing.biff_component.index_set()
+
+    assert pytest.approx(
+        pyo.value(m.fs.costing.annual_throughput_kg_per_year),
+        rel=1e-10,
+    ) == days_per_year * pyo.value(m.fs.costing.annual_throughput_kg_per_day)
