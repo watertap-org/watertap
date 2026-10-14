@@ -513,8 +513,7 @@ def test_capex(subtype):
 
     m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tds"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2014
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2014)
 
     m.fs.unit = MBRZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype
@@ -568,8 +567,7 @@ def test_sec():
 
     m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2014
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2014)
 
     m.fs.unit = MBRZO(
         property_package=m.fs.params, database=m.db, process_subtype="default"

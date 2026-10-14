@@ -273,8 +273,7 @@ def test_costing():
         solute_list=["tds", "total_coliforms_fecal_ecoli", "viruses_enteric"]
     )
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2014
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2014)
 
     m.fs.unit = ChlorinationZO(property_package=m.fs.params, database=m.db)
 

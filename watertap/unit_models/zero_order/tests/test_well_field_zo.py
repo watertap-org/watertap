@@ -258,8 +258,7 @@ def test_costing(subtype):
     m.fs.params = WaterParameterBlock(
         solute_list=["toc", "nitrate", "sulfate", "bar", "crux"]
     )
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2018
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2018)
     m.fs.unit = WellFieldZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype
     )

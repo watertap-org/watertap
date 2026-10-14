@@ -11,6 +11,7 @@
 #################################################################################
 
 import pyomo.environ as pyo
+from pyomo.common.config import ConfigValue
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.expr.visitor import identify_variables
@@ -19,6 +20,7 @@ from idaes.core.base.costing_base import register_idaes_currency_units
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
+from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
 
@@ -38,6 +40,23 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     and for anonymous expressions in flow costs.
     """
 
+    CONFIG = FlowsheetCostingBlockData.CONFIG()
+    CONFIG.declare(
+        "base_currency_year",
+        ConfigValue(
+            default=None,
+            domain=int,
+            doc="Base year for currency units. If not provided, default is 2018.",
+        ),
+    )
+    CONFIG.declare(
+        "base_period",
+        ConfigValue(
+            default="year",
+            doc="Base period for operating costs. If not provided, default is year.",
+        ),
+    )
+
     # Define default mapping of costing methods to unit models
     unit_mapping = {
         Mixer: cost_mixer,
@@ -50,11 +69,138 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # Register currency and conversion rates based on CE Index
         register_idaes_currency_units()
 
-    def set_base_currency_base_period(self):
-        # Set the base year for all costs
-        self.base_currency = pyo.units.USD_2018
-        # Set a base period for all operating costs
-        self.base_period = pyo.units.year
+    def set_base_currency_and_period(self):
+        self.base_currency = None
+        self.base_period = None
+
+        # Hidden variables for internal tracking of base currency and period
+        self._base_currency = None
+        self._base_period = None
+        self._base_currency_year = None
+
+        # Boolean to track if the base currency and period have been defined
+        self._base_currency_period_defined = False
+
+        if "case_study_definition" in self.config:
+            # it is a ZeroOrderCosting block, so we preferentially
+            # use the values from the _cs_def if available
+            if "base_currency" in self._cs_def:
+                base_currency_year = int(
+                    str(self._cs_def["base_currency"]).split("_")[-1]
+                )
+                # Assign the base currency to the internal variable
+                self._base_currency_year = base_currency_year
+                self._check_base_currency_year(base_currency_year)
+                if isinstance(self._cs_def["base_currency"], int):
+                    # Allow users to pass only the year for the base currency via yaml
+                    self.base_currency = getattr(
+                        pyo.units, f"USD_{self._cs_def['base_currency']}"
+                    )
+                else:
+                    self.base_currency = getattr(
+                        pyo.units, self._cs_def["base_currency"]
+                    )
+
+                self._base_currency = self.base_currency
+                _log.info(
+                    f"Setting base_currency from case study yaml: {self.base_currency}"
+                )
+
+            if "base_period" in self._cs_def:
+                self._check_base_period(self._cs_def["base_period"])
+                self.base_period = getattr(pyo.units, self._cs_def["base_period"])
+                # str representation of year is "a"
+                bs_str = (
+                    "year" if self.base_period == pyo.units.year else self.base_period
+                )
+                # Assign the base period to the internal variable
+                self._base_period = self.base_period
+                _log.info(f"Setting base_period from case study yaml: {bs_str}")
+
+            # Mark that the base currency and period have been defined
+            self._base_currency_period_defined = True
+
+        # For ZO unit models where a config argument was provided, update the base currency to use config argument
+        if self.config.base_currency_year is not None:
+            self._check_base_currency_year(self.config.base_currency_year)
+            self.base_currency = getattr(
+                pyo.units, f"USD_{self.config.base_currency_year}"
+            )
+            # Assign the base currency year to the internal variable
+            self._base_currency_year = self.config.base_currency_year
+            self._base_currency = self.base_currency
+            _log.info(f"Setting base_currency from config: {self.base_currency}")
+
+        # If the base currency year and base currency is not set or specified in the config, use the default base_currency USD_2018
+        elif self.config.base_currency_year is None and self.base_currency is None:
+            _log.info(
+                "Base currency year not specified in config, using default value: 2018"
+            )
+            self.config.base_currency_year = 2018
+            self.base_currency = pyo.units.USD_2018
+            self._base_currency = self.base_currency
+
+        # For ZO unit models where a config argument was provided, update the base period to use config argument
+        if self.base_period is not self.config.base_period:
+            self._check_base_period(self.config.base_period)
+            self.base_period = getattr(pyo.units, self.config.base_period)
+            # Assign the base period to the internal variable
+            self._base_period = self.base_period
+            _log.info(f"Setting base_period from config: {self.config.base_period}")
+
+        # If the base period is not set or specified in the config, use the default base_period year
+        elif self.config.base_period is None and self.base_period is None:
+            _log.info("Base period not specified in config, using default value: 2018")
+            self.config.base_period = "year"
+            self.base_period = pyo.units.year
+            self._base_period = self.base_period
+
+        self._base_currency_period_defined = True
+
+    def _validate_watertap_costing_config(self):
+        """
+        Validate the configuration of a WaterTAP costing block
+        and set the base_currency and base_period attributes.
+        """
+
+        if getattr(self, "_base_currency_period_defined", None) is True:
+            if (
+                self.base_currency is not self._base_currency
+                or self.base_period is not self._base_period
+            ):
+                # Users cannot manually re-set base_currency and base_period
+                msg = "base_currency and base_period are already set:"
+                msg += f" base_currency = {self._base_currency}, base_period = {self._base_period}"
+                _log.warning(msg)
+
+                # Reassign the base_currency and base_period from the existing attributes
+                self.base_currency = getattr(self, "_base_currency")
+                self.base_period = getattr(self, "_base_period")
+
+        if (
+            getattr(self, "_base_currency", None) is None
+            or getattr(self, "_base_period", None) is None
+        ):
+            self.set_base_currency_and_period()
+
+    @staticmethod
+    def _check_base_currency_year(base_currency_year):
+        if not 1990 <= base_currency_year <= 2023:
+            raise ConfigurationError(
+                f"Base currency year must be between 1990 and 2023, but got {base_currency_year}"
+            )
+
+    @staticmethod
+    def _check_base_period(base_period):
+        try:
+            bp = getattr(pyo.units, base_period)
+        except AttributeError:
+            raise ConfigurationError(f"{base_period} is not a valid unit.")
+
+        if not bp._pint_unit.dimensionality == "[time]":
+            msg = f"base_period configuration must be a unit of time "
+            msg += f"but got {base_period} {bp._pint_unit.dimensionality}."
+            raise ConfigurationError(msg)
 
     def add_LCOW(self, flow_rate, name="LCOW"):
         """
@@ -64,6 +210,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                         calculating LCOW
             name (optional) - name for the LCOW variable (default: LCOW)
         """
+
+        self._validate_watertap_costing_config()
 
         denominator = (
             pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / self.base_period)
@@ -317,6 +465,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name (optional) - name for the annual water production
                               Expression (default: annual_water_production)
         """
+
+        self._validate_watertap_costing_config()
+
         self.add_component(
             name,
             pyo.Expression(
@@ -431,6 +582,20 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 to_units=expr_units,
             )
 
+    def cost_process(self):
+        """
+        This method constructs the process-level costing components based on
+        the registered unit operations and flows.
+
+        This first aggregates the costs from all the registered units and
+        flows, and then calls the build_process_costs method from the
+        associated costing package.
+        """
+        self._validate_watertap_costing_config()
+
+        self.aggregate_costs()
+        self.build_process_costs()
+
     def build_process_costs(self):
         """
         Build the common process costs to WaterTAP Costing Packages.
@@ -500,7 +665,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         """
 
         self.register_currency_definitions()
-        self.set_base_currency_base_period()
+        self._validate_watertap_costing_config()
 
         self.utilization_factor = pyo.Var(
             initialize=0.9,
@@ -535,8 +700,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.capital_recovery_factor = pyo.Var(
             initialize=0.1,
-            units=pyo.units.year**-1,
-            doc="Capital annualization factor [fraction of investment cost/year]",
+            units=self.base_period**-1,
+            doc="Capital annualization factor [fraction of investment cost/base period]",
         )
 
         # used in initialize_build to check for fixed variable consistency
@@ -549,8 +714,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.capital_recovery_factor_constraint = pyo.Constraint(
             expr=self.capital_recovery_factor
             == (
-                (self.wacc / pyo.units.year)
-                / (1 - 1 / ((1 + self.wacc) ** (self.plant_lifetime / pyo.units.year)))
+                (self.wacc / self.base_period)
+                / (
+                    1
+                    - 1 / ((1 + self.wacc) ** (self.plant_lifetime / self.base_period))
+                )
             )
         )
 
@@ -700,6 +868,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 class WaterTAPCostingData(WaterTAPCostingBlockData):
     def build_global_params(self):
 
+        super().build_global_params()
+
         # Build flowsheet level costing components
         # These are the global parameters
         self.total_investment_factor = pyo.Var(
@@ -709,11 +879,12 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         )
         self.maintenance_labor_chemical_factor = pyo.Var(
             initialize=0.03,
-            doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
-            units=pyo.units.year**-1,
+            doc="Maintenance-labor-chemical factor [fraction of equipment cost/base period]",
+            units=self.base_period**-1,
         )
 
-        super().build_global_params()
+        self.fix_all_vars()
+        self.capital_recovery_factor.unfix()
 
 
 @declare_process_block_class("WaterTAPCostingDetailed")
@@ -724,6 +895,7 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
         Unit-specific parameters will be added as sub-Blocks on a case-by-case
         basis as a unit of that type is costed.
         """
+        super().build_global_params()
 
         # Costing factors
         self.land_cost_percent_FCI = pyo.Var(
@@ -776,7 +948,8 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
             doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
         )
 
-        super().build_global_params()
+        self.fix_all_vars()
+        self.capital_recovery_factor.unfix()
 
     def build_process_costs(self):
         """
@@ -819,3 +992,17 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
             expr=self.insurance_and_taxes_percent_FCI * self.aggregate_capital_cost,
             doc="Insurance and taxes costs - based on aggregate capital costs",
         )
+
+    def cost_process(self):
+        """
+        This method constructs the process-level costing components based on
+        the registered unit operations and flows.
+
+        This first aggregates the costs from all the registered units and
+        flows, and then calls the build_process_costs method from the
+        associated costing package.
+        """
+        self._validate_watertap_costing_config()
+
+        self.aggregate_costs()
+        self.build_process_costs()

@@ -124,8 +124,7 @@ def test_costing():
 
     m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2007
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2007)
 
     m.fs.unit = CoolingSupplyZO(property_package=m.fs.params, database=m.db)
     rho = 1000 * pyunits.kg / pyunits.m**3

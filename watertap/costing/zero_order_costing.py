@@ -53,7 +53,7 @@ class ZeroOrderCostingData(WaterTAPCostingDetailedData):
         ConfigValue(
             default=None,
             doc="Path to YAML file defining global parameters for case study. If "
-            "not provided, default values from the WaterTap database are used.",
+            "not provided, default values from the WaterTAP database are used.",
         ),
     )
 
@@ -65,12 +65,6 @@ class ZeroOrderCostingData(WaterTAPCostingDetailedData):
             )
         else:
             register_idaes_currency_units()
-
-    def set_base_currency_base_period(self):
-        # Set the base year for all costs
-        self.base_currency = getattr(pyo.units, self._cs_def["base_currency"])
-        # Set a base period for all operating costs
-        self.base_period = getattr(pyo.units, self._cs_def["base_period"])
 
     def build_global_params(self):
         """
@@ -135,5 +129,4 @@ def _load_case_study_definition(self):
             "Could not find specified case study definition file. "
             "Please check the path provided."
         )
-
     return yaml.load(lines, yaml.Loader)

@@ -339,8 +339,7 @@ def test_costing():
 
     m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2014
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2014)
 
     m.fs.unit = AerationBasinZO(property_package=m.fs.params, database=m.db)
 

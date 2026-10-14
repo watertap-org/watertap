@@ -33,6 +33,12 @@ This is referred to as the "flowsheet costing block" (contrasted with a "unit mo
 
     m.fs.costing = WaterTAPCosting()
 
+By default, the WaterTAP costing package will aggregate all system costing variables to 2018 USD and use an annual time period for cost calculations.
+These can be modified by passing the ``base_currency_year`` and ``base_period`` arguments when creating the ``WaterTAPCosting`` instance. For example:
+
+.. code-block:: python
+
+    m.fs.costing = WaterTAPCosting(base_currency_year=2023, base_period="month")
 
 At this point, the flowsheet costing block only contains instructions to aggregate the costs from the individual unit model costing blocks into overall flowsheet-level costs and metrics.
 To get costing results, we need to add the unit model costing block.

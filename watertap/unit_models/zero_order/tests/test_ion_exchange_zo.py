@@ -329,8 +329,7 @@ def test_costing_wt3(subtype):
 
     m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2017
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2017)
 
     m.fs.unit = IonExchangeZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype

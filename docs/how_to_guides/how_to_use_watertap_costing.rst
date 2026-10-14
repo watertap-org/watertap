@@ -135,7 +135,7 @@ Additional details on the WaterTAP costing package, including equations and defa
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = SeawaterParameterBlock()
-        m.fs.costing = WaterTAPCosting()
+        m.fs.costing = WaterTAPCosting(base_currency_year=2023)
 
         m.fs.feed = Feed(property_package=m.fs.properties)
         m.fs.pump1 = Pump(property_package=m.fs.properties)
@@ -337,7 +337,6 @@ Additional details on the WaterTAP costing package, including equations and defa
 
         # Change values of flowsheet-level costing variables if desired
         m.fs.costing.electricity_cost.fix(0.12)
-        m.fs.costing.base_currency = pyunits.USD_2023
 
         # Change values of unit model costing parameters if desired
         m.fs.costing.chem_addition.chemical_capex_slope.fix(2.34e4)
@@ -372,7 +371,8 @@ Adding costing to a WaterTAP model
 This section applies the steps outlined in the :ref:`how to add WaterTAP costing to a flowsheet guide<how_to_add_watertap_costing_to_flowsheet>` for all unit models on this flowsheet.
 
 Adding the WaterTAP costing package to a flowsheet can be done at any point in the flowsheet build prior to adding unit model costing blocks. 
-Below is a build function to create the flowsheet. The costing package is added after added the property package.
+Below is a build function to create the flowsheet. The costing package is added after added the property package. We pass 2023 for the ``base_currency_year`` argument
+to set the base currency for all system costing calculations. Any value between 1990 and 2023 can be used.
 
 
 .. code-block:: python
@@ -385,7 +385,8 @@ Below is a build function to create the flowsheet. The costing package is added 
         m.fs.properties = SeawaterParameterBlock()
 
         # Add the WaterTAP costing package to the flowsheet
-        m.fs.costing = WaterTAPCosting()
+        # and specify 2023 as the base currency
+        m.fs.costing = WaterTAPCosting(base_currency_year=2023)
 
         # Add unit models to flowsheet
         m.fs.feed = Feed(property_package=m.fs.properties)
@@ -519,8 +520,8 @@ The following snippet shows how to add costing to the unit models on our flowshe
             period=pyunits.hr,
         )
 
-At this point in the build, you can change values of flowsheet-level costing variables (``electricity_price`` in this example) and change the ``base_currency`` 
-or other costing variables/parameters. In the example below, we also add an ``Objective`` to minimize LCOW.
+At this point in the build, you can change values of flowsheet-level costing variables (``electricity_cost`` in this example). 
+In the example below, we also add an ``Objective`` to minimize LCOW.
 
 .. testcode::
 
@@ -529,7 +530,6 @@ or other costing variables/parameters. In the example below, we also add an ``Ob
 
     # Change values of flowsheet-level costing variables if desired
     m.fs.costing.electricity_cost.fix(0.12)
-    m.fs.costing.base_currency = pyunits.USD_2023
 
     # Change values of unit model costing parameters if desired
     m.fs.costing.chem_addition.chemical_capex_slope.fix(2.34e4)
@@ -575,7 +575,7 @@ Likewise, if the unit model has any fixed operating costs, they can be accessed 
     ro_fixed_operating_cost = value(m.fs.RO.costing.fixed_operating_cost)
     chem_addition_fixed_operating_cost = value(m.fs.chem_addition.costing.fixed_operating_cost)
 
-Importantly, the currency units for these values are only converted to the ``base_currency`` and ``base_period`` defined on the flowsheet costing block if the model developer 
+Importantly, the currency units for these values are only converted to the ``base_currency`` and ``base_period`` defined by the flowsheet costing block configuration if the model developer 
 did so in the costing method. For this reason, it is recommended to make this conversion when creating costing methods to ensure consistency in the reported values.
 If you are unsure, the units for costing variables (or any variable) can be accessed using ``pyunits.get_units(var)`` from the units package and printing the output.
 
@@ -595,17 +595,18 @@ If you are unsure, the units for costing variables (or any variable) can be acce
 .. testoutput::
 
     Base currency: USD_2023
-    RO capital cost units: USD_2018
-    Chemical addition capital cost units: USD_2018
-    Pump capital cost units: USD_2018
-    ERD capital cost units: USD_2018
+    RO capital cost units: USD_2023
+    Chemical addition capital cost units: USD_2023
+    Pump capital cost units: USD_2023
+    ERD capital cost units: USD_2023
 
 
 System costing results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Costing results for all units with a costing block are aggregated to the system level and converted to be in the same currency year (as defined by ``base_currency``). Operating costs are likewise converted to 
-units of ``base_currency / base_period``. These results are found on the flowsheet costing block (``m.fs.costing``) and for this example includes the following:
+Costing results for all units with a costing block are aggregated to the system level and converted to be in the same currency year as defined by the ``base_currency`` configuration argument for the WaterTAP costing package. 
+Operating costs are likewise converted to units of ``base_currency / base_period``. 
+These results are found on the flowsheet costing block (``m.fs.costing``) and for this example includes the following:
 
 - Total capital cost: ``m.fs.costing.total_capital_cost``
 - Total operating cost: ``m.fs.costing.total_operating_cost``

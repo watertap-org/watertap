@@ -368,8 +368,7 @@ def test_costing():
         solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2014
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2014)
 
     m.fs.unit = OzoneAOPZO(property_package=m.fs.properties, database=m.db)
     rho = 1000 * pyunits.kg / pyunits.m**3
