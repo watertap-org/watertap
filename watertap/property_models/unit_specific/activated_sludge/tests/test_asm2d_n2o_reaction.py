@@ -442,6 +442,161 @@ class TestParamBlock(object):
             else:
                 assert value(v) == 0
 
+    @pytest.mark.unit
+    def test_phosphorus_conservation(self, model):
+        rparams = model.rparams
+        prop = model.pparams
+        P_content = {
+            "H2O": 0,
+            "S_O2": 0,
+            "S_F": value(prop.i_PSF),
+            "S_A": 0,
+            "S_I": 0,
+            "S_NH4": 0,
+            "S_NH2OH": 0,
+            "S_N2O": 0,
+            "S_NO": 0,
+            "S_NO2": 0,
+            "S_NO3": 0,
+            "S_N2": 0,
+            "S_PO4": 1,
+            "S_IC": 0,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": value(prop.i_PXI),
+            "X_S": value(prop.i_PXS),
+            "X_H": value(prop.i_PBM),
+            "X_PAO": value(prop.i_PBM),
+            "X_PP": 1,
+            "X_PHA": 0,
+            "X_AOB": value(prop.i_PBM),
+            "X_NOB": value(prop.i_PBM),
+        }
+
+        for r in rparams.rate_reaction_idx:
+            P_balance = sum(
+                P_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in P_content
+            )
+            assert pytest.approx(0, abs=1e-8) == P_balance
+
+    @pytest.mark.unit
+    def test_nitrogen_conservation(self, model):
+        rparams = model.rparams
+        prop = model.pparams
+        N_content = {
+            "H2O": 0,
+            "S_O2": 0,
+            "S_F": value(prop.i_NSF),
+            "S_A": 0,
+            "S_I": value(prop.i_NSI),
+            "S_NH4": 1,
+            "S_NH2OH": 1,
+            "S_N2O": 1,
+            "S_NO": 1,
+            "S_NO2": 1,
+            "S_NO3": 1,
+            "S_N2": 1,
+            "S_PO4": 0,
+            "S_IC": 0,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": value(prop.i_NXI),
+            "X_S": value(prop.i_NXS),
+            "X_H": value(prop.i_NBM),
+            "X_PAO": value(prop.i_NBM),
+            "X_PP": 0,
+            "X_PHA": 0,
+            "X_AOB": value(prop.i_NBM),
+            "X_NOB": value(prop.i_NBM),
+        }
+
+        for r in rparams.rate_reaction_idx:
+            N_balance = sum(
+                N_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in N_content
+            )
+            assert pytest.approx(0, abs=1e-8) == N_balance
+
+    @pytest.mark.unit
+    def test_carbon_conservation(self, model):
+        rparams = model.rparams
+        prop = model.pparams
+        C_content = {
+            "H2O": 0,
+            "S_O2": 0,
+            "S_F": value(prop.i_CSF),
+            "S_A": value(prop.i_CSA),
+            "S_I": value(prop.i_CSI),
+            "S_NH4": 0,
+            "S_NH2OH": 0,
+            "S_N2O": 0,
+            "S_NO": 0,
+            "S_NO2": 0,
+            "S_NO3": 0,
+            "S_N2": 0,
+            "S_PO4": 0,
+            "S_IC": 1,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": value(prop.i_CXI),
+            "X_S": value(prop.i_CXS),
+            "X_H": value(prop.i_CBM),
+            "X_PAO": value(prop.i_CBM),
+            "X_PP": 0,
+            "X_PHA": value(prop.i_CXPHA),
+            "X_AOB": value(prop.i_CBM),
+            "X_NOB": value(prop.i_CBM),
+        }
+
+        for r in rparams.rate_reaction_idx:
+            C_balance = sum(
+                C_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in C_content
+            )
+            assert pytest.approx(0, abs=1e-8) == C_balance
+
+    @pytest.mark.unit
+    def test_COD_conservation(self, model):
+        rparams = model.rparams
+        prop = model.pparams
+
+        COD_content = {
+            "H2O": 0,
+            "S_O2": -1,
+            "S_F": 1,
+            "S_A": 1,
+            "S_I": 1,
+            "S_NH4": 0,
+            "S_NH2OH": -value(prop.i_COD_NH2OH),
+            "S_N2O": -value(prop.i_COD_N2O),
+            "S_NO": -value(prop.i_COD_NO),
+            "S_NO2": -value(prop.i_COD_NO2),
+            "S_NO3": -value(prop.i_COD_NO3),
+            "S_N2": -value(prop.i_COD_N2),
+            "S_PO4": 0,
+            "S_IC": 0,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": 1,
+            "X_S": 1,
+            "X_H": 1,
+            "X_PAO": 1,
+            "X_PP": 0,
+            "X_PHA": 1,
+            "X_AOB": 1,
+            "X_NOB": 1,
+        }
+
+        for r in rparams.rate_reaction_idx:
+            COD_balance = sum(
+                COD_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in COD_content
+            )
+            # There is a very minor disagreement when abs=1e-8
+            # Obtained: 3e-8; Expected: 0 +/- 1e-8
+            assert pytest.approx(0, abs=1e-7) == COD_balance
+
 
 class TestReactionBlock(object):
     @pytest.fixture(scope="class")
@@ -855,3 +1010,33 @@ class TestFlowsheet:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
             119.379e-3, rel=1e-4
         )
+
+    @pytest.mark.component
+    def test_phosphorus_conservation(self, model):
+        TP_in = value(model.fs.R1.control_volume.properties_in[0].total_phosphorus_flow)
+        TP_out = value(
+            model.fs.R1.control_volume.properties_out[0].total_phosphorus_flow
+        )
+
+        assert TP_out == pytest.approx(TP_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = value(model.fs.R1.control_volume.properties_in[0].total_nitrogen_flow)
+        TN_out = value(model.fs.R1.control_volume.properties_out[0].total_nitrogen_flow)
+
+        assert TN_out == pytest.approx(TN_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_carbon_conservation(self, model):
+        TC_in = value(model.fs.R1.control_volume.properties_in[0].total_carbon_flow)
+        TC_out = value(model.fs.R1.control_volume.properties_out[0].total_carbon_flow)
+
+        assert TC_out == pytest.approx(TC_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = value(model.fs.R1.control_volume.properties_in[0].total_COD_flow)
+        TCOD_out = value(model.fs.R1.control_volume.properties_out[0].total_COD_flow)
+
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)

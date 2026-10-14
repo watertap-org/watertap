@@ -231,37 +231,61 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="ISS fractional content of biomass",
         )
-        self.ISS_XI = pyo.Var(
-            initialize=0.75,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="TSS to COD ratio for XI",
-        )
-        self.ISS_XS = pyo.Var(
-            initialize=0.75,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="TSS to COD ratio for XS",
-        )
-        self.ISS_BM = pyo.Var(
-            initialize=0.9,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="TSS to COD ratio for biomass",
-        )
 
         # Effluent Quality Index (EQI) parameters - asm2dinit_bsm2.m [1]
-        self.i_NSF = pyo.Var(
-            initialize=0.03352,
+        self.i_CSI = pyo.Var(
+            initialize=0.36178,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
+            doc="C content of inert soluble COD S_I, [kg C/kg COD]",
+        )
+        self.i_CSF = pyo.Var(
+            initialize=0.31843,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of inert soluble COD S_F, [kg C/kg COD]",
+        )
+        self.i_CSA = pyo.Var(
+            initialize=0.37500,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of inert soluble COD S_A, [kg C/kg COD]",
+        )
+        self.i_CXI = pyo.Var(
+            initialize=0.36178,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of inert soluble COD X_I, [kg C/kg COD]",
+        )
+        self.i_CXS = pyo.Var(
+            initialize=0.31843,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of inert soluble COD X_S, [kg C/kg COD]",
+        )
+        self.i_CBM = pyo.Var(
+            initialize=0.36612,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of biomass, [kg C/kg COD]",
+        )
+        self.i_CXPHA = pyo.Var(
+            initialize=0.3,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of XPHA, [kg C/kg COD]",
         )
         self.i_NSI = pyo.Var(
             initialize=0.06003,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="N content of inert soluble COD S_I, [kg N/kg COD]",
+        )
+        self.i_NSF = pyo.Var(
+            initialize=0.03352,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
         )
         self.i_NXI = pyo.Var(
             initialize=0.06003,
@@ -281,41 +305,17 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="N content of biomass, X_H, X_PAO, X_AUT, [kg N/kg COD]",
         )
-        self.f_SI = pyo.Var(
-            initialize=0.00,
+        self.i_PSI = pyo.Var(
+            initialize=0.00649,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
-        )
-        self.f_XIH = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD generated in lysis of X_H, [kg COD/kg COD]",
-        )
-        self.f_XIP = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD generated in lysis of X_PAO and X_PHA, [kg COD/kg COD]",
-        )
-        self.f_XIA = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD generated in lysis of X_AUT, [kg COD/kg COD]",
+            doc="P content of inert soluble COD, [kg P/kg COD]",
         )
         self.i_PSF = pyo.Var(
             initialize=0.00559,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="P content of fermentable substrate, S_F, [kg P/kg COD]",
-        )
-        self.i_PSI = pyo.Var(
-            initialize=0.00649,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="P content of inert soluble COD S_I, [kg P/kg COD]",
         )
         self.i_PXI = pyo.Var(
             initialize=0.00649,
@@ -334,6 +334,55 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
+        )
+
+        self.i_KXPP = pyo.Var(
+            initialize=0.4204,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Potassium coefficient for polyphosphates",
+        )
+        self.i_MgXPP = pyo.Var(
+            initialize=0.2614,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Magnesium coefficient for polyphosphates",
+        )
+        self.i_COD_NH2OH = pyo.Var(
+            initialize=8 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand coefficient for NH2OH",
+        )
+        self.i_COD_N2O = pyo.Var(
+            initialize=16 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand coefficient for N2O",
+        )
+        self.i_COD_NO = pyo.Var(
+            initialize=20 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand coefficient for NO",
+        )
+        self.i_COD_NO2 = pyo.Var(
+            initialize=24 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand coefficient for NO2",
+        )
+        self.i_COD_NO3 = pyo.Var(
+            initialize=32 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand coefficient for NO3",
+        )
+        self.i_COD_N2 = pyo.Var(
+            initialize=12 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand coefficient for N2",
         )
 
         # Fix Vars that are treated as Params
@@ -361,6 +410,10 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
                 "BOD5": {"method": "_BOD5"},
                 "SP_organic": {"method": "_SP_organic"},
                 "SP_inorganic": {"method": "_SP_inorganic"},
+                "total_phosphorus_flow": {"method": "_total_phosphorus_flow"},
+                "total_carbon_flow": {"method": "_total_carbon_flow"},
+                "total_nitrogen_flow": {"method": "_total_nitrogen_flow"},
+                "total_COD_flow": {"method": "_total_COD_flow"},
             }
         )
         obj.add_default_units(
@@ -591,7 +644,110 @@ class ASM2dN2OStateBlockData(StateBlockData):
 
         self.TSS = pyo.Expression(rule=_TSS, doc="Total suspended solids")
 
-        # TODO: Add addiitonal effluent metrics
+        def _total_phosphorus_flow(self):
+            total_phosphorus = self.flow_vol * (
+                self.conc_mass_comp["S_PO4"]
+                + self.params.i_PSF * self.conc_mass_comp["S_F"]
+                + self.params.i_PXI * self.conc_mass_comp["X_I"]
+                + self.params.i_PXS * self.conc_mass_comp["X_S"]
+                + self.params.i_PBM
+                * (
+                    self.conc_mass_comp["X_H"]
+                    + self.conc_mass_comp["X_PAO"]
+                    + self.conc_mass_comp["X_AOB"]
+                    + self.conc_mass_comp["X_NOB"]
+                )
+                + self.conc_mass_comp["X_PP"]
+            )
+
+            return total_phosphorus
+
+        self.total_phosphorus_flow = pyo.Expression(
+            rule=_total_phosphorus_flow,
+            doc="Total phosphorus mass flowrate [kg P/s]",
+        )
+
+        def _total_carbon_flow(self):
+            total_carbon = self.flow_vol * (
+                self.conc_mass_comp["S_IC"]
+                + self.params.i_CSF * self.conc_mass_comp["S_F"]
+                + self.params.i_CSA * self.conc_mass_comp["S_A"]
+                + self.params.i_CSI * self.conc_mass_comp["S_I"]
+                + self.params.i_CXI * self.conc_mass_comp["X_I"]
+                + self.params.i_CXS * self.conc_mass_comp["X_S"]
+                + self.params.i_CBM
+                * (
+                    self.conc_mass_comp["X_H"]
+                    + self.conc_mass_comp["X_PAO"]
+                    + self.conc_mass_comp["X_AOB"]
+                    + self.conc_mass_comp["X_NOB"]
+                )
+                + self.params.i_CXPHA * self.conc_mass_comp["X_PHA"]
+            )
+
+            return total_carbon
+
+        self.total_carbon_flow = pyo.Expression(
+            rule=_total_carbon_flow,
+            doc="Total carbon mass flowrate [kg C/s]",
+        )
+
+        def _total_nitrogen_flow(self):
+            total_nitrogen = self.flow_vol * (
+                self.conc_mass_comp["S_NH4"]
+                + self.conc_mass_comp["S_NH2OH"]
+                + self.conc_mass_comp["S_N2O"]
+                + self.conc_mass_comp["S_NO"]
+                + self.conc_mass_comp["S_NO2"]
+                + self.conc_mass_comp["S_NO3"]
+                + self.conc_mass_comp["S_N2"]
+                + self.params.i_NSF * self.conc_mass_comp["S_F"]
+                + self.params.i_NSI * self.conc_mass_comp["S_I"]
+                + self.params.i_NXI * self.conc_mass_comp["X_I"]
+                + self.params.i_NXS * self.conc_mass_comp["X_S"]
+                + self.params.i_NBM
+                * (
+                    self.conc_mass_comp["X_H"]
+                    + self.conc_mass_comp["X_PAO"]
+                    + self.conc_mass_comp["X_AOB"]
+                    + self.conc_mass_comp["X_NOB"]
+                )
+            )
+
+            return total_nitrogen
+
+        self.total_nitrogen_flow = pyo.Expression(
+            rule=_total_nitrogen_flow,
+            doc="Total nitrogen mass flowrate [kg N/s]",
+        )
+
+        def _total_COD_flow(self):
+            total_COD = self.flow_vol * (
+                -self.conc_mass_comp["S_O2"]
+                + self.conc_mass_comp["S_F"]
+                + self.conc_mass_comp["S_A"]
+                + self.conc_mass_comp["S_I"]
+                - self.params.i_COD_NH2OH * self.conc_mass_comp["S_NH2OH"]
+                - self.params.i_COD_N2O * self.conc_mass_comp["S_N2O"]
+                - self.params.i_COD_NO * self.conc_mass_comp["S_NO"]
+                - self.params.i_COD_NO2 * self.conc_mass_comp["S_NO2"]
+                - self.params.i_COD_NO3 * self.conc_mass_comp["S_NO3"]
+                - self.params.i_COD_N2 * self.conc_mass_comp["S_N2"]
+                + self.conc_mass_comp["X_I"]
+                + self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_H"]
+                + self.conc_mass_comp["X_PAO"]
+                + self.conc_mass_comp["X_PHA"]
+                + self.conc_mass_comp["X_AOB"]
+                + self.conc_mass_comp["X_NOB"]
+            )
+
+            return total_COD
+
+        self.total_COD_flow = pyo.Expression(
+            rule=_total_COD_flow,
+            doc="Total COD-equivalent mass flowrate [kg COD/s]",
+        )
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
