@@ -381,7 +381,7 @@ The following methods can be used to add different metrics to the costing block:
 These methods accept a flow rate :math:`Q` (with units of quantity per time) as the basis for the calculation. Two arguments are available to specify the flow basis and the corresponding units for the flow basis:
 
 - ``flow_basis`` (optional): The basis for the flow rate, either ``"volumetric"``, ``"mass"``, or ``"energy"``.
-- ``flow_basis_units`` (optional): The units for the flow basis (e.g., m\ :sup:`3`, kg, kWh).
+- ``flow_basis_units`` (optional): The units for the flow basis (e.g., ``flow_basis_units = pyo.units.kg``).
 
 The flow basis is inferred from the flow rate units unless ``flow_basis`` or ``flow_basis_units`` is provided. The default units for the flow basis when ``flow_basis_units`` is not specified are:
 
