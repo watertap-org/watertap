@@ -1,3 +1,5 @@
+.. _crystallizer_zo:
+
 Crystallizer (ZO)
 =================
 

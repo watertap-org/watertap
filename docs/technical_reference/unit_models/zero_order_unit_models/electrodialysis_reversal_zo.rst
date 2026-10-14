@@ -1,3 +1,5 @@
+.. _electrodialysis_reversal_zo:
+
 Electrodialysis Reversal (ZO)
 =============================
 

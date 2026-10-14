@@ -993,8 +993,7 @@ class ModifiedASM2dReactionScaler(CustomScalerBase):
     are scaled using the inverse maximum scheme.
     """
 
-    # TODO: Revisit this scaling factor
-    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": None}
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

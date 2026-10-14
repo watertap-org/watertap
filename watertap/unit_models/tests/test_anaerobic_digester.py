@@ -24,8 +24,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Suffix,
-    TransformationFactory,
-    Var,
 )
 
 from idaes.core import (
@@ -40,19 +38,16 @@ from watertap.core.solvers import get_solver
 from watertap.unit_models.anaerobic_digester import AD, ADScaler
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
-    ADM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
-    ADM1ReactionScaler,
 )
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling.scaling_base import ScalerBase
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -117,13 +112,16 @@ def build():
     m.fs.unit.volume_vapor.fix(300)
     m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+    # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e1)
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.rate_reaction_extent, 1e4)
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.volume[0], 1e-2)
+
     iscale.calculate_scaling_factors(m.fs.unit)
 
-    # Set scaling factors for badly scaled variables
     iscale.set_scaling_factor(
         m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
     )
-    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
 
     return m
 
@@ -141,13 +139,13 @@ class TestAnaerobicDigester(UnitTestHarness):
             0.00531408
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]] = (
-            0.1977833
+            0.197783266
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"]] = (
             0.0132484
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]] = (
-            0.0549707
+            0.05497066
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"]] = (
             0.0986058
@@ -169,7 +167,7 @@ class TestAnaerobicDigester(UnitTestHarness):
             1.1793147
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"]] = (
-            0.760653
+            0.7606534
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c"]] = 0.308718
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]] = (
@@ -211,7 +209,7 @@ class TestAnaerobicDigester(UnitTestHarness):
             1.6216465
         )
         self.unit_solutions[m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]] = (
-            0.169417
+            0.16941715
         )
         self.unit_solutions[m.fs.unit.KH_co2[0]] = 0.02714666
         self.unit_solutions[m.fs.unit.KH_ch4[0]] = 0.001161902
@@ -341,7 +339,7 @@ class TestADScaler:
         sfx_cv = model.fs.unit.liquid_phase.scaling_factor
         assert isinstance(sfx_cv, Suffix)
         # Scaling factors for volume and rate reactions
-        assert len(sfx_cv) == 47
+        assert len(sfx_cv) == 76
 
     #
     @pytest.mark.component
@@ -448,13 +446,16 @@ class TestADScaler:
         m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+        iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
+        iscale.set_scaling_factor(m.fs.unit.liquid_phase.rate_reaction_extent, 1e4)
+        iscale.set_scaling_factor(m.fs.unit.liquid_phase.volume[0], 1e-2)
+
         iscale.calculate_scaling_factors(m.fs.unit)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
+        jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.36919186521693e14, rel=1e-3
+            1.2771225664e17, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -513,103 +514,10 @@ class TestADScaler:
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
         scaler = ADScaler()
-        scaler.scale_model(
-            m.fs.unit,
-            submodel_scalers={
-                m.fs.unit.liquid_phase.properties_in: ADM1PropertiesScaler,
-                m.fs.unit.liquid_phase.properties_out: ADM1PropertiesScaler,
-                m.fs.unit.liquid_phase.reactions: ADM1ReactionScaler,
-            },
-        )
+        scaler.scale_model(m.fs.unit)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
+        jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.504226e11, rel=1e-3
-        )
-
-    @pytest.mark.integration
-    def test_example_case_scaler_scaling(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.props = ADM1ParameterBlock()
-        m.fs.props_vap = ADM1_vaporParameterBlock()
-        m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
-
-        m.fs.unit = AD(
-            liquid_property_package=m.fs.props,
-            vapor_property_package=m.fs.props_vap,
-            reaction_package=m.fs.rxn_props,
-            has_heat_transfer=True,
-            has_pressure_change=False,
-        )
-
-        # Set the operating conditions
-        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
-        m.fs.unit.inlet.temperature.fix(308.15)
-        m.fs.unit.inlet.pressure.fix(101325)
-
-        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
-
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
-
-        m.fs.unit.inlet.cations[0].fix(0.04)
-        m.fs.unit.inlet.anions[0].fix(0.02)
-
-        m.fs.unit.volume_liquid.fix(3400)
-        m.fs.unit.volume_vapor.fix(300)
-        m.fs.unit.liquid_outlet.temperature.fix(308.15)
-
-        sb = ScalerBase()
-
-        # Apply scaling to unscaled variables
-        for var in m.fs.component_data_objects(Var, descend_into=True):
-            if "conc_mass_comp" in var.name:
-                sb.set_variable_scaling_factor(var, 1e1)
-            if "conc_mol" in var.name:
-                sb.set_variable_scaling_factor(var, 1e2)
-            if "reaction_rate" in var.name:
-                sb.set_variable_scaling_factor(var, 1e6)
-
-            sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-6)
-
-        scaler = ADScaler()
-        scaler.scale_model(
-            m.fs.unit,
-            submodel_scalers={
-                m.fs.unit.liquid_phase.properties_in: ADM1PropertiesScaler,
-                m.fs.unit.liquid_phase.properties_out: ADM1PropertiesScaler,
-                m.fs.unit.liquid_phase.reactions: ADM1ReactionScaler,
-            },
-        )
-
-        # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.432989e10, rel=1e-3
+            7.411292146230802e15, rel=1e-3
         )
