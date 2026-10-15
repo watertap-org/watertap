@@ -285,7 +285,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
         if index is not None:
             try:
-                pdata = pdata[self._get_data_key(pdata, index)]            
+                pdata = pdata[self._get_data_key(pdata, index)]
             except KeyError:
                 if pname == "removal_frac_mass_comp" and use_default_removal:
                     try:
@@ -322,7 +322,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
         parameter.fix(val * units)
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
-    
+
     @staticmethod
     def _get_data_key(pdata, index):
         """
