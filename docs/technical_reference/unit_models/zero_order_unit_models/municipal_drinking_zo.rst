@@ -1,3 +1,5 @@
+.. _municipal_drinking_zo:
+
 Municipal Drinking (ZO)
 =======================
 
