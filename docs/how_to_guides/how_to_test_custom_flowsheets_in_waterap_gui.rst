@@ -42,7 +42,7 @@ creates ``frontend/node_modules``:
 Install the IDAES solver dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With ``flowsheet-processor-env`` active, install the IDAES solver dependencies:
+With ``flowsheet-processor-env`` environment active, install the IDAES solver dependencies:
 
 .. code-block:: python
 
@@ -57,8 +57,8 @@ To use the default WaterTAP flowsheets, install the published package:
 
 	pip install watertap
 
-To test a local WaterTAP PR instead, use the local installation described in
-:ref:`howto_gui_local_watertap`.
+To test a custom WaterTAP flowsheet in your local WaterTAP instead, use the local installation described in
+:ref:`how_to_gui_local_watertap`.
 
 Running the UI
 --------------
@@ -77,12 +77,12 @@ browser. If you are already in ``frontend``, skip the ``cd`` command:
 	cd frontend
 	npm run app-start
 
-.. _howto_gui_local_watertap:
+.. _how_to_gui_local_watertap:
 
-Running WaterTAP flowsheets from a local PR
--------------------------------------------
+Running custom WaterTAP flowsheets
+----------------------------------
 
-1. In your local WaterTAP repository, check out the branch containing the PR you want to test.
+1. In your local WaterTAP repository, check out the branch containing the flowsheet you want to test.
 2. Activate ``flowsheet-processor-env`` and install WaterTAP from the local WaterTAP repository root (the directory containing ``pyproject.toml``):
 
 	.. code-block:: console
@@ -96,8 +96,12 @@ Running WaterTAP flowsheets from a local PR
 
 		npm run app-start
 
-Stop any running UI before installing the local WaterTAP package, then restart
-it to load the updated flowsheets. Repeat the local installation and restart
+This launches the WaterTAP GUI in your web browser.
+
+Stop any running UI before installing the local WaterTAP package, then restart it to load the updated flowsheets. Repeat the local installation and restart
 after making further changes to WaterTAP.
 
 Custom flowsheets must expose the UI interface described in :ref:`how_to_ui-api` to be available in the GUI.
+
+.. note::
+   For detailed information on developer testing of custom flowsheets, refer to the README instructions on the `IDAES Flowsheet Processor UI repository <https://github.com/prommis/idaes-flowsheet-processor-ui>`_.
