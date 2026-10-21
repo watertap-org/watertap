@@ -63,8 +63,8 @@ from watertap.property_models.seawater_prop_pack import (
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("SeawaterVTPCParameterBlock")
-class SeawaterVTPCParameterData(SeawaterParameterData):
+@declare_process_block_class("SeawaterFTPwParameterBlock")
+class SeawaterFTPwParameterData(SeawaterParameterData):
     """References
     Parameter block for a seawater property package. Two components: 'H2O' and 'TDS', and one phase: 'Liq'.
 
@@ -85,16 +85,16 @@ class SeawaterVTPCParameterData(SeawaterParameterData):
         """
         Callable method for Block construction.
         """
-        super(SeawaterVTPCParameterData, self).build()
+        super(SeawaterFTPwParameterData, self).build()
 
-        self._state_block_class = SeawaterVTPCStateBlock
+        self._state_block_class = SeawaterFTPwStateBlock
 
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
-        self.set_default_scaling("conc_mass_phase_comp", 1e-3, index=("Liq", "H2O"))
-        self.set_default_scaling("conc_mass_phase_comp", 1e-1, index=("Liq", "TDS"))
-        self.set_default_scaling("flow_vol_phase", 1e3, index="Liq")
+        self.set_default_scaling("mass_frac_phase_comp", 1, index=("Liq", "H2O"))
+        self.set_default_scaling("mass_frac_phase_comp", 10, index=("Liq", "TDS"))
+        self.set_default_scaling("flow_mass_phase", 1, index="Liq")
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("dens_mass_solvent", 1e-3)
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
@@ -112,14 +112,15 @@ class SeawaterVTPCParameterData(SeawaterParameterData):
         """Define properties supported and units."""
         obj.add_properties(
             {
+                "flow_mass_phase": {"method": None},
                 "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
                 "temperature": {"method": None},
                 "pressure": {"method": None},
-                "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
+                "mass_frac_phase_comp": {"method": None},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "flow_vol_phase": {"method": None},
+                "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "flow_vol": {"method": "_flow_vol"},
-                "conc_mass_phase_comp": {"method": None},
+                "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
@@ -177,7 +178,7 @@ class SeawaterVTPCParameterData(SeawaterParameterData):
         )
 
 
-class _SeawaterVTPCStateBlock(StateBlock):
+class _SeawaterFTPwStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -196,8 +197,8 @@ class _SeawaterVTPCStateBlock(StateBlock):
         # Constraint on water concentration at outlet - unfix in these cases
         for idx, b in self.items():
             if b.config.defined_state is False:
-                b.conc_mass_phase_comp["Liq", "H2O"].unfix()
-                # flags.pop((idx, "conc_mass_phase_comp", ("Liq", "H2O")))
+                b.mass_frac_phase_comp["Liq", "H2O"].unfix()
+                # flags.pop((idx, "mass_frac_phase_comp", ("Liq", "H2O")))
 
         return flags
 
@@ -414,9 +415,9 @@ class _SeawaterVTPCStateBlock(StateBlock):
 
 
 @declare_process_block_class(
-    "SeawaterVTPCStateBlock", block_class=_SeawaterVTPCStateBlock
+    "SeawaterFTPwStateBlock", block_class=_SeawaterFTPwStateBlock
 )
-class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
+class SeawaterFTPwStateBlockData(SeawaterStateBlockData):
     """A seawater property package."""
 
     def build(self):
@@ -428,24 +429,24 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # Add state variables
-        self.flow_vol_phase = Var(
+        self.flow_mass_phase = Var(
             self.params.phase_list,
-            initialize=0.000977,
+            initialize=1,
             bounds=(0.0, None),
-            units=pyunits.m**3 / pyunits.s,
-            doc="Volumetric flow rate",
+            units=pyunits.kg / pyunits.s,
+            doc="Mass flow rate",
         )
 
-        self.conc_mass_phase_comp = Var(
+        self.mass_frac_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
             initialize={
-                ("Liq", "H2O"): 987.7,
-                ("Liq", "TDS"): 35.82,
+                ("Liq", "H2O"): 0.965,
+                ("Liq", "TDS"): 0.035,
             },
-            bounds=(0.0, 1e6),
-            units=pyunits.kg * pyunits.m**-3,
-            doc="Mass concentration",
+            bounds=(0.0, 1.001),
+            units=pyunits.dimensionless,
+            doc="Mass fraction",
         )
 
         self.temperature = Var(
@@ -465,27 +466,16 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
         if not self.config.defined_state:
 
             @self.Constraint(self.phase_list)
-            def eq_sum_conc_mass_phase_comp(b, p):
-                return (
-                    sum(b.conc_mass_phase_comp[p, j] for j in b.component_list)
-                    == b.dens_mass_phase[p]
-                )
+            def eq_sum_mass_frac_phase_comp(b, p):
+                return sum(b.mass_frac_phase_comp[p, j] for j in b.component_list) == 1
 
     # -----------------------------------------------------------------------------
     # Property Methods
 
-    def _flow_vol_phase(self):
+    def _flow_mass_phase(self):
         # Overwrite method from base class.
         raise BurntToast(
-            "This function should never be called because flow_vol_phase should "
-            "have been created as a state variable. If it does not exist as a "
-            "state variable, please report this bug to the WaterTAP developers."
-        )
-
-    def _conc_mass_phase_comp(self):
-        # Overwrite method from base class.
-        raise BurntToast(
-            "This function should never be called because conc_mass_phase_comp should "
+            "This function should never be called because flow_mass_phase should "
             "have been created as a state variable. If it does not exist as a "
             "state variable, please report this bug to the WaterTAP developers."
         )
@@ -502,7 +492,7 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
 
         def rule_flow_mass_phase_comp(b, p, j):
             return b.flow_mass_phase_comp[p, j] == (
-                b.flow_vol_phase[p] * b.conc_mass_phase_comp[p, j]
+                b.flow_mass_phase[p] * b.mass_frac_phase_comp[p, j]
             )
 
         self.eq_flow_mass_phase_comp = Constraint(
@@ -522,21 +512,17 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
         )
 
         def rule_mass_frac_phase_comp(b, p, j):
-            return b.mass_frac_phase_comp[p, j] == b.conc_mass_phase_comp[p, j] / sum(
-                b.conc_mass_phase_comp[p, j] for j in b.params.component_list
+            raise BurntToast(
+                "This function should never be called because mass_frac_phase_comp should "
+                "have been created as a state variable. If it does not exist as a "
+                "state variable, please report this bug to the WaterTAP developers."
             )
-
-        self.eq_mass_frac_phase_comp = Constraint(
-            self.params.phase_list,
-            self.params.component_list,
-            rule=rule_mass_frac_phase_comp,
-        )
 
     def define_state_vars(self):
         """Define state vars."""
         return {
-            "flow_vol_phase": self.flow_vol_phase,
-            "conc_mass_phase_comp": self.conc_mass_phase_comp,
+            "flow_mass_phase": self.flow_mass_phase,
+            "mass_frac_phase_comp": self.mass_frac_phase_comp,
             "temperature": self.temperature,
             "pressure": self.pressure,
         }
@@ -552,18 +538,18 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
 
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
-        # for the following variables: flow_vol_phase, conc_mass_phase_comp, pressure,
+        # for the following variables: flow_mass_phase, mass_frac_phase_comp, pressure,
         # temperature, dens_mass_phase, visc_d_phase, osm_coeff, and enth_mass_phase
 
         if self.is_property_constructed("flow_mass_phase_comp"):
             for (p, j), vardata in self.flow_mass_phase_comp.items():
                 # These scaling factors should have been set either by the
                 # user directly or from the default scaling factors
-                sf_C = iscale.get_scaling_factor(
-                    self.conc_mass_phase_comp[p, j], warning=True
+                sf_w = iscale.get_scaling_factor(
+                    self.mass_frac_phase_comp[p, j], warning=True
                 )
-                sf_V = iscale.get_scaling_factor(self.flow_vol_phase[p], warning=True)
-                iscale.set_scaling_factor(vardata, sf_C * sf_V, overwrite=False)
+                sf_F = iscale.get_scaling_factor(self.flow_mass_phase[p], warning=True)
+                iscale.set_scaling_factor(vardata, sf_w * sf_F, overwrite=False)
 
         # scaling factors for parameters
         # TODO this should live on the parameter block.
@@ -580,29 +566,36 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
                     iscale.get_scaling_factor(self.pressure),
                 )
 
-        if self.is_property_constructed("mass_frac_phase_comp"):
-            for j in self.params.component_list:
-                if (
-                    iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])
-                    is None
-                ):
-                    if j == "TDS":
-                        sf = iscale.get_scaling_factor(
-                            self.conc_mass_phase_comp["Liq", j]
-                        ) / iscale.get_scaling_factor(
-                            self.conc_mass_phase_comp["Liq", "H2O"]
-                        )
-                        iscale.set_scaling_factor(
-                            self.mass_frac_phase_comp["Liq", j], sf
-                        )
-                    elif j == "H2O":
-                        iscale.set_scaling_factor(
-                            self.mass_frac_phase_comp["Liq", j], 1
-                        )
+        if self.is_property_constructed("flow_vol_phase"):
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "H2O"]
+            ) / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
+            iscale.set_scaling_factor(self.flow_vol_phase, sf)
 
         if self.is_property_constructed("flow_vol"):
             sf = iscale.get_scaling_factor(self.flow_vol_phase["Liq"])
             iscale.set_scaling_factor(self.flow_vol, sf)
+
+        if self.is_property_constructed("conc_mass_phase_comp"):
+            for j in self.params.component_list:
+                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
+                if (
+                    iscale.get_scaling_factor(self.conc_mass_phase_comp["Liq", j])
+                    is None
+                ):
+                    if j == "H2O":
+                        # solvents typically have a mass fraction between 0.5-1
+                        iscale.set_scaling_factor(
+                            self.conc_mass_phase_comp["Liq", j], sf_dens
+                        )
+                    elif j == "TDS":
+                        iscale.set_scaling_factor(
+                            self.conc_mass_phase_comp["Liq", j],
+                            sf_dens
+                            * iscale.get_scaling_factor(
+                                self.mass_frac_phase_comp["Liq", j]
+                            ),
+                        )
 
         if self.is_property_constructed("flow_mol_phase_comp"):
             for j in self.params.component_list:
@@ -660,12 +653,10 @@ class SeawaterVTPCStateBlockData(SeawaterStateBlockData):
             iscale.set_scaling_factor(self.boiling_point_elevation_phase["Liq"], 1)
 
         # transforming constraints
-        if self.is_property_constructed("eq_sum_conc_mass_phase_comp"):
-            for p, condata in self.eq_sum_conc_mass_phase_comp.items():
-                sf_rho = iscale.get_scaling_factor(
-                    self.dens_mass_phase, default=1e-3, warning=True
-                )
-                iscale.constraint_scaling_transform(condata, sf_rho)
+        if self.is_property_constructed("eq_sum_mass_frac_phase_comp"):
+            for p, condata in self.eq_sum_mass_frac_phase_comp.items():
+                # Register the fact that this constraint is well-scaled
+                iscale.constraint_scaling_transform(condata, 1)
         # property relationships with no index, simple constraint
         v_str_lst_simple = [
             "dens_mass_solvent",

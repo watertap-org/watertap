@@ -12,7 +12,7 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-import watertap.property_models.seawater_prop_pack_VTPC as props
+import watertap.property_models.seawater_prop_pack_FTPw as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -26,40 +26,33 @@ from watertap.property_models.tests.property_test_harness import (
 # -----------------------------------------------------------------------------
 class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = props.SeawaterVTPCParameterBlock
+        self.prop_pack = props.SeawaterFTPwParameterBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = True
 
 
 def configure_watertap_harness(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     if defined_state:
         test_obj.stateblock_statistics = {
-            "number_variables": 26,
-            "number_total_constraints": 21,
+            "number_variables": 27,
+            "number_total_constraints": 22,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 5,
         }
     else:
         test_obj.stateblock_statistics = {
-            "number_variables": 26,
-            "number_total_constraints": 22,
+            "number_variables": 27,
+            "number_total_constraints": 23,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
-        }
-
-    if not defined_state:
-        test_obj.expected_on_demand = {
-            "dens_mass_phase",
-            "dens_mass_solvent",
-            "mass_frac_phase_comp",
         }
     test_obj.default_solution = {
         ("mass_frac_phase_comp", ("Liq", "H2O")): 0.965,
@@ -98,28 +91,28 @@ class TestSeawaterPropertyDefinedState(PropertyTestHarness):
 
 
 def configure_solution_1(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     test_obj.state_args = {
-        ("flow_vol_phase", "Liq"): 1.005e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 9.954,
+        ("flow_mass_phase", "Liq"): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.01,
         ("temperature", None): 273.15 + 50,
         ("pressure", None): 2e5,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 985.5
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.99
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.99,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.01,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 985.5,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 9.954,
         ("dens_mass_phase", "Liq"): 995.4,
         ("dens_mass_solvent", None): 988.0,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.99,
@@ -156,28 +149,28 @@ class TestSeawaterPropertySolution_1DefinedState(PropertyRegressionTest):
 
 
 def configure_solution_2(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 10,
         ("pressure", None): 100e5,
-        ("flow_vol_phase", "Liq"): 9.628e-4,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 51.93,
+        ("flow_mass_phase", "Liq"): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 986.8
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.95
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.95,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 986.8,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 51.93,
         ("dens_mass_phase", "Liq"): 1.039e3,
         ("dens_mass_solvent", None): 999.5,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.95,
@@ -217,28 +210,28 @@ class TestSeawaterPropertySolution_2DefinedState(PropertyRegressionTest):
 # https://web.mit.edu/seawater/2017_MIT_Seawater_Property_Tables_r2b_2023c.pdf
 # T = 10C, salinity = 10 g/kg, Q = 1 L/s
 def configure_temp_10_salinity_10(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 10,
         ("pressure", None): 1e5,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 10.07345,
-        ("flow_vol_phase", "Liq"): 0.001,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.01,
+        ("flow_mass_phase", "Liq"): 1.0073452,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 997.27225
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.99
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.99,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.01,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 997.27225,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 10.07345,
         ("dens_mass_phase", "Liq"): 1007.3457,
         ("dens_mass_solvent", None): 999.50934,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.9972722,
@@ -276,28 +269,28 @@ class TestSeawaterPropertyTemp10Salinity10DefinedState(PropertyRegressionTest):
 
 # T = 30C, salinity = 30 g/kg, Q = 1 L/s
 def configure_temp_30_salinity_30(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 30,
         ("pressure", None): 1e5,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 30.54672,
-        ("flow_vol_phase", "Liq"): 0.001,
+        ("flow_mass_phase", "Liq"): 1.018224239,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.03,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 987.67751
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.97
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.97,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.03,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 30.54672,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 987.67751,
         ("dens_mass_phase", "Liq"): 1018.22423,
         ("dens_mass_solvent", None): 995.53714,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.987677512,
@@ -335,28 +328,28 @@ class TestSeawaterPropertyTemp30Salinity30DefinedState(PropertyRegressionTest):
 
 # T = 50C, salinity = 50 g/kg, Q = 1 L/s
 def configure_temp_50_salinity_50(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1e3,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 50,
         ("pressure", None): 1e5,
-        ("flow_vol_phase", "Liq"): 0.001,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 51.25247,
+        ("flow_mass_phase", "Liq"): 1.025049586,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 973.7971
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.95
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.95,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 51.25247,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 973.7971,
         ("dens_mass_phase", "Liq"): 1025.04958,
         ("dens_mass_solvent", None): 988.04718,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.973797107,
@@ -394,28 +387,28 @@ class TestSeawaterPropertyTemp50Salinity50DefinedState(PropertyRegressionTest):
 
 # T = 70C, salinity = 70 g/kg, Q = 1 L/s
 def configure_temp_70_salinity_70(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 70,
         ("pressure", None): 1e5,
-        ("flow_vol_phase", "Liq"): 0.001,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 72.03834,
+        ("flow_mass_phase", "Liq"): 1.02911919,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.07,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 957.08085
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.93
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.93,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.07,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 957.08085,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 72.03834,
         ("dens_mass_phase", "Liq"): 1029.1192,
         ("dens_mass_solvent", None): 977.76708,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.95708085,
@@ -453,28 +446,28 @@ class TestSeawaterPropertyTemp70Salinity70DefinedState(PropertyRegressionTest):
 
 # T = 90C, salinity = 90 g/kg
 def configure_temp_90_salinity_90(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-        ("flow_vol_phase", ("Liq",)): 1e3,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+        ("flow_mass_phase", ("Liq",)): 1,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 90,
         ("pressure", None): 1e5,
         ("flow_vol_phase", "Liq"): 0.001,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 92.82907,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.09,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 938.60506
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.91
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.90999,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.09,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 92.82907,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 938.60506,
         ("dens_mass_phase", "Liq"): 1031.43413,
         ("dens_mass_solvent", None): 965.24563,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.93860506,
@@ -511,28 +504,28 @@ class TestSeawaterPropertyTemp90Salinity90DefinedState(PropertyRegressionTest):
 
 
 def configure_temp_120_salinity_120(test_obj, defined_state):
-    test_obj.prop_pack = props.SeawaterVTPCParameterBlock
+    test_obj.prop_pack = props.SeawaterFTPwParameterBlock
     test_obj.param_args = {"defined_state": defined_state}
 
     test_obj.solver = "ipopt"
     test_obj.optarg = {"nlp_scaling_method": "user-scaling"}
 
     test_obj.scaling_args = {
-        ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
+        ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
         ("flow_vol_phase", ("Liq",)): 1e3,
     }
     test_obj.state_args = {
         ("temperature", None): 273.15 + 120,
         ("pressure", None): 1e5,
         ("flow_vol_phase", "Liq"): 0.001,
-        ("conc_mass_phase_comp", ("Liq", "TDS")): 123.96923,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.12,
     }
     if defined_state:
-        test_obj.state_args[("conc_mass_phase_comp", ("Liq", "H2O"))] = 909.10769
+        test_obj.state_args[("mass_frac_phase_comp", ("Liq", "H2O"))] = 0.88
     test_obj.regression_solution = {
-        ("mass_frac_phase_comp", ("Liq", "H2O")): 0.88,
-        ("mass_frac_phase_comp", ("Liq", "TDS")): 0.12,
+        ("conc_mass_phase_comp", ("Liq", "H2O")): 909.10769,
+        ("conc_mass_phase_comp", ("Liq", "TDS")): 123.96923,
         ("dens_mass_phase", "Liq"): 1033.07692,
         ("dens_mass_solvent", None): 943.02132,
         ("flow_mass_phase_comp", ("Liq", "H2O")): 0.90910769,
@@ -572,140 +565,135 @@ class TestSeawaterPropertyTemp120Salinity120DefinedState(PropertyRegressionTest)
 @pytest.mark.component
 class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterVTPCParameterBlock
+        self.prop_pack = props.SeawaterFTPwParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt_v2"
 
         self.scaling_args = {
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-            ("flow_vol_phase", ("Liq",)): 1e2,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+            ("flow_mass_phase", ("Liq",)): 0.1,
         }
         self.var_args = {
-            ("flow_mass_phase_comp", ("Liq", "H2O")): 19.66,
-            ("flow_mass_phase_comp", ("Liq", "TDS")): 1.035,
+            ("flow_vol_phase", "Liq"): 2e-2,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): 51.76252,
             ("temperature", None): 273.15 + 25,
             ("pressure", None): 5e5,
         }
         self.state_solution = {
-            ("flow_vol_phase", "Liq"): 2e-2,
+            ("flow_mass_phase", "Liq"): 20.695,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 51.76252,
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 983.2379,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 0.95,
         }
 
 
 @pytest.mark.component
 class TestSeawaterCalculateState_2(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterVTPCParameterBlock
+        self.prop_pack = props.SeawaterFTPwParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt_v2"
 
         self.scaling_args = {
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-            ("flow_vol_phase", ("Liq",)): 1e2,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+            ("flow_mass_phase", ("Liq",)): 0.1,
         }
         self.var_args = {
-            ("flow_mass_phase_comp", ("Liq", "H2O")): 0.9604,
+            ("flow_vol_phase", "Liq"): 1e-3,
             ("pressure_osm_phase", "Liq"): 100e5,
             ("temperature", None): 273.15 + 25,
             ("pressure", None): 5e5,
         }
         self.state_solution = {
-            ("flow_vol_phase", "Liq"): 1e-3,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1.2310e02,
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 9.6037e02,
-            ("flow_mass_phase_comp", ("Liq", "TDS")): 0.1231,
+            ("flow_mass_phase", "Liq"): 1.0835,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.11366,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 0.88634,
         }
 
 
 @pytest.mark.component
 class TestSeawaterCalculateState_3(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterVTPCParameterBlock
+        self.prop_pack = props.SeawaterFTPwParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt_v2"
 
         self.scaling_args = {
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-            ("flow_vol_phase", ("Liq",)): 1e2,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 100,
+            ("flow_mass_phase", ("Liq",)): 0.1,
         }
         self.var_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 0.9605,
-            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.06,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): 6.1310e01,
             ("pressure_sat", None): 3e4,
             ("pressure", None): 5e5,
         }
         self.state_solution = {
-            ("flow_vol_phase", "Liq"): 1e-3,
-            ("flow_mass_phase_comp", ("Liq", "TDS")): 0.0613,
+            ("flow_mass_phase", "Liq"): 1.0218,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.06,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 0.94,
             ("temperature", None): 343.05,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 6.1310e01,
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 9.6053e02,
         }
 
 
 @pytest.mark.component
 class TestSeawaterCalculateState_4(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterVTPCParameterBlock
+        self.prop_pack = props.SeawaterFTPwParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt_v2"
 
         self.scaling_args = {
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1e1,
-            ("flow_vol_phase", ("Liq",)): 0.1,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 1e5,
+            ("flow_mass_phase", ("Liq",)): 1e-4,
             ("enth_mass_phase", ("Liq", "TDS")): 1e-4,
         }
         self.var_args = {
-            ("flow_mass_phase_comp", ("Liq", "H2O")): 9995.07,
-            ("mass_frac_phase_comp", ("Liq", "TDS")): 1e-5,
+            ("flow_vol_phase", "Liq"): 10,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): 9.9952e-03,
             ("temperature", None): 273.15 + 10,
             ("pressure", None): 2e6,
         }
         self.state_solution = {
-            ("flow_vol_phase", "Liq"): 10,
-            ("flow_mass_phase_comp", ("Liq", "TDS")): 0.09995,
+            ("flow_mass_phase", "Liq"): 9995.16995,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 1e-5,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 1 - 1e-5,
             ("enth_mass_phase", "Liq"): 4.3945e4,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 9.9952e-03,
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 9.9951e02,
         }
 
 
 @pytest.mark.component
 class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterVTPCParameterBlock
+        self.prop_pack = props.SeawaterFTPwParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt_v2"
 
         self.scaling_args = {
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 1e-3,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1e-1,
-            ("flow_vol_phase", ("Liq",)): 0.1,
-            ("enth_mass_phase", ("Liq", "TDS")): 1e-4,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 1,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 10,
+            ("flow_mass_phase", ("Liq",)): 1e-5,
+            ("enth_mass_phase", ("Liq", "TDS")): 1e-5,
         }
         self.var_args = {
-            ("flow_mass_phase_comp", ("Liq", "H2O")): 9091.08,
-            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.12,
+            ("flow_vol_phase", "Liq"): 10,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): 1.2397e02,
             ("temperature", None): 273.15 + 120,
             ("pressure", None): 1.2e7,
         }
         self.state_solution = {
-            ("flow_vol_phase", "Liq"): 10,
-            ("flow_mass_phase_comp", ("Liq", "TDS")): 1239.69,
+            ("flow_mass_phase", "Liq"): 10330.77,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.12,
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 0.88,
             ("enth_mass_phase", "Liq"): 4.36167e5,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): 1.2397e02,
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 9.0911e02,
         }
 
 
@@ -713,7 +701,7 @@ class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
 def test_list_and_print_properties():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.props = props.SeawaterVTPCParameterBlock()
+    m.fs.props = props.SeawaterFTPwParameterBlock()
 
     m.fs.props.list_properties()
     m.fs.props.print_properties()
