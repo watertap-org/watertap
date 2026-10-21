@@ -405,10 +405,12 @@ class TestModifiedASM2dPropertiesScaler:
         scaler.variable_scaling_routine(model.props[1])
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 3
+        assert len(sfx) == 21
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-2, rel=1e-8)
+        # Same scaling factor applied to all components
+        assert sfx[model.props[1].conc_mass_comp["S_A"]] == pytest.approx(1e2, rel=1e-8)
 
     @pytest.mark.unit
     def test_constraint_scaling_routine(self):
@@ -437,7 +439,9 @@ class TestModifiedASM2dPropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 3
+        assert len(sfx) == 21
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-2, rel=1e-8)
+        # Same scaling factor applied to all components
+        assert sfx[model.props[1].conc_mass_comp["S_A"]] == pytest.approx(1e2, rel=1e-8)

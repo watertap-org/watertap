@@ -1,3 +1,5 @@
+.. _aeration_basin_zo:
+
 Aeration Basin (ZO)
 ===================
 

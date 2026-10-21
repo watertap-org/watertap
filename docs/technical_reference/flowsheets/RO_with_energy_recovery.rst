@@ -156,4 +156,4 @@ including the different build options for ``erd_type``:
 Code Documentation
 ------------------
 
-* :mod:`watertap.examples.flowsheets.RO_with_energy_recovery`
+* :mod:`watertap.flowsheets.RO_with_energy_recovery`

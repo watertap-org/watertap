@@ -1,3 +1,5 @@
+.. _cooling_tower_zo:
+
 Cooling Tower  (ZO)
 ===================
 
