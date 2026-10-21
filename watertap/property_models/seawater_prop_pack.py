@@ -761,6 +761,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "flow_mass_phase_comp": {"method": None},
                 "temperature": {"method": None},
                 "pressure": {"method": None},
+                "flow_mass_phase": {"method": "_flow_mass_phase"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
@@ -1096,6 +1097,25 @@ class SeawaterStateBlockData(StateBlockData):
 
     # -----------------------------------------------------------------------------
     # Property Methods
+    def _flow_mass_phase(self):
+        self.flow_mass_phase = Var(
+            self.params.phase_list,
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.kg / pyunits.s,
+            doc="Phase mass flow rate",
+        )
+
+        def rule_flow_mass_phase(b, p):
+            return b.flow_mass_phase[p] == sum(
+                b.flow_mass_phase_comp[p, j] for j in b.params.component_list
+            )
+
+        self.eq_flow_mass_phase = Constraint(
+            self.params.phase_list,
+            rule=rule_flow_mass_phase,
+        )
+
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -1698,6 +1718,12 @@ class SeawaterStateBlockData(StateBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
+        if self.is_property_constructed("flow_mass_phase"):
+            sf_H2O = iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"])
+            sf_TDS = iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "TDS"])
+            sf = 1 / (1 / sf_H2O + 1 / sf_TDS)
+            iscale.set_scaling_factor(self.flow_mass_phase["Liq"], sf, overwrite=False)
+
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase["Liq"]) is None:
                 iscale.set_scaling_factor(

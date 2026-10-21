@@ -40,12 +40,13 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1e2,
         }
         self.stateblock_statistics = {
-            "number_variables": 26,
-            "number_total_constraints": 22,
+            "number_variables": 27,
+            "number_total_constraints": 23,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
         }  # 4 state vars, but pressure is not active
         self.default_solution = {
+            ("flow_mass_phase", "Liq"): 1,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.965,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.035,
             ("dens_mass_phase", "Liq"): 1023.5,
@@ -91,6 +92,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("pressure", None): 2e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.99,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.01,
             ("dens_mass_phase", "Liq"): 995.4,
@@ -137,6 +139,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("pressure", None): 100e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.95,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
             ("dens_mass_phase", "Liq"): 1.039e3,
@@ -186,6 +189,7 @@ class TestSeawaterPropertyTemp10Salinity10(PropertyRegressionTest):
             ("pressure", None): 1e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1.0073452,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.99,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.01,
             ("dens_mass_phase", "Liq"): 1007.3457,
@@ -233,6 +237,7 @@ class TestSeawaterPropertyTemp30Salinity30(PropertyRegressionTest):
             ("pressure", None): 1e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1.018224239,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.97,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.03,
             ("dens_mass_phase", "Liq"): 1018.22423,
@@ -280,6 +285,7 @@ class TestSeawaterPropertyTemp50Salinity50(PropertyRegressionTest):
             ("pressure", None): 1e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1.025049586,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.95,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.05,
             ("dens_mass_phase", "Liq"): 1025.04958,
@@ -327,6 +333,7 @@ class TestSeawaterPropertyTemp70Salinity70(PropertyRegressionTest):
             ("pressure", None): 1e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1.02911919,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.93,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.07,
             ("dens_mass_phase", "Liq"): 1029.1192,
@@ -374,6 +381,7 @@ class TestSeawaterPropertyTemp90Salinity90(PropertyRegressionTest):
             ("pressure", None): 1e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1.031434132,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.90999,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.09,
             ("dens_mass_phase", "Liq"): 1031.43413,
@@ -421,6 +429,7 @@ class TestSeawaterPropertyTemp120Salinity120(PropertyRegressionTest):
             ("pressure", None): 1e5,
         }
         self.regression_solution = {
+            ("flow_mass_phase", "Liq"): 1.03307692,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.88,
             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.12,
             ("dens_mass_phase", "Liq"): 1033.07692,
