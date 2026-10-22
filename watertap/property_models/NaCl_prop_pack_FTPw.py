@@ -17,7 +17,6 @@ Initial property package for seawater system
 from pyomo.environ import (
     check_optimal_termination,
     Constraint,
-    Param,
     Suffix,
     value,
     Var,
@@ -30,8 +29,7 @@ from idaes.core import (
     declare_process_block_class,
     StateBlock,
 )
-from idaes.core.base.components import Solute, Solvent
-from idaes.core.base.phases import LiquidPhase
+from idaes.core.base.components import Solute
 
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
@@ -52,7 +50,6 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import BurntToast
-from idaes.core.util.misc import extract_data
 
 # Import WaterTAP libraries
 from watertap.core.solvers import get_solver
