@@ -75,21 +75,10 @@ _log = idaeslog.getLogger(__name__)
 class NaClParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
-    def build(self):
-        """
-        Callable method for Block construction.
-        """
-        super(NaClParameterData, self).build()
+    def _get_state_block_class(self):
+        return NaClStateBlock
 
-        self._state_block_class = NaClStateBlock
-
-        # components
-        self.H2O = Solvent()
-        self.NaCl = Solute()
-
-        # phases
-        self.Liq = LiquidPhase()
-
+    def _define_parameters(self):
         # reference
         # this package is developed from Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
         # the enthalpy calculations are from Sharqawy et al. (2010) http://dx.doi.org/10.5004/dwt.2010.1079
@@ -169,7 +158,7 @@ class NaClParameterData(PhysicalParameterBlock):
         for v in self.component_objects(Var):
             v.fix()
 
-        # ---default scaling---
+    def _set_default_scaling(self):
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
@@ -177,6 +166,24 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
+
+    def build(self):
+        """
+        Callable method for Block construction.
+        """
+        super(NaClParameterData, self).build()
+
+        self._state_block_class = self._get_state_block_class()
+
+        # components
+        self.H2O = Solvent()
+        self.NaCl = Solute()
+
+        # phases
+        self.Liq = LiquidPhase()
+
+        self._define_parameters()
+        self._set_default_scaling()
 
     def list_properties(self):
         """
@@ -192,27 +199,36 @@ class NaClParameterData(PhysicalParameterBlock):
         print_property_metadata(self)
 
     @classmethod
+    def _trim_state_variables(cls, property_dict):
+        property_dict["flow_mass_phase_comp"]["method"] = None
+        property_dict["temperature"]["method"] = None
+        property_dict["pressure"]["method"] = None
+
+    @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
-        obj.add_properties(
-            {
-                "flow_mass_phase_comp": {"method": None},
-                "temperature": {"method": None},
-                "pressure": {"method": None},
-                "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
-                "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "flow_vol_phase": {"method": "_flow_vol_phase"},
-                "flow_vol": {"method": "_flow_vol"},
-                "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
-                "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "molality_phase_comp": {"method": "_molality_phase_comp"},
-                "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-                "visc_d_phase": {"method": "_visc_d_phase"},
-                "pressure_osm_phase": {"method": "_pressure_osm_phase"},
-                "enth_mass_phase": {"method": "_enth_mass_phase"},
-            }
-        )
+        property_dict = {
+            "flow_mass_phase": {"method": "_flow_mass_phase"},
+            "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
+            "temperature": {"method": "_temperature"},
+            "pressure": {"method": "_pressure"},
+            "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
+            "dens_mass_phase": {"method": "_dens_mass_phase"},
+            "flow_vol_phase": {"method": "_flow_vol_phase"},
+            "flow_vol": {"method": "_flow_vol"},
+            "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
+            "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
+            "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
+            "molality_phase_comp": {"method": "_molality_phase_comp"},
+            "diffus_phase_comp": {"method": "_diffus_phase_comp"},
+            "visc_d_phase": {"method": "_visc_d_phase"},
+            "pressure_osm_phase": {"method": "_pressure_osm_phase"},
+            "enth_mass_phase": {"method": "_enth_mass_phase"},
+        }
+        cls._trim_state_variables(property_dict)
+        import pdb
+
+        obj.add_properties(property_dict)
 
         obj.define_custom_properties(
             {
@@ -520,6 +536,25 @@ class NaClStateBlockData(StateBlockData):
 
     # -----------------------------------------------------------------------------
     # On-demand Property Methods
+    def _flow_mass_phase(self):
+        self.flow_mass_phase = Var(
+            self.params.phase_list,
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.kg / pyunits.s,
+            doc="Phase mass flow rate",
+        )
+
+        def rule_flow_mass_phase(b, p):
+            return b.flow_mass_phase[p] == sum(
+                b.flow_mass_phase_comp[p, j] for j in b.params.component_list
+            )
+
+        self.eq_flow_mass_phase = Constraint(
+            self.params.phase_list,
+            rule=rule_flow_mass_phase,
+        )
+
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -857,17 +892,26 @@ class NaClStateBlockData(StateBlockData):
         # temperature, dens_mass, visc_d, diffus, osm_coeff, and enth_mass
 
         # these variables should have user input
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"]) is None:
-            sf = iscale.get_scaling_factor(
-                self.flow_mass_phase_comp["Liq", "H2O"], default=1e0, warning=True
-            )
-            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"], sf)
+        sf = iscale.get_scaling_factor(
+            self.flow_mass_phase_comp["Liq", "H2O"], default=1e0, warning=True
+        )
+        nom_Fp = 1 / sf
+        iscale.set_scaling_factor(
+            self.flow_mass_phase_comp["Liq", "H2O"], sf, overwrite=False
+        )
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "NaCl"]) is None:
-            sf = iscale.get_scaling_factor(
-                self.flow_mass_phase_comp["Liq", "NaCl"], default=1e2, warning=True
+        sf = iscale.get_scaling_factor(
+            self.flow_mass_phase_comp["Liq", "NaCl"], default=1e2, warning=True
+        )
+        nom_Fp += 1 / sf
+        iscale.set_scaling_factor(
+            self.flow_mass_phase_comp["Liq", "NaCl"], sf, overwrite=False
+        )
+
+        if self.is_property_constructed("flow_mass_phase"):
+            iscale.set_scaling_factor(
+                self.flow_mass_phase["Liq"], 1 / nom_Fp, overwrite=False
             )
-            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "NaCl"], sf)
 
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():

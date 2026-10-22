@@ -198,7 +198,6 @@ class _SeawaterFTPwStateBlock(StateBlock):
         for idx, b in self.items():
             if b.config.defined_state is False:
                 b.mass_frac_phase_comp["Liq", "H2O"].unfix()
-                # flags.pop((idx, "mass_frac_phase_comp", ("Liq", "H2O")))
 
         return flags
 
@@ -502,21 +501,11 @@ class SeawaterFTPwStateBlockData(SeawaterStateBlockData):
         )
 
     def _mass_frac_phase_comp(self):
-        self.mass_frac_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            initialize=0.1,
-            bounds=(0.0, None),
-            units=pyunits.dimensionless,
-            doc="Mass fraction",
+        raise BurntToast(
+            "This function should never be called because mass_frac_phase_comp should "
+            "have been created as a state variable. If it does not exist as a "
+            "state variable, please report this bug to the WaterTAP developers."
         )
-
-        def rule_mass_frac_phase_comp(b, p, j):
-            raise BurntToast(
-                "This function should never be called because mass_frac_phase_comp should "
-                "have been created as a state variable. If it does not exist as a "
-                "state variable, please report this bug to the WaterTAP developers."
-            )
 
     def define_state_vars(self):
         """Define state vars."""
