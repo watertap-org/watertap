@@ -494,7 +494,7 @@ class _NaClStateBlock(StateBlock):
 
         # fix state variables if hold_state
         if hold_state:
-            fix_state_vars(self)
+            self.fix_initialization_states(self)
 
         return results
 
