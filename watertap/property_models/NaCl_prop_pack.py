@@ -75,6 +75,24 @@ _log = idaeslog.getLogger(__name__)
 class NaClParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
+    def build(self):
+        """
+        Callable method for Block construction.
+        """
+        super(NaClParameterData, self).build()
+
+        self._state_block_class = self._get_state_block_class()
+
+        # components
+        self.H2O = Solvent()
+        self.NaCl = Solute()
+
+        # phases
+        self.Liq = LiquidPhase()
+
+        self._define_parameters()
+        self._set_default_scaling()
+
     def _get_state_block_class(self):
         return NaClStateBlock
 
@@ -166,24 +184,6 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
-
-    def build(self):
-        """
-        Callable method for Block construction.
-        """
-        super(NaClParameterData, self).build()
-
-        self._state_block_class = self._get_state_block_class()
-
-        # components
-        self.H2O = Solvent()
-        self.NaCl = Solute()
-
-        # phases
-        self.Liq = LiquidPhase()
-
-        self._define_parameters()
-        self._set_default_scaling()
 
     def list_properties(self):
         """

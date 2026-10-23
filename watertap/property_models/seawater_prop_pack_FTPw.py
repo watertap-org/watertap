@@ -88,11 +88,12 @@ class SeawaterFTPwParameterData(SeawaterParameterData):
         """
         Callable method for Block construction.
         """
-        super(SeawaterFTPwParameterData, self).build()
+        super().build()
 
-        self._state_block_class = SeawaterFTPwStateBlock
+    def _get_state_block_class(self):
+        return SeawaterFTPwStateBlock
 
-        # ---default scaling---
+    def _set_default_scaling(self):
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("mass_frac_phase_comp", 1, index=("Liq", "H2O"))
@@ -111,74 +112,16 @@ class SeawaterFTPwParameterData(SeawaterParameterData):
         self.set_default_scaling("boiling_point_elevation_phase", 1e0, index="Liq")
 
     @classmethod
+    def _trim_state_variables(cls, property_dict):
+        property_dict["flow_mass_phase"]["method"] = None
+        property_dict["mass_frac_phase_comp"]["method"] = None
+        property_dict["temperature"]["method"] = None
+        property_dict["pressure"]["method"] = None
+
+    @classmethod
     def define_metadata(cls, obj):
-        """Define properties supported and units."""
-        obj.add_properties(
-            {
-                "flow_mass_phase": {"method": None},
-                "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
-                "temperature": {"method": None},
-                "pressure": {"method": None},
-                "mass_frac_phase_comp": {"method": None},
-                "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "flow_vol_phase": {"method": "_flow_vol_phase"},
-                "flow_vol": {"method": "_flow_vol"},
-                "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
-                "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "molality_phase_comp": {"method": "_molality_phase_comp"},
-                "visc_d_phase": {"method": "_visc_d_phase"},
-                "pressure_osm_phase": {"method": "_pressure_osm_phase"},
-                "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "pressure_sat": {"method": "_pressure_sat"},
-                "cp_mass_phase": {"method": "_cp_mass_phase"},
-                "therm_cond_phase": {"method": "_therm_cond_phase"},
-                "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-            }
-        )
-        obj.define_custom_properties(
-            {
-                "dens_mass_solvent": {
-                    "doc": "Mass Density of Pure Water",
-                    "units": pyunits.kg * pyunits.m**-3,
-                    "method": "_dens_mass_solvent",
-                },
-                "osm_coeff": {
-                    "doc": "Osmotic Coefficient",
-                    "units": pyunits.dimensionless,
-                    "method": "_osm_coeff",
-                },
-                "enth_flow": {
-                    "doc": "Enthalpy Flow",
-                    "units": pyunits.J * pyunits.s**-1,
-                    "method": "_enth_flow",
-                },
-                "dh_vap_mass": {
-                    "doc": "Latent Heat of Vaporization",
-                    "units": pyunits.J * pyunits.kg**-1,
-                    "method": "_dh_vap_mass",
-                },
-                "boiling_point_elevation_phase": {
-                    "doc": "Boiling Point Elevation",
-                    "units": pyunits.K,
-                    "method": "_boiling_point_elevation_phase",
-                },
-                "energy_density_phase": {
-                    "doc": "Energy Density",
-                    "units": pyunits.J * pyunits.m**-3,
-                    "method": "_energy_density_phase",
-                },
-            }
-        )
-        obj.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
-        )
+        """Inherit property metadata from parent"""
+        super().define_metadata(obj)
 
 
 # We need to inherit from the mixin first so that its initialization methods

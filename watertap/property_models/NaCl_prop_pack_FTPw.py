@@ -85,6 +85,12 @@ class NaClFTPwParameterData(NaClParameterData):
 
     CONFIG = NaClParameterData.CONFIG()
 
+    def build(self):
+        """
+        Inherit build method from parent.
+        """
+        super().build()
+
     def _get_state_block_class(self):
         return NaClFTPwStateBlock
 
@@ -102,12 +108,6 @@ class NaClFTPwParameterData(NaClParameterData):
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
-
-    def build(self):
-        """
-        Inherit build method from parent.
-        """
-        super().build()
 
     @classmethod
     def _trim_state_variables(cls, property_dict):

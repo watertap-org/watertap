@@ -74,7 +74,18 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("SeawaterParameterBlock")
 class SeawaterParameterData(PhysicalParameterBlock):
-    """Parameter block for a seawater property package."""
+    """Parameter block for a seawater property package.
+    References
+    This package was developed from the following references:
+    - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
+    new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
+    doi: 10.1016/j.desal.2016.02.024(preprint)
+    - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
+    existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
+    (2017 corrections provided at http://web.mit.edu/seawater)
+    Diffusivity for NaCl is being used temporarily based on
+    Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
+    """
 
     CONFIG = PhysicalParameterBlock.CONFIG()
 
@@ -84,7 +95,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         """
         super(SeawaterParameterData, self).build()
 
-        self._state_block_class = SeawaterStateBlock
+        self._state_block_class = self._get_state_block_class()
 
         # components
         self.H2O = Solvent()
@@ -93,19 +104,13 @@ class SeawaterParameterData(PhysicalParameterBlock):
         # phases
         self.Liq = LiquidPhase()
 
-        """ References
-        This package was developed from the following references:
-        - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
-        new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
-        doi: 10.1016/j.desal.2016.02.024(preprint)
-        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
-        existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
-        (2017 corrections provided at http://web.mit.edu/seawater)
-        Diffusivity for NaCl is being used temporarily based on
-        Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
-        """
-        # TODO: Edit comment above about diffusivity when/if relationship is changed
+        self._define_parameters()
+        self._set_default_scaling()
 
+    def _get_state_block_class(self):
+        return SeawaterStateBlock
+
+    def _define_parameters(self):
         # parameters
         # molecular weight
         mw_comp_data = {
@@ -725,7 +730,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         for v in self.component_objects(Var):
             v.fix()
 
-        # ---default scaling---
+    def _set_default_scaling(self):
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
@@ -754,31 +759,37 @@ class SeawaterParameterData(PhysicalParameterBlock):
         print_property_metadata(self)
 
     @classmethod
+    def _trim_state_variables(cls, property_dict):
+        property_dict["flow_mass_phase_comp"]["method"] = None
+        property_dict["temperature"]["method"] = None
+        property_dict["pressure"]["method"] = None
+
+    @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
-        obj.add_properties(
-            {
-                "flow_mass_phase_comp": {"method": None},
-                "temperature": {"method": None},
-                "pressure": {"method": None},
-                "flow_mass_phase": {"method": "_flow_mass_phase"},
-                "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
-                "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "flow_vol_phase": {"method": "_flow_vol_phase"},
-                "flow_vol": {"method": "_flow_vol"},
-                "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
-                "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "molality_phase_comp": {"method": "_molality_phase_comp"},
-                "visc_d_phase": {"method": "_visc_d_phase"},
-                "pressure_osm_phase": {"method": "_pressure_osm_phase"},
-                "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "pressure_sat": {"method": "_pressure_sat"},
-                "cp_mass_phase": {"method": "_cp_mass_phase"},
-                "therm_cond_phase": {"method": "_therm_cond_phase"},
-                "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-            }
-        )
+        property_dict = {
+            "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
+            "temperature": {"method": "_temperature"},
+            "pressure": {"method": "_pressure"},
+            "flow_mass_phase": {"method": "_flow_mass_phase"},
+            "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
+            "dens_mass_phase": {"method": "_dens_mass_phase"},
+            "flow_vol_phase": {"method": "_flow_vol_phase"},
+            "flow_vol": {"method": "_flow_vol"},
+            "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
+            "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
+            "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
+            "molality_phase_comp": {"method": "_molality_phase_comp"},
+            "visc_d_phase": {"method": "_visc_d_phase"},
+            "pressure_osm_phase": {"method": "_pressure_osm_phase"},
+            "enth_mass_phase": {"method": "_enth_mass_phase"},
+            "pressure_sat": {"method": "_pressure_sat"},
+            "cp_mass_phase": {"method": "_cp_mass_phase"},
+            "therm_cond_phase": {"method": "_therm_cond_phase"},
+            "diffus_phase_comp": {"method": "_diffus_phase_comp"},
+        }
+        cls._trim_state_variables(property_dict)
+        obj.add_properties(property_dict)
         obj.define_custom_properties(
             {
                 "dens_mass_solvent": {
