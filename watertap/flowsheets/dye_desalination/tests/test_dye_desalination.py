@@ -21,7 +21,6 @@ from watertap.flowsheets.dye_desalination.dye_desalination import (
     build,
     set_operating_conditions,
     initialize_system,
-    initialize_costing,
     solve,
     add_costing,
     optimize_operation,
@@ -118,7 +117,7 @@ class TestDyewithROFlowsheetwithPretreatment:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
@@ -219,7 +218,7 @@ class TestDyewithROFlowsheetDefault:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
@@ -320,7 +319,7 @@ class TestDyewith0DROFlowsheet:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
@@ -423,7 +422,7 @@ class TestDyewithROFlowsheetwithDewatering:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
@@ -521,7 +520,7 @@ class TestDyewithROFlowsheetwithGAC:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
