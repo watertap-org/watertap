@@ -948,21 +948,29 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
                         to_units=pyunits.USD_2023 / pyunits.year,
                     )
 
-    total_capital_cost = pyunits.convert(
-        m.fs.costing.total_capital_cost, to_units=pyunits.USD_2023
-    )
+    @m.fs.Expression(doc="Total capital cost of the treatment train")
+    def total_capital_cost(b):
+        return pyunits.convert(
+            m.fs.costing.total_capital_cost, to_units=pyunits.USD_2023
+        )
 
-    total_operating_cost = pyunits.convert(
-        m.fs.costing.total_operating_cost, to_units=pyunits.USD_2023 / pyunits.yr
-    )
+    @m.fs.Expression(doc="Total operating cost of the treatment train")
+    def total_operating_cost(b):
+        return pyunits.convert(
+            m.fs.costing.total_fixed_operating_cost,
+            to_units=pyunits.USD_2023 / pyunits.year,
+        ) + pyunits.convert(
+            m.fs.costing.total_variable_operating_cost,
+            to_units=pyunits.USD_2023 / pyunits.year,
+        )
 
     @m.fs.Expression(
         doc="Levelized cost of treatment with respect to volumetric feed flow"
     )
     def LCOT(b):
         return (
-            total_capital_cost * b.costing.capital_recovery_factor
-            + total_operating_cost
+            b.total_capital_cost * b.costing.capital_recovery_factor
+            + b.total_operating_cost
             - b.total_externalities
         ) / (
             pyunits.convert(
@@ -977,8 +985,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
     )
     def LCOT_wo_revenue(b):
         return (
-            total_capital_cost * b.costing.capital_recovery_factor
-            + total_operating_cost
+            b.total_capital_cost * b.costing.capital_recovery_factor
+            + b.total_operating_cost
             + b.external_cost
         ) / (
             pyunits.convert(
@@ -996,8 +1004,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             hasattr(m.fs, "desalination") and hasattr(m.fs, "gac")
         ):
             return (
-                total_capital_cost * b.costing.capital_recovery_factor
-                + total_operating_cost
+                b.total_capital_cost * b.costing.capital_recovery_factor
+                + b.total_operating_cost
                 + b.external_cost
             ) / (
                 pyunits.convert(
@@ -1009,8 +1017,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             )
         elif hasattr(m.fs, "desalination"):
             return (
-                total_capital_cost * b.costing.capital_recovery_factor
-                + total_operating_cost
+                b.total_capital_cost * b.costing.capital_recovery_factor
+                + b.total_operating_cost
                 + b.external_cost
             ) / (
                 pyunits.convert(
@@ -1021,8 +1029,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             )
         elif hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
             return (
-                total_capital_cost * b.costing.capital_recovery_factor
-                + total_operating_cost
+                b.total_capital_cost * b.costing.capital_recovery_factor
+                + b.total_operating_cost
                 + external_cost
             ) / (
                 pyunits.convert(
@@ -1042,8 +1050,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             hasattr(m.fs, "gac") and hasattr(m.fs, "desalination")
         ):
             return (
-                total_capital_cost * b.costing.capital_recovery_factor
-                + total_operating_cost
+                b.total_capital_cost * b.costing.capital_recovery_factor
+                + b.total_operating_cost
             ) / (
                 pyunits.convert(
                     b.permeate.properties[0].flow_vol
@@ -1054,8 +1062,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             )
         if hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
             return (
-                total_capital_cost * b.costing.capital_recovery_factor
-                + total_operating_cost
+                b.total_capital_cost * b.costing.capital_recovery_factor
+                + b.total_operating_cost
             ) / (
                 pyunits.convert(
                     b.treated.properties[0].flow_vol,
@@ -1065,8 +1073,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             )
         elif hasattr(m.fs, "desalination"):
             return (
-                total_capital_cost * b.costing.capital_recovery_factor
-                + total_operating_cost
+                b.total_capital_cost * b.costing.capital_recovery_factor
+                + b.total_operating_cost
             ) / (
                 pyunits.convert(
                     b.permeate.properties[0].flow_vol,
