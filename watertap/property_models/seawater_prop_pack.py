@@ -1064,7 +1064,7 @@ class _SeawaterStateBlock(StateBlock):
 
         # fix state variables if hold_state
         if hold_state:
-            self.fix_initialization_states(self)
+            self.fix_initialization_states()
 
         return results
 

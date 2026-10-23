@@ -15,14 +15,11 @@ Initial property package for seawater system
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    check_optimal_termination,
     Constraint,
     Suffix,
-    value,
     Var,
 )
 from pyomo.environ import units as pyunits
-from pyomo.contrib.solver.common.util import NoSolutionError
 
 # Import IDAES cores
 from idaes.core import (
@@ -31,28 +28,12 @@ from idaes.core import (
 )
 from idaes.core.base.components import Solute
 
-from idaes.core.initialization.block_triangularization import (
-    BlockTriangularizationInitializer,
-)
-from idaes.core.util.initialization import (
-    fix_state_vars,
-    revert_state_vars,
-    solve_indexed_blocks,
-)
-import idaes.logger as idaeslog
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-)
-from idaes.core.util.exceptions import (
-    ConfigurationError,
-    InitializationError,
-    PropertyPackageError,
-)
+from idaes.core.util.initialization import fix_state_vars
+
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import BurntToast
 
 # Import WaterTAP libraries
-from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
 
 from watertap.property_models.NaCl_prop_pack import (
@@ -62,9 +43,6 @@ from watertap.property_models.NaCl_prop_pack import (
 from watertap.property_models.bt_initialization_mixin import (
     BlockTriangularizationInitializationMixin,
 )
-
-# Set up logger
-_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("NaClFTPwParameterBlock")
