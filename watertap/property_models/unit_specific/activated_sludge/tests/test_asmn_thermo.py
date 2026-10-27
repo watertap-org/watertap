@@ -391,7 +391,7 @@ class TestASMNPropertiesScaler:
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
-        assert sfx[model.props[1].pH] == pytest.approx(1e-1, rel=1e-8)
+        assert sfx[model.props[1].pH] == pytest.approx(1e0, rel=1e-8)
 
     @pytest.mark.unit
     def test_constraint_scaling_routine(self):
@@ -424,4 +424,4 @@ class TestASMNPropertiesScaler:
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
-        assert sfx[model.props[1].pH] == pytest.approx(1e-1, rel=1e-8)
+        assert sfx[model.props[1].pH] == pytest.approx(1e0, rel=1e-8)

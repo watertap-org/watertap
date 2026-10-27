@@ -65,7 +65,7 @@ class ASMNParameterData(PhysicalParameterBlock):
 
         self.S_I = Solute(doc="Inert soluble organic matter, S_I, [mg COD/L]")
         self.S_S = Solute(doc="Readily biodegradable substrate, S_S, [mg COD/L]")
-        self.S_O = Solute(doc="Dissolved oxygen, S_O, [mg COD/L]")
+        self.S_O = Solute(doc="Dissolved oxygen, S_O, [mg O2/L]")
         self.S_NO3 = Solute(doc="Nitrate, S_NO3, [mg N/L]")
         self.S_NO2 = Solute(doc="Nitrite, S_NO2, [mg N/L]")
         self.S_NO = Solute(doc="Nitric oxide, S_NO, [mg N/L]")
@@ -84,7 +84,7 @@ class ASMNParameterData(PhysicalParameterBlock):
         )
         self.X_D = Solute(doc="Debris from biomass death and lysis, X_D, [mg COD/L]")
         self.X_NS = Solute(
-            doc="Particulate biodegradable organic nitrogen, X_NS, [mg COD/L]"
+            doc="Particulate biodegradable organic nitrogen, X_NS, [mg N/L]"
         )
 
         self.S_Z = Solute(doc="Salt, S_Z, [mg/L]")
@@ -179,6 +179,33 @@ class ASMNParameterData(PhysicalParameterBlock):
             doc="Conversion factor for BOD5",
         )
 
+        # COD equivalents of oxidized N species, referenced to NH4+ (N(-3)) = 0
+        # e.g. NO3- (N(+5)): -8 e-/N * 8 g O2/e- / 14 g N = -32/7 [kg COD/kg N]
+        self.i_COD_NO3 = pyo.Var(
+            initialize=-32 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NegativeReals,
+            doc="COD equivalent of nitrate-N, [kg COD/kg N]",
+        )
+        self.i_COD_NO2 = pyo.Var(
+            initialize=-24 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NegativeReals,
+            doc="COD equivalent of nitrite-N, [kg COD/kg N]",
+        )
+        self.i_COD_NO = pyo.Var(
+            initialize=-20 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NegativeReals,
+            doc="COD equivalent of nitric oxide-N, [kg COD/kg N]",
+        )
+        self.i_COD_N2O = pyo.Var(
+            initialize=-16 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NegativeReals,
+            doc="COD equivalent of nitrous oxide-N, [kg COD/kg N]",
+        )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -202,6 +229,8 @@ class ASMNParameterData(PhysicalParameterBlock):
                 "TKN": {"method": "_TKN"},
                 "Total_N": {"method": "_Total_N"},
                 "COD": {"method": "_COD"},
+                "total_nitrogen_flow": {"method": "_total_nitrogen_flow"},
+                "total_COD_flow": {"method": "_total_COD_flow"},
             }
         )
         obj.add_default_units(
@@ -490,7 +519,6 @@ class ASMNStateBlockData(StateBlockData):
                     + self.conc_mass_comp["X_BA2"]
                 )
             )
-            # TODO: 0.25 should be a parameter instead as it changes by influent/effluent
             return self.params.BOD5_factor[i] * bod5
 
         self.BOD5 = pyo.Expression(
@@ -553,6 +581,32 @@ class ASMNStateBlockData(StateBlockData):
         self.Total_N = pyo.Expression(
             rule=_Total_N,
             doc="Total Nitrogen",
+        )
+
+        # N2 is not tracked: R5 (N2O -> N2) removes N from this balance
+        def _total_nitrogen_flow(self):
+            return self.flow_vol * self.Total_N
+
+        self.total_nitrogen_flow = pyo.Expression(
+            rule=_total_nitrogen_flow,
+            doc="Total nitrogen mass flowrate [kg N/s]",
+        )
+
+        # Organic COD minus O2 plus electron-acceptor COD of NOx species (ref: NH4+ = 0)
+        # S_NS, X_NS carry N only; S_ALK, S_Z carry no COD
+        def _total_COD_flow(self):
+            return self.flow_vol * (
+                self.COD
+                - self.conc_mass_comp["S_O"]
+                + self.params.i_COD_NO3 * self.conc_mass_comp["S_NO3"]
+                + self.params.i_COD_NO2 * self.conc_mass_comp["S_NO2"]
+                + self.params.i_COD_NO * self.conc_mass_comp["S_NO"]
+                + self.params.i_COD_N2O * self.conc_mass_comp["S_N2O"]
+            )
+
+        self.total_COD_flow = pyo.Expression(
+            rule=_total_COD_flow,
+            doc="Total COD-equivalent mass flowrate [kg COD/s]",
         )
 
     def get_material_flow_terms(self, p, j):

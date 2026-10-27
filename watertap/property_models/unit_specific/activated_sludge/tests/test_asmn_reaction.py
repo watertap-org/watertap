@@ -47,6 +47,10 @@ from watertap.property_models.unit_specific.activated_sludge.asmn_reactions impo
 # Get default solver for testing
 solver = get_solver()
 
+# R5 (N2O -> N2): N2 is not an ASMN component, so N and COD leave the balance
+# TODO: revisit once N2 handling is decided
+UNTRACKED_N2_RXNS = ["R5"]
+
 
 class TestParamBlock(object):
     @pytest.fixture(scope="class")
@@ -292,6 +296,85 @@ class TestParamBlock(object):
         assert not hasattr(model.rparams, "K_IA1Z")
         assert not hasattr(model.rparams, "K_IA2Z")
         assert not hasattr(model.rparams, "K_ISJ")
+
+    @pytest.mark.unit
+    def test_nitrogen_conservation(self, model):
+        rparams = model.rparams
+        prop = model.pparams
+        # ASM1 convention: organic N carried by S_NS/X_NS, not by COD fractions
+        N_content = {
+            "H2O": 0,
+            "S_I": 0,
+            "S_S": 0,
+            "S_O": 0,
+            "S_NO3": 1,
+            "S_NO2": 1,
+            "S_NO": 1,
+            "S_N2O": 1,
+            "S_NH": 1,
+            "S_NS": 1,
+            "X_I": value(prop.i_NXD),
+            "X_S": 0,
+            "X_BH": value(prop.i_NXB),
+            "X_BA1": value(prop.i_NXB),
+            "X_BA2": value(prop.i_NXB),
+            "X_D": value(prop.i_NXD),
+            "X_NS": 1,
+            "S_Z": 0,
+            "S_J": 0,
+            "S_W": 0,
+            "S_ALK": 0,
+        }
+
+        for r in rparams.rate_reaction_idx:
+            if r in UNTRACKED_N2_RXNS:
+                continue
+            N_balance = sum(
+                N_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in N_content
+            )
+            assert pytest.approx(0, abs=1e-8) == N_balance
+
+    @pytest.mark.unit
+    def test_COD_conservation(self, model):
+        rparams = model.rparams
+        prop = model.pparams
+        # S_O in O2 units (negative COD); N oxides referenced to NH4+ = 0
+        COD_content = {
+            "H2O": 0,
+            "S_I": 1,
+            "S_S": 1,
+            "S_O": -1,
+            "S_NO3": value(prop.i_COD_NO3),
+            "S_NO2": value(prop.i_COD_NO2),
+            "S_NO": value(prop.i_COD_NO),
+            "S_N2O": value(prop.i_COD_N2O),
+            "S_NH": 0,
+            "S_NS": 0,
+            "X_I": 1,
+            "X_S": 1,
+            "X_BH": 1,
+            "X_BA1": 1,
+            "X_BA2": 1,
+            "X_D": 1,
+            "X_NS": 0,
+            "S_Z": 0,
+            "S_J": 1,
+            "S_W": 1,
+            "S_ALK": 0,
+        }
+
+        for r in rparams.rate_reaction_idx:
+            if r in UNTRACKED_N2_RXNS:
+                continue
+            terms = [
+                COD_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in COD_content
+            ]
+            # Table 4 uses rounded e- equivalents (1.14, 3.43, 0.571, 1.143),
+            # so check residual relative to gross COD turnover of each reaction
+            gross = sum(abs(t) for t in terms)
+            assert pytest.approx(0, abs=1e-3 * gross) == sum(terms)
 
 
 class TestParamBlockOptionalInhibition(object):
@@ -615,3 +698,17 @@ class TestReactor:
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             0.004997, rel=1e-4
         )
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = value(model.fs.R1.control_volume.properties_in[0].total_nitrogen_flow)
+        TN_out = value(model.fs.R1.control_volume.properties_out[0].total_nitrogen_flow)
+
+        assert TN_out == pytest.approx(TN_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = value(model.fs.R1.control_volume.properties_in[0].total_COD_flow)
+        TCOD_out = value(model.fs.R1.control_volume.properties_out[0].total_COD_flow)
+
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)
