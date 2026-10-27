@@ -52,7 +52,7 @@ class TestParamBlock(object):
         for i in model.params.phase_list:
             assert i == "Liq"
 
-        assert len(model.params.component_list) == 21
+        assert len(model.params.component_list) == 22
         for i in model.params.component_list:
             assert i in [
                 "H2O",
@@ -63,6 +63,7 @@ class TestParamBlock(object):
                 "S_NO2",
                 "S_NO",
                 "S_N2O",
+                "S_N2",
                 "S_NH",
                 "S_NS",
                 "X_I",
@@ -91,7 +92,7 @@ class TestParamBlock(object):
         assert value(model.params.temperature_ref) == 298.15
 
         assert len(model.params.particulate_component_set) == 7
-        assert len(model.params.non_particulate_component_set) == 14
+        assert len(model.params.non_particulate_component_set) == 15
         assert len(model.params.tss_component_set) == 6
         for i in model.params.particulate_component_set:
             assert i in [
@@ -124,6 +125,7 @@ class TestParamBlock(object):
                 "S_NO2",
                 "S_NO",
                 "S_N2O",
+                "S_N2",
                 "S_NH",
                 "S_NS",
                 "S_Z",
@@ -164,7 +166,7 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
         # H2O should not appear in conc_mass_comp
-        assert len(model.props[1].conc_mass_comp) == 19
+        assert len(model.props[1].conc_mass_comp) == 20
         for i in model.props[1].conc_mass_comp:
             assert i in [
                 "S_I",
@@ -174,6 +176,7 @@ class TestStateBlock(object):
                 "S_NO2",
                 "S_NO",
                 "S_N2O",
+                "S_N2",
                 "S_NH",
                 "S_NS",
                 "X_I",
@@ -200,6 +203,16 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].params.BOD5_factor, Param)
         assert value(model.props[1].params.BOD5_factor["raw"]) == 0.65
         assert value(model.props[1].params.BOD5_factor["effluent"]) == 0.25
+        assert isinstance(model.props[1].params.i_COD_NO3, Var)
+        assert value(model.props[1].params.i_COD_NO3) == pytest.approx(-32 / 7)
+        assert isinstance(model.props[1].params.i_COD_NO2, Var)
+        assert value(model.props[1].params.i_COD_NO2) == pytest.approx(-24 / 7)
+        assert isinstance(model.props[1].params.i_COD_NO, Var)
+        assert value(model.props[1].params.i_COD_NO) == pytest.approx(-20 / 7)
+        assert isinstance(model.props[1].params.i_COD_N2O, Var)
+        assert value(model.props[1].params.i_COD_N2O) == pytest.approx(-16 / 7)
+        assert isinstance(model.props[1].params.i_COD_N2, Var)
+        assert value(model.props[1].params.i_COD_N2) == pytest.approx(-12 / 7)
 
         assert isinstance(model.props[1].material_flow_expression, Expression)
         for j in model.params.component_list:
@@ -360,7 +373,7 @@ class TestStateBlock(object):
             assert v in orig_fixed_vars
 
     @pytest.mark.unit
-    def check_units(self, model):
+    def test_check_units(self, model):
         assert_units_consistent(model)
 
     @pytest.mark.unit
@@ -371,6 +384,14 @@ class TestStateBlock(object):
         assert value(model.props[1].BOD5["raw"]) == pytest.approx(0.3094, rel=1e-3)
         assert value(model.props[1].TKN) == pytest.approx(0.3378, rel=1e-3)
         assert value(model.props[1].Total_N) == pytest.approx(0.7378, rel=1e-3)
+        # Total_N + S_N2
+        assert value(model.props[1].total_nitrogen_flow) == pytest.approx(
+            0.8378, rel=1e-3
+        )
+        # COD - S_O + 0.1 * (-32 - 24 - 20 - 16 - 12) / 7
+        assert value(model.props[1].total_COD_flow) == pytest.approx(
+            0.9 - 10.4 / 7, rel=1e-3
+        )
 
 
 class TestASMNPropertiesScaler:

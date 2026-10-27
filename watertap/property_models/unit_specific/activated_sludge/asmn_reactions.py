@@ -17,6 +17,12 @@ References:
 [1] Hiatt, W.C., Grady, C.P.L. Jr., "An Updated Process Model for Carbon
 Oxidation, Nitrification, and Denitrification", Water Environ. Res., 80, 2145
 (2008).
+
+[2] Snip, L.J.P., "Quantifying the greenhouse gas emissions of waste water
+treatment plants", MSc thesis, Wageningen University (2010), Tables 5.1-5.2.
+
+Note: S_N2 is not among the 20 components of [1]; it is added as the product
+of N2O reduction (R5) following [2] so that N and COD balances close.
 """
 
 # Import Pyomo libraries
@@ -501,20 +507,26 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             )
 
         # Reaction Stoichiometry
-        # This is the stoichiometric part the Peterson matrix in dict form
         # Note that reaction stoichiometry is on a mass basis.
         # For alkalinity, this requires converting the mass of nitrogen species
         # reacted to mass of alkalinity converted using a charge balance (effectively MW_C/MW_N)
         mw_alk = 12 * pyo.units.kg / pyo.units.kmol
         mw_n = 14 * pyo.units.kg / pyo.units.kmol
 
+        # Electron equivalents [g COD/g N] as exact fractions
+        # (Table 4 of [1] rounds to 1.143, 0.571, 1.14, 3.43);
+        cod_2e = 8 / 7  # 2 e-/N: NO3- -> NO2-, NO2- -> NO3-
+        cod_1e = 4 / 7  # 1 e-/N: NO2- -> NO, NO -> N2O, N2O -> N2
+        cod_6e = 24 / 7  # 6 e-/N: NO2- -> NH4+, NH4+ -> NO2-
+
         # Helper denitrification stoichiometric coefficients
-        A = (1 - self.Y_H * self.eta_Y) / (1.143 * self.Y_H * self.eta_Y)
-        B = (1 - self.Y_H * self.eta_Y) / (0.571 * self.Y_H * self.eta_Y)
+        A = (1 - self.Y_H * self.eta_Y) / (cod_2e * self.Y_H * self.eta_Y)
+        B = (1 - self.Y_H * self.eta_Y) / (cod_1e * self.Y_H * self.eta_Y)
 
         # Component order follows Table 4 of Hiatt and Grady (2008):
         # X_S, X_BH, X_BA1, X_BA2, X_D, S_S, S_O, S_NO3, S_NO2, S_NO, S_N2O,
         # S_NH, S_NS, X_NS, S_ALK, S_J, S_W, then inert components (H2O, S_I, X_I, S_Z)
+        # S_N2 (after S_N2O) is not in [1]; produced only by R5, per [2]
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic growth of heterotrophs
             ("R1", "Liq", "X_S"): 0,
@@ -528,6 +540,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "S_NO2"): 0,
             ("R1", "Liq", "S_NO"): 0,
             ("R1", "Liq", "S_N2O"): 0,
+            ("R1", "Liq", "S_N2"): 0,
             ("R1", "Liq", "S_NH"): -self.i_NXB,
             ("R1", "Liq", "S_NS"): 0,
             ("R1", "Liq", "X_NS"): 0,
@@ -550,6 +563,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R2", "Liq", "S_NO2"): A,
             ("R2", "Liq", "S_NO"): 0,
             ("R2", "Liq", "S_N2O"): 0,
+            ("R2", "Liq", "S_N2"): 0,
             ("R2", "Liq", "S_NH"): -self.i_NXB,
             ("R2", "Liq", "S_NS"): 0,
             ("R2", "Liq", "X_NS"): 0,
@@ -572,6 +586,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R3", "Liq", "S_NO2"): -B,
             ("R3", "Liq", "S_NO"): B,
             ("R3", "Liq", "S_N2O"): 0,
+            ("R3", "Liq", "S_N2"): 0,
             ("R3", "Liq", "S_NH"): -self.i_NXB,
             ("R3", "Liq", "S_NS"): 0,
             ("R3", "Liq", "X_NS"): 0,
@@ -594,6 +609,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R4", "Liq", "S_NO2"): 0,
             ("R4", "Liq", "S_NO"): -B,
             ("R4", "Liq", "S_N2O"): B,
+            ("R4", "Liq", "S_N2"): 0,
             ("R4", "Liq", "S_NH"): -self.i_NXB,
             ("R4", "Liq", "S_NS"): 0,
             ("R4", "Liq", "X_NS"): 0,
@@ -616,6 +632,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R5", "Liq", "S_NO2"): 0,
             ("R5", "Liq", "S_NO"): 0,
             ("R5", "Liq", "S_N2O"): -B,
+            ("R5", "Liq", "S_N2"): B,
             ("R5", "Liq", "S_NH"): -self.i_NXB,
             ("R5", "Liq", "S_NS"): 0,
             ("R5", "Liq", "X_NS"): 0,
@@ -632,12 +649,13 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "X_BA1"): 0,
             ("R6", "Liq", "X_BA2"): 0,
             ("R6", "Liq", "X_D"): 0,
-            ("R6", "Liq", "S_S"): -1.14,
+            ("R6", "Liq", "S_S"): -cod_2e,
             ("R6", "Liq", "S_O"): 0,
             ("R6", "Liq", "S_NO3"): -1,
             ("R6", "Liq", "S_NO2"): 1,
             ("R6", "Liq", "S_NO"): 0,
             ("R6", "Liq", "S_N2O"): 0,
+            ("R6", "Liq", "S_N2"): 0,
             ("R6", "Liq", "S_NH"): 0,
             ("R6", "Liq", "S_NS"): 0,
             ("R6", "Liq", "X_NS"): 0,
@@ -654,12 +672,13 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "X_BA1"): 0,
             ("R7", "Liq", "X_BA2"): 0,
             ("R7", "Liq", "X_D"): 0,
-            ("R7", "Liq", "S_S"): -3.43,
+            ("R7", "Liq", "S_S"): -cod_6e,
             ("R7", "Liq", "S_O"): 0,
             ("R7", "Liq", "S_NO3"): 0,
             ("R7", "Liq", "S_NO2"): -1,
             ("R7", "Liq", "S_NO"): 0,
             ("R7", "Liq", "S_N2O"): 0,
+            ("R7", "Liq", "S_N2"): 0,
             ("R7", "Liq", "S_NH"): 1,
             ("R7", "Liq", "S_NS"): 0,
             ("R7", "Liq", "X_NS"): 0,
@@ -682,6 +701,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_NO2"): 0,
             ("R8", "Liq", "S_NO"): 0,
             ("R8", "Liq", "S_N2O"): 0,
+            ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NH"): 0,
             ("R8", "Liq", "S_NS"): 0,
             ("R8", "Liq", "X_NS"): self.i_NXB - self.f_D * self.i_NXD,
@@ -699,11 +719,12 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R9", "Liq", "X_BA2"): 0,
             ("R9", "Liq", "X_D"): 0,
             ("R9", "Liq", "S_S"): 0,
-            ("R9", "Liq", "S_O"): -(3.43 - self.Y_A1) / self.Y_A1,
+            ("R9", "Liq", "S_O"): -(cod_6e - self.Y_A1) / self.Y_A1,
             ("R9", "Liq", "S_NO3"): 0,
             ("R9", "Liq", "S_NO2"): 1 / self.Y_A1,
             ("R9", "Liq", "S_NO"): 0,
             ("R9", "Liq", "S_N2O"): 0,
+            ("R9", "Liq", "S_N2"): 0,
             ("R9", "Liq", "S_NH"): -self.i_NXB - 1 / self.Y_A1,
             ("R9", "Liq", "S_NS"): 0,
             ("R9", "Liq", "X_NS"): 0,
@@ -721,11 +742,12 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "X_BA2"): 1,
             ("R10", "Liq", "X_D"): 0,
             ("R10", "Liq", "S_S"): 0,
-            ("R10", "Liq", "S_O"): -(1.14 - self.Y_A2) / self.Y_A2,
+            ("R10", "Liq", "S_O"): -(cod_2e - self.Y_A2) / self.Y_A2,
             ("R10", "Liq", "S_NO3"): 1 / self.Y_A2,
             ("R10", "Liq", "S_NO2"): -1 / self.Y_A2,
             ("R10", "Liq", "S_NO"): 0,
             ("R10", "Liq", "S_N2O"): 0,
+            ("R10", "Liq", "S_N2"): 0,
             ("R10", "Liq", "S_NH"): -self.i_NXB,
             ("R10", "Liq", "S_NS"): 0,
             ("R10", "Liq", "X_NS"): 0,
@@ -748,6 +770,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "S_NO2"): 0,
             ("R11", "Liq", "S_NO"): 0,
             ("R11", "Liq", "S_N2O"): 0,
+            ("R11", "Liq", "S_N2"): 0,
             ("R11", "Liq", "S_NH"): -self.i_NXB,
             ("R11", "Liq", "S_NS"): 0,
             ("R11", "Liq", "X_NS"): 0,
@@ -770,6 +793,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_NO2"): 0,
             ("R12", "Liq", "S_NO"): 0,
             ("R12", "Liq", "S_N2O"): 0,
+            ("R12", "Liq", "S_N2"): 0,
             ("R12", "Liq", "S_NH"): 0,
             ("R12", "Liq", "S_NS"): 0,
             ("R12", "Liq", "X_NS"): self.i_NXB - self.f_D * self.i_NXD,
@@ -792,6 +816,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "S_NO2"): 0,
             ("R13", "Liq", "S_NO"): 0,
             ("R13", "Liq", "S_N2O"): 0,
+            ("R13", "Liq", "S_N2"): 0,
             ("R13", "Liq", "S_NH"): 0,
             ("R13", "Liq", "S_NS"): 0,
             ("R13", "Liq", "X_NS"): self.i_NXB - self.f_D * self.i_NXD,
@@ -814,6 +839,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "S_NO2"): 0,
             ("R14", "Liq", "S_NO"): 0,
             ("R14", "Liq", "S_N2O"): 0,
+            ("R14", "Liq", "S_N2"): 0,
             ("R14", "Liq", "S_NH"): 1,
             ("R14", "Liq", "S_NS"): -1,
             ("R14", "Liq", "X_NS"): 0,
@@ -836,6 +862,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "S_NO2"): 0,
             ("R15", "Liq", "S_NO"): 0,
             ("R15", "Liq", "S_N2O"): 0,
+            ("R15", "Liq", "S_N2"): 0,
             ("R15", "Liq", "S_NH"): 0,
             ("R15", "Liq", "S_NS"): 0,
             ("R15", "Liq", "X_NS"): 0,
@@ -858,6 +885,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "S_NO2"): 0,
             ("R16", "Liq", "S_NO"): 0,
             ("R16", "Liq", "S_N2O"): 0,
+            ("R16", "Liq", "S_N2"): 0,
             ("R16", "Liq", "S_NH"): 0,
             ("R16", "Liq", "S_NS"): 1,
             ("R16", "Liq", "X_NS"): -1,
@@ -880,6 +908,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "S_NO2"): 0,
             ("R17", "Liq", "S_NO"): 0,
             ("R17", "Liq", "S_N2O"): 0,
+            ("R17", "Liq", "S_N2"): 0,
             ("R17", "Liq", "S_NH"): -self.i_NXB,
             ("R17", "Liq", "S_NS"): 0,
             ("R17", "Liq", "X_NS"): 0,
@@ -902,6 +931,7 @@ class ASMNReactionParameterData(ReactionParameterBlock):
             ("R18", "Liq", "S_NO2"): 0,
             ("R18", "Liq", "S_NO"): 0,
             ("R18", "Liq", "S_N2O"): 0,
+            ("R18", "Liq", "S_N2"): 0,
             ("R18", "Liq", "S_NH"): -self.i_NXB,
             ("R18", "Liq", "S_NS"): 0,
             ("R18", "Liq", "X_NS"): 0,

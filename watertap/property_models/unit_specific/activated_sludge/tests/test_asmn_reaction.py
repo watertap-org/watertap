@@ -27,6 +27,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_consistent
+import idaes.core.util.scaling as iscale
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import CSTR
@@ -46,10 +47,6 @@ from watertap.property_models.unit_specific.activated_sludge.asmn_reactions impo
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-
-# R5 (N2O -> N2): N2 is not an ASMN component, so N and COD leave the balance
-# TODO: revisit once N2 handling is decided
-UNTRACKED_N2_RXNS = ["R5"]
 
 
 class TestParamBlock(object):
@@ -96,7 +93,7 @@ class TestParamBlock(object):
                 "R18",
             ]
 
-        assert len(model.rparams.rate_reaction_stoichiometry) == 18 * 21
+        assert len(model.rparams.rate_reaction_stoichiometry) == 18 * 22
         for i in model.rparams.rate_reaction_stoichiometry:
             assert i[0] in [
                 "R1",
@@ -128,6 +125,7 @@ class TestParamBlock(object):
                 "S_NO2",
                 "S_NO",
                 "S_N2O",
+                "S_N2",
                 "S_NH",
                 "S_NS",
                 "X_I",
@@ -311,6 +309,7 @@ class TestParamBlock(object):
             "S_NO2": 1,
             "S_NO": 1,
             "S_N2O": 1,
+            "S_N2": 1,
             "S_NH": 1,
             "S_NS": 1,
             "X_I": value(prop.i_NXD),
@@ -327,8 +326,6 @@ class TestParamBlock(object):
         }
 
         for r in rparams.rate_reaction_idx:
-            if r in UNTRACKED_N2_RXNS:
-                continue
             N_balance = sum(
                 N_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
                 for j in N_content
@@ -349,6 +346,7 @@ class TestParamBlock(object):
             "S_NO2": value(prop.i_COD_NO2),
             "S_NO": value(prop.i_COD_NO),
             "S_N2O": value(prop.i_COD_N2O),
+            "S_N2": value(prop.i_COD_N2),
             "S_NH": 0,
             "S_NS": 0,
             "X_I": 1,
@@ -365,16 +363,11 @@ class TestParamBlock(object):
         }
 
         for r in rparams.rate_reaction_idx:
-            if r in UNTRACKED_N2_RXNS:
-                continue
             terms = [
                 COD_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
                 for j in COD_content
             ]
-            # Table 4 uses rounded e- equivalents (1.14, 3.43, 0.571, 1.143),
-            # so check residual relative to gross COD turnover of each reaction
-            gross = sum(abs(t) for t in terms)
-            assert pytest.approx(0, abs=1e-3 * gross) == sum(terms)
+            assert pytest.approx(0, abs=1e-8) == sum(terms)
 
 
 class TestParamBlockOptionalInhibition(object):
@@ -596,6 +589,7 @@ class TestReactor:
         m.fs.R1.inlet.conc_mass_comp[0, "S_NO2"].fix(1e-6 * units.g / units.m**3)
         m.fs.R1.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.g / units.m**3)
         m.fs.R1.inlet.conc_mass_comp[0, "S_N2O"].fix(1e-6 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(1e-6 * units.g / units.m**3)
         m.fs.R1.inlet.conc_mass_comp[0, "S_NH"].fix(25 * units.g / units.m**3)
         m.fs.R1.inlet.conc_mass_comp[0, "S_NS"].fix(6.5 * units.g / units.m**3)
         m.fs.R1.inlet.conc_mass_comp[0, "X_NS"].fix(8.5 * units.g / units.m**3)
@@ -611,6 +605,18 @@ class TestReactor:
         m.fs.R1.volume.fix(1000 * units.m**3)
 
         m.fs.R1.outlet.pH.fix(7.0)
+
+        # Rates ~1e-10 to 1e-6 kg/m3/s: scale so IPOPT enforces the rate expressions
+        cv = m.fs.R1.control_volume
+        for t in m.fs.time:
+            for v in cv.reactions[t].reaction_rate.values():
+                iscale.set_scaling_factor(v, 1e6)
+            for c in cv.reactions[t].rate_expression.values():
+                iscale.constraint_scaling_transform(c, 1e6)
+            for sb in (cv.properties_in[t], cv.properties_out[t]):
+                for v in sb.conc_mass_comp.values():
+                    iscale.set_scaling_factor(v, 1e3)
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -632,9 +638,7 @@ class TestReactor:
 
     @pytest.mark.component
     def test_solution(self, model):
-        # Sanity checks on the solved CSTR outlet: state variables propagate as
-        # expected (flow, T, P, pH unchanged through the reactor) and all mass
-        # concentrations remain non-negative.
+        # State variables pass through unchanged
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(
             1000 / 86400, rel=1e-4
         )
@@ -644,59 +648,60 @@ class TestReactor:
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.pH[0]) == pytest.approx(7.0, rel=1e-4)
 
+        # Heterotrophs grow at HRT = 1 d; autotrophs and NOx washed out
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
-            30e-3, rel=1e-4
+            3.0000e-02, rel=1e-3
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_S"]) == pytest.approx(
-            65e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            50e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            200e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BH"]) == pytest.approx(
-            0, abs=1e-5
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BA1"]) == pytest.approx(
-            0, abs=1e-5
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BA2"]) == pytest.approx(
-            0, abs=1e-5
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_D"]) == pytest.approx(
-            0, abs=1e-5
+            6.1484e-02, rel=1e-3
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            1.9582e-3, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
-            0, abs=1e-5
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO2"]) == pytest.approx(
-            1.2382e-5, rel=1e-4
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO"]) == pytest.approx(
-            0, abs=1e-5
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2O"]) == pytest.approx(
-            0, abs=1e-5
-        )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO2"]) == pytest.approx(
-            1.2382e-5, rel=1e-4
+            4.2763e-05, rel=1e-3
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH"]) == pytest.approx(
-            24.973e-3, rel=1e-4
+            3.0581e-02, rel=1e-3
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NS"]) == pytest.approx(
-            6.5141e-3, rel=1e-4
+            7.2497e-04, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
+            5.0000e-02, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            1.9941e-01, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BH"]) == pytest.approx(
+            2.0851e-03, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_D"]) == pytest.approx(
+            6.8060e-05, rel=1e-3
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_NS"]) == pytest.approx(
-            8.5e-3, rel=1e-4
+            8.5103e-03, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
+            0, abs=1e-6
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO2"]) == pytest.approx(
+            0, abs=1e-6
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO"]) == pytest.approx(
+            0, abs=1e-6
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2O"]) == pytest.approx(
+            0, abs=1e-6
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
+            0, abs=1e-6
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BA1"]) == pytest.approx(
+            0, abs=1e-6
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BA2"]) == pytest.approx(
+            0, abs=1e-6
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            0.004997, rel=1e-4
+            5.3987e-3, rel=1e-3
         )
 
     @pytest.mark.component
@@ -711,4 +716,103 @@ class TestReactor:
         TCOD_in = value(model.fs.R1.control_volume.properties_in[0].total_COD_flow)
         TCOD_out = value(model.fs.R1.control_volume.properties_out[0].total_COD_flow)
 
-        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-6)
+
+
+class TestReactorAnoxic:
+    """Seeded biomass, nitrate feed, low DO: exercises R2-R5 so N2 production is non-zero."""
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.props = ASMNParameterBlock()
+        m.fs.rxn_props = ASMNReactionParameterBlock(property_package=m.fs.props)
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+
+        m.fs.R1.inlet.flow_vol.fix(1000 * units.m**3 / units.day)
+        m.fs.R1.inlet.temperature.fix(293.15 * units.K)
+        m.fs.R1.inlet.pressure.fix(1 * units.atm)
+        m.fs.R1.inlet.pH.fix(7.0)
+        m.fs.R1.inlet.alkalinity.fix(5 * units.mol / units.m**3)
+
+        feed = {
+            "S_I": 30,
+            "S_S": 65,
+            "X_I": 50,
+            "X_S": 200,
+            "X_BH": 500,
+            "X_BA1": 50,
+            "X_BA2": 25,
+            "S_O": 0.05,
+            "S_NO3": 20,
+            "S_NH": 25,
+            "S_NS": 6.5,
+            "X_NS": 8.5,
+        }
+        for j in m.fs.props.solute_set:
+            m.fs.R1.inlet.conc_mass_comp[0, j].fix(
+                feed.get(j, 1e-6) * units.g / units.m**3
+            )
+
+        m.fs.R1.volume.fix(1000 * units.m**3)
+        m.fs.R1.outlet.pH.fix(7.0)
+
+        # Rates ~1e-10 to 1e-6 kg/m3/s: scale so IPOPT enforces the rate expressions
+        cv = m.fs.R1.control_volume
+        for t in m.fs.time:
+            for v in cv.reactions[t].reaction_rate.values():
+                iscale.set_scaling_factor(v, 1e6)
+            for c in cv.reactions[t].rate_expression.values():
+                iscale.constraint_scaling_transform(c, 1e6)
+            for sb in (cv.properties_in[t], cv.properties_out[t]):
+                for v in sb.conc_mass_comp.values():
+                    iscale.set_scaling_factor(v, 1e3)
+        iscale.calculate_scaling_factors(m)
+
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        model.fs.R1.initialize()
+        results = solver.solve(model)
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_denitrification_active(self, model):
+        rxns = model.fs.R1.control_volume.reactions[0]
+        assert value(rxns.reaction_rate["R5"]) > 1e-8
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) > 1e-3
+
+    @pytest.mark.component
+    def test_N2_production(self, model):
+        rparams = model.fs.rxn_props
+        B = value(
+            (1 - rparams.Y_H * rparams.eta_Y) / (4 / 7 * rparams.Y_H * rparams.eta_Y)
+        )
+        R5 = value(model.fs.R1.control_volume.reactions[0].reaction_rate["R5"])
+        V = value(model.fs.R1.volume[0])
+        N2_out = value(
+            model.fs.R1.outlet.flow_vol[0]
+            * (
+                model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]
+                - model.fs.R1.inlet.conc_mass_comp[0, "S_N2"]
+            )
+        )
+        assert N2_out == pytest.approx(B * R5 * V, rel=1e-6)
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = value(model.fs.R1.control_volume.properties_in[0].total_nitrogen_flow)
+        TN_out = value(model.fs.R1.control_volume.properties_out[0].total_nitrogen_flow)
+        assert TN_out == pytest.approx(TN_in, rel=1e-6)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = value(model.fs.R1.control_volume.properties_in[0].total_COD_flow)
+        TCOD_out = value(model.fs.R1.control_volume.properties_out[0].total_COD_flow)
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-6)

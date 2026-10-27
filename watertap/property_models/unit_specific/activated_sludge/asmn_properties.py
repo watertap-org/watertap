@@ -11,6 +11,17 @@
 #################################################################################
 """
 Thermophysical property package to be used in conjunction with ASMN reactions.
+
+References:
+
+[1] Hiatt, W.C., Grady, C.P.L. Jr., "An Updated Process Model for Carbon
+Oxidation, Nitrification, and Denitrification", Water Environ. Res., 80, 2145
+(2008).
+
+[2] Snip, L.J.P., "Quantifying the greenhouse gas emissions of waste water
+treatment plants", MSc thesis, Wageningen University (2010).
+
+Note: S_N2 is added to the 20 components of [1], following [2], to close N and COD balances.
 """
 
 # Import Pyomo libraries
@@ -70,6 +81,9 @@ class ASMNParameterData(PhysicalParameterBlock):
         self.S_NO2 = Solute(doc="Nitrite, S_NO2, [mg N/L]")
         self.S_NO = Solute(doc="Nitric oxide, S_NO, [mg N/L]")
         self.S_N2O = Solute(doc="Nitrous oxide, S_N2O, [mg N/L]")
+        self.S_N2 = Solute(
+            doc="Dinitrogen, S_N2, product of N2O reduction ([2]), [mg N/L]"
+        )
         self.S_NH = Solute(doc="Ammonia, S_NH, [mg N/L]")
         self.S_NS = Solute(doc="Soluble biodegradable organic nitrogen, S_NS, [mg N/L]")
 
@@ -103,6 +117,7 @@ class ASMNParameterData(PhysicalParameterBlock):
                 "S_NO2",
                 "S_NO",
                 "S_N2O",
+                "S_N2",
                 "S_NH",
                 "S_NS",
                 "S_Z",
@@ -204,6 +219,12 @@ class ASMNParameterData(PhysicalParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.NegativeReals,
             doc="COD equivalent of nitrous oxide-N, [kg COD/kg N]",
+        )
+        self.i_COD_N2 = pyo.Var(
+            initialize=-12 / 7,
+            units=pyo.units.dimensionless,
+            domain=pyo.NegativeReals,
+            doc="COD equivalent of dinitrogen-N, [kg COD/kg N]",
         )
 
         # Fix Vars that are treated as Params
@@ -583,9 +604,9 @@ class ASMNStateBlockData(StateBlockData):
             doc="Total Nitrogen",
         )
 
-        # N2 is not tracked: R5 (N2O -> N2) removes N from this balance
+        # Total_N (effluent TN) excludes dissolved N2; the conservation balance includes it
         def _total_nitrogen_flow(self):
-            return self.flow_vol * self.Total_N
+            return self.flow_vol * (self.Total_N + self.conc_mass_comp["S_N2"])
 
         self.total_nitrogen_flow = pyo.Expression(
             rule=_total_nitrogen_flow,
@@ -602,6 +623,7 @@ class ASMNStateBlockData(StateBlockData):
                 + self.params.i_COD_NO2 * self.conc_mass_comp["S_NO2"]
                 + self.params.i_COD_NO * self.conc_mass_comp["S_NO"]
                 + self.params.i_COD_N2O * self.conc_mass_comp["S_N2O"]
+                + self.params.i_COD_N2 * self.conc_mass_comp["S_N2"]
             )
 
         self.total_COD_flow = pyo.Expression(
