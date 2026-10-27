@@ -195,7 +195,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             "X_ac": 0.0006947201,
             "X_h2": 0.0006947201,
             "X_I": 0.0002093322,
-            "X_PP": 1,
+            "X_PP": 1 / 31,
             "X_PAO": 0.0006947201,
         }
 
@@ -1762,18 +1762,18 @@ class ModifiedADM1ReactionScaler(CustomScalerBase):
     are scaled using the inverse maximum scheme.
     """
 
-    # TODO: Revisit this scaling factor
     DEFAULT_SCALING_FACTORS = {
-        "reaction_rate": 1e2,
-        "I": 1e1,
+        "reaction_rate": None,
+        "I": 1e2,
+        "S_H": 1e8,
     }
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        self.scale_variable_by_default(model.S_H, overwrite=overwrite)
         for r in model.params.rate_reaction_idx:
             self.scale_variable_by_default(model.I[r], overwrite=overwrite)
-
         if model.is_property_constructed("reaction_rate"):
             for j in model.reaction_rate.values():
                 self.scale_variable_by_default(j, overwrite=overwrite)
@@ -2335,7 +2335,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             return 1 / (1 + self.conc_mol_nh3 / self.params.K_I_nh3)
 
         self.I_nh3 = pyo.Expression(
-            rule=rule_I_nh3, doc="ammonia inibition attributed to acetate uptake"
+            rule=rule_I_nh3, doc="ammonia inhibition attributed to acetate uptake"
         )
 
         def rule_I_pH_aa(self):

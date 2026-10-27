@@ -35,7 +35,8 @@ solver = get_solver()
 
 class TestPumpZOdefault:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -109,7 +110,8 @@ params = db._get_technology("pump")
 
 class TestPumpZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

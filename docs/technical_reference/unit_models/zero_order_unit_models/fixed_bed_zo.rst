@@ -1,3 +1,5 @@
+.. _fixed_bed_zo:
+
 Fixed Bed (ZO)
 ==============
 
@@ -49,7 +51,7 @@ Additional Constraints
 
    "Acetic acid demand constraint", "acetic_acid_demand_equation"
    "Phosphoric acid demand constraint", "phosphoric_acid_demand_equation"
-   "Acetic acid demand constraint", "ferric_chloride_demand_equation"
+   "Ferric chloride demand constraint", "ferric_chloride_demand_equation"
    "Activated carbon demand constraint", "activated_carbon_demand_equation"
    "Sand demand constraint", "sand_demand_equation"
    "Anthracite demand constraint", "anthracite_demand_equation"

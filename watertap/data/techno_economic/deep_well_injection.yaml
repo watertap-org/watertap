@@ -1,18 +1,14 @@
 default:
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-  default_removal_frac_mass_comp:
-    value: 0
-    units: dimensionless
   capital_cost:
     cost_factor: None
     well_pump_cost:
       value: 16.9e6 # this is wells/pumps fixed capital AFTER applying TIC factor
       units: USD_2011
+      reference: KBHDP case study
     pipe_cost_basis:
       value: 35000
-      units: USD_2011/(miles*inches)
+      units: USD_2020/(miles*inches) # assumed year based on when case studies were done
+      reference: Produced water case studies
     flow_exponent:
       value: 0.7
       units: dimensionless

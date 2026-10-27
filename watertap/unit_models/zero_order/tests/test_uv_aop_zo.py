@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestUVAOPZO_with_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -165,7 +166,8 @@ class TestUVAOPZO_with_default_removal:
 
 class TestUVAOPZO_subtype_no_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

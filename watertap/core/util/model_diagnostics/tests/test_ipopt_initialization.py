@@ -22,7 +22,8 @@ from watertap.core.util.model_diagnostics.ipopt_initialization import (
 
 class TestPerturbationHelper:
     @pytest.fixture(scope="class")
-    def b(self):
+    @classmethod
+    def b(cls):
         b = Block(concrete=True)
         b.x = Var(bounds=(1e-8, None), initialize=1e-7)
         b.y = Var(bounds=(1e1, 1e2), initialize=1e3)

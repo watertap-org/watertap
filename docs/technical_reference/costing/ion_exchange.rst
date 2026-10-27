@@ -24,7 +24,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Unit cost for hazardous waste resin disposal", ":math:`c_{haz,res}`", "``hazardous_resin_disposal``", "347.10", ":math:`\text{USD}_{2020}\text{/ton}`", "From EPA-WBS cost model."
    "Unit cost for hazardous waste regeneration solution disposal", ":math:`c_{haz,regen}`", "``hazardous_regen_disposal``", "3.64", ":math:`\text{USD}_{2020}\text{/gal}`", "From EPA-WBS cost model."
    "Number of cycles the regenerant can be reused before disposal", ":math:`n_{recycle}`", "``regen_recycle``", "1", ":math:`\text{dimensionless}`", "Can optionally be set by the user to investigate more efficient regen regimes."
-   "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "1.65", ":math:`\text{dimensionless}`", "Costing factor to account for total installed cost of equipment"
+   "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "2", ":math:`\text{dimensionless}`", "Costing factor to account for total installed cost of equipment"
    "Unit cost of regenerant", ":math:`c_{regen}`", "Regenerant dependent; see table below", "Regenerant dependent; see table below", "Regenerant dependent; see table below", "Regenerant dependent; see table below"
 
 
@@ -34,10 +34,10 @@ These parameters are created directly on ``m.fs.costing``.
 .. csv-table::
    :header: "Description", "Parameter Name", "Default Value", "Units", "Notes"
 
-   "Unit cost of NaCl", "``nacl``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
-   "Unit cost of HCl", "``hcl``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
-   "Unit cost of NaOH", "``naoh``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
-   "Unit cost of Methanol (MeOH)", "``meoh``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
+   "Unit cost of NaCl", "``unit_cost``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
+   "Unit cost of HCl", "``unit_cost``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
+   "Unit cost of NaOH", "``unit_cost``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
+   "Unit cost of Methanol (MeOH)", "``unit_cost``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -94,7 +94,7 @@ And the total capital cost for the ion exchange system is the summation of these
 .. math::
     C_{tot} = ((C_{resin} + C_{col}) (n_{op} + n_{red}) + C_{bw} + C_{regen}) f_{TIC}
 
-A total installed cost (:math:`f_{TIC}`) factor of 1.65 is applied to account for installation costs. 
+A total installed cost (:math:`f_{TIC}`) factor with a default value of 2 is applied to account for installation costs. 
 
 .. note::
     If using ``single_use`` option for ``regenerant`` configuration keyword, the capital for the regeneration tank is zero.

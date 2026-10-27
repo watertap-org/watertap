@@ -38,7 +38,8 @@ solver = get_solver()
 
 class TestParamBlock(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         model = ConcreteModel()
         model.params = ASM1ParameterBlock()
 
@@ -120,7 +121,8 @@ class TestParamBlock(object):
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         model = ConcreteModel()
         model.params = ASM1ParameterBlock()
 
@@ -170,7 +172,7 @@ class TestStateBlock(object):
         assert value(model.props[1].params.i_xb) == 0.08
         assert isinstance(model.props[1].params.i_xp, Var)
         assert value(model.props[1].params.i_xp) == 0.06
-        assert isinstance(model.props[1].params.COD_to_SS, Var)
+        assert isinstance(model.props[1].params.COD_to_SS, Param)
         assert value(model.props[1].params.COD_to_SS) == 0.75
         assert isinstance(model.props[1].params.BOD5_factor, Param)
         assert value(model.props[1].params.BOD5_factor["raw"]) == 0.65
@@ -303,9 +305,13 @@ class TestStateBlock(object):
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
-        assert len(sv) == 5
+        assert len(sv) == 9
         for i in sv:
             assert i in [
+                "TSS",
+                "COD",
+                "BOD5",
+                "TKN",
                 "Volumetric Flowrate",
                 "Molar Alkalinity",
                 "Mass Concentration",

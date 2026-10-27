@@ -640,7 +640,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             initialize=1,
             bounds=(0, 1000),
             units=pyunits.amp * pyunits.meter**-2,
-            doc="Current density accross the membrane as a function of the normalized length",
+            doc="Current density across the membrane as a function of the normalized length",
         )
 
         if self.config.operation_mode == ElectricalOperationMode.Constant_Voltage:

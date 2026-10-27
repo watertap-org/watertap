@@ -43,7 +43,8 @@ solver = get_solver()
 
 class TestVFARecoveryZO_no_default:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -161,7 +162,8 @@ class TestVFARecoveryZO_no_default:
 
 class TestVFARecoveryZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -296,7 +298,8 @@ params = db._get_technology("vfa_recovery")
 
 class Test_VFARecovery_ZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

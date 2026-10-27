@@ -32,7 +32,8 @@ solver = get_solver()
 
 class TestGACFlowsheet:
     @pytest.fixture(scope="class")
-    def gac_frame(self):
+    @classmethod
+    def gac_frame(cls):
 
         m = gac_fs.build(
             material_flow_basis="molar",

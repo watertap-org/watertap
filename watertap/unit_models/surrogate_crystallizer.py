@@ -17,9 +17,11 @@ from pyomo.environ import (
     check_optimal_termination,
     Param,
     Constraint,
+    value,
     Suffix,
     units as pyunits,
     NonNegativeReals,
+    Reals,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -41,7 +43,7 @@ from watertap.costing.unit_models.surrogate_crystallizer import (
 
 _log = idaeslog.getLogger(__name__)
 
-__author__ = "Oluwamayowa Amusat, Adam Atia"
+__author__ = "Oluwamayowa Amusat, Adam Atia, Alexander Dudchenko"
 
 
 @declare_process_block_class("SurrogateCrystallizer")
@@ -130,8 +132,36 @@ see property package for documentation.}""",
         ConfigValue(
             default={},
             domain=dict,
-            description="Specification of ion makeup of each solid in system. e.g., {'NaCl': {'Na_+': 1, 'Cl_-': -1} }",
-            doc="""Solids makeup; keys are solid names, and values include subkeys of ion names and values of charge.""",
+            description="Specification of solids formed in Surrogate Crystalizer process",
+            doc="""
+            A dict of precipitates formed in the StoichiometricReactor process
+            including their molecular weights, and precipitation stoichiometric coefficients for
+            the components defined in the property package in the following format:
+
+            .. code-block:: python
+
+                {
+                "precipitate_name_1":
+                {
+                "mw": (value, units), 
+                "precipitation_stoichiometric":
+                {
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff,
+                }
+                },
+                "precipitate_name_2":
+                {
+                "mw": (value, units),
+                "precipitation_stoichiometric":
+                {
+                "component_name_1": stoichiometric_coeff,
+                "component_name_2": stoichiometric_coeff,
+                }
+                },
+                }
+
+            """,
         ),
     )
 
@@ -145,19 +175,32 @@ see property package for documentation.}""",
 
         self.solids_list = Set(initialize=self.config.solids_ions_dict.keys())
 
-        # Add ion in solid ratios as parameters
-        dict1 = dict()
-        for m in self.solids_list:
-            for p in self.config.property_package.ion_set:
-                dict1[m, p] = float(
-                    self.config.solids_ions_dict[m][p]
-                    if p in self.config.solids_ions_dict[m]
-                    else 0.0
-                )
-        self.mwc = Param(
-            self.solids_list, self.config.property_package.ion_set, initialize=dict1
+        self.mw_solids = Param(
+            self.solids_list,
+            units=pyunits.kg / pyunits.mol,
+            doc="Molecular weight of precipitate",
+            mutable=True,
         )
+        for p in self.solids_list:
+            self.mw_solids[p] = pyunits.convert(
+                self.config.solids_ions_dict[p]["mw"],
+                to_units=pyunits.kg / pyunits.mol,
+            )
 
+        self.solids_stoich_comp = Param(
+            self.solids_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            mutable=True,
+            doc="Precipitation stoichiometric coefficients for components in property package",
+        )
+        for p in self.solids_list:
+            for j in self.config.solids_ions_dict[p][
+                "precipitation_stoichiometric"
+            ].keys():
+                self.solids_stoich_comp[p, j] = self.config.solids_ions_dict[p][
+                    "precipitation_stoichiometric"
+                ][j]
         # Add other variables
         self.temperature_operating = Var(
             initialize=298.15,
@@ -168,57 +211,80 @@ see property package for documentation.}""",
         )
         self.pressure_operating = Var(
             initialize=101325,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.Pa,
             bounds=(0.001, 1e6),
             doc="Crystallizer pressure in Pa",
         )
         self.evaporation_percent = Var(
             initialize=50,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.dimensionless,
             bounds=(10, 95),
             doc="Crystallizer percentage of water evaporation",
         )
         self.flow_mass_sol_comp_true = Var(
-            self.config.property_package.ion_set,
+            self.config.property_package.component_list,
             initialize=0,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.kg / pyunits.s,
             doc="True species solid mass flow (kg)",
         )
         self.flow_mass_sol_comp_apparent = Var(
             self.solids_list,
             initialize=0,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.kg / pyunits.s,
             doc="Apparent species solid mass flow (kg)",
         )
         self.flow_mass_sol_total = Var(
             initialize=0,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.kg / pyunits.s,
             doc="Total solid flow",
         )
+        self.flow_mol_sol_comp_true = Var(
+            self.config.property_package.component_list,
+            initialize=0,
+            # bounds=(0, None),
+            domain=Reals,
+            units=pyunits.mol / pyunits.s,
+            doc="True species solid molar flow (mol/s)",
+        )
+
+        self.flow_mol_sol_comp_apparent = Var(
+            self.solids_list,
+            initialize=0,
+            domain=Reals,
+            units=pyunits.mol / pyunits.s,
+            doc="Apparent species solid molar flow (mol/s)",
+        )
         self.flow_mass_liq_total = Var(
             initialize=0,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.kg / pyunits.s,
             doc="Total liquid flow",
         )
         self.flow_mass_vap_total = Var(
             initialize=0,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.kg / pyunits.s,
             doc="Total vapor flow",
         )
 
         self.heat_required = Var(
             initialize=1e5,
-            domain=NonNegativeReals,
+            domain=Reals,
             units=pyunits.kW,
             bounds=(-5e6, 5e6),
             doc="Heat requirement for crystallizer (kW)",
+        )
+        self.vapor_pressure = Var(
+            initialize=101325,
+            domain=Reals,
+            units=pyunits.Pa,
+            bounds=(0.001, None),
+            doc="Crystallizer vapor pressure in Pa",
         )
 
         # # Add state blocks for inlet and three outlets
@@ -309,7 +375,11 @@ see property package for documentation.}""",
 
         @self.Constraint()
         def eq_P_con2(b):
-            return self.pressure_operating == b.properties_out_vapor[0].pressure
+            return self.vapor_pressure == b.properties_out_vapor[0].pressure
+
+        @self.Constraint()
+        def eq_P_con3(b):
+            return self.pressure_operating == self.vapor_pressure
 
         @self.Constraint(
             self.config.property_package.component_list,
@@ -331,21 +401,46 @@ see property package for documentation.}""",
 
         @self.Constraint(
             self.config.property_package.component_list,
-            doc="Mass balance for components",
+            doc="Molar balance for components",
         )
-        def eq_solid_amount(b, j):
-            if j == "H2O":
-                return Constraint.Skip
-            else:
-                return b.flow_mass_sol_comp_true[j] == sum(
-                    (b.mwc[q, j] * b.properties_in[0].params.mw_comp[j])
-                    / sum(
-                        b.mwc[q, j] * b.properties_in[0].params.mw_comp[j]
-                        for j in b.config.property_package.ion_set
+        def eq_mol_flow_true(b, j):
+            return b.flow_mol_sol_comp_true[j] == b.flow_mass_sol_comp_true[
+                j
+            ] / pyunits.convert(
+                b.properties_in[0].params.mw_comp[j],
+                to_units=pyunits.kg / pyunits.mol,
+            )
+
+        @self.Constraint(
+            self.solids_list,
+            doc="Molar balance for components",
+        )
+        def eq_mol_flow_apparent(b, j):
+            return b.flow_mol_sol_comp_apparent[j] == b.flow_mass_sol_comp_apparent[
+                j
+            ] / pyunits.convert(
+                b.mw_solids[j],
+                to_units=pyunits.kg / pyunits.mol,
+            )
+
+        @self.Constraint(
+            self.config.property_package.component_list,
+            doc="Molar balance for components",
+        )
+        def eq_solid_mol_amount(b, j):
+            total = []
+            for _q in b.solids_list:
+                if (
+                    j
+                    in self.config.solids_ions_dict[_q][
+                        "precipitation_stoichiometric"
+                    ].keys()
+                ):
+                    total.append(
+                        b.solids_stoich_comp[_q, j] * b.flow_mol_sol_comp_apparent[_q]
                     )
-                    * b.flow_mass_sol_comp_apparent[q]
-                    for q in b.solids_list
-                )
+
+            return b.flow_mol_sol_comp_true[j] == sum(total)
 
         # 5. Constraints calculating total flows for each outlet stream
         @self.Constraint(
@@ -514,11 +609,47 @@ see property package for documentation.}""",
 
         super().calculate_scaling_factors()
 
-        iscale.set_scaling_factor(
-            self.temperature_operating,
-            iscale.get_scaling_factor(self.properties_in[0].temperature),
+        def get_mol_scale(prop_type, j):
+            sf = iscale.get_scaling_factor(prop_type.flow_mol_phase_comp["Liq", j])
+            if sf is None:
+                sf = iscale.get_scaling_factor(
+                    prop_type.flow_mass_phase_comp["Liq", j]
+                ) * value(
+                    pyunits.convert(
+                        prop_type.params.mw_comp[j],
+                        to_units=pyunits.kg / pyunits.mol,
+                    )
+                )
+            return sf
+
+        def get_mass_scale(prop_type, j):
+            sf = iscale.get_scaling_factor(prop_type.flow_mass_phase_comp["Liq", j])
+            if sf is None:
+                sf = iscale.get_scaling_factor(
+                    prop_type.flow_mol_phase_comp["Liq", j]
+                ) / value(
+                    pyunits.convert(
+                        prop_type.params.mw_comp[j],
+                        to_units=pyunits.kg / pyunits.mol,
+                    )
+                )
+            return sf
+
+        if iscale.get_scaling_factor(self.temperature_operating) is None:
+            iscale.set_scaling_factor(
+                self.temperature_operating,
+                iscale.get_scaling_factor(self.properties_in[0].temperature),
+            )
+        if iscale.get_scaling_factor(self.pressure_operating) is None:
+            iscale.set_scaling_factor(self.pressure_operating, 1e-5)
+
+        if iscale.get_scaling_factor(self.vapor_pressure) is None:
+            iscale.set_scaling_factor(self.vapor_pressure, 1e-5)
+
+        iscale.set_scaling_factor(self.evaporation_percent, 1e-1)
+        liquid_fow = iscale.get_scaling_factor(
+            self.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        iscale.set_scaling_factor(self.pressure_operating, 1e-3)
         iscale.set_scaling_factor(
             self.heat_required,
             iscale.get_scaling_factor(
@@ -527,6 +658,84 @@ see property package for documentation.}""",
             * iscale.get_scaling_factor(self.properties_in[0].enth_mass_phase["Liq"])
             * 1e3,
         )
+
+        if iscale.get_scaling_factor(self.flow_mass_liq_total) is None:
+            iscale.set_scaling_factor(self.flow_mass_liq_total, liquid_fow)
+        if (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                self.eq_total_liquid_constraint
+            )
+            is None
+        ):
+            sf = iscale.get_scaling_factor(self.flow_mass_liq_total)
+            iscale.constraint_scaling_transform(self.eq_total_liquid_constraint, sf)
+        if iscale.get_scaling_factor(self.flow_mass_vap_total) is None:
+            iscale.set_scaling_factor(self.flow_mass_vap_total, liquid_fow)
+        if (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                self.eq_total_vapor_constraint
+            )
+            is None
+        ):
+            sf = iscale.get_scaling_factor(self.flow_mass_vap_total)
+            iscale.constraint_scaling_transform(self.eq_total_vapor_constraint, sf)
+
+        for j in self.flow_mass_sol_comp_true:
+            sf = get_mass_scale(self.properties_in[0], j)
+
+            iscale.set_scaling_factor(
+                self.flow_mass_sol_comp_true[j],
+                sf,
+            )
+        for j in self.flow_mol_sol_comp_true:
+
+            sf = get_mol_scale(self.properties_in[0], j)
+            iscale.set_scaling_factor(
+                self.flow_mol_sol_comp_true[j],
+                sf,
+            )
+        solid_mass_scales = []
+
+        for precip in self.solids_list:
+            scales = []
+            for ion, stoich in self.config.solids_ions_dict[precip][
+                "precipitation_stoichiometric"
+            ].items():
+                sf = get_mol_scale(self.properties_in[0], ion)
+                scales.append(sf / stoich)
+            # want maximum scale for limiting ion
+
+            precip_scale = max(scales)
+            mol_precip_scale = precip_scale
+            mass_precip_scale = precip_scale / value(
+                pyunits.convert(
+                    self.mw_solids[precip],
+                    pyunits.kg / pyunits.mol,
+                )
+            )
+            solid_mass_scales.append(mass_precip_scale)
+            iscale.set_scaling_factor(
+                self.flow_mass_sol_comp_apparent[precip],
+                mass_precip_scale,
+            )
+            iscale.set_scaling_factor(
+                self.flow_mol_sol_comp_apparent[precip],
+                mol_precip_scale,
+            )
+            iscale.constraint_scaling_transform(
+                self.eq_mol_flow_apparent[precip],
+                mol_precip_scale,
+            )
+        if iscale.get_scaling_factor(self.flow_mass_sol_total) is None:
+            iscale.set_scaling_factor(self.flow_mass_sol_total, min(solid_mass_scales))
+        if (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                self.eq_total_solids_constraint
+            )
+            is None
+        ):
+            sf = iscale.get_scaling_factor(self.flow_mass_sol_total)
+            iscale.constraint_scaling_transform(self.eq_total_solids_constraint, sf)
 
         # transforming constraints
         for ind, c in self.eq_T_con1.items():
@@ -540,6 +749,11 @@ see property package for documentation.}""",
         for ind, c in self.eq_P_con1.items():
             sf = iscale.get_scaling_factor(self.properties_in[0].pressure)
             iscale.constraint_scaling_transform(c, sf)
+            if (
+                iscale.get_constraint_transform_applied_scaling_factor(self.eq_P_con3)
+                is None
+            ):
+                iscale.constraint_scaling_transform(self.eq_P_con3, sf)
 
         for ind, c in self.eq_P_con2.items():
             sf = iscale.get_scaling_factor(self.properties_in[0].pressure)
@@ -550,7 +764,6 @@ see property package for documentation.}""",
                 self.properties_in[0].flow_mass_phase_comp["Liq", j]
             )
             iscale.constraint_scaling_transform(c, sf)
-
         for j, c in self.eq_water_balance_constraints.items():
             sf = iscale.get_scaling_factor(
                 self.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]

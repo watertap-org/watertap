@@ -39,7 +39,9 @@ from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 from watertap.core.solvers import get_solver
 
-__author__ = "Oluwamayowa Amusat, Adam Atia"
+import idaes.core.util.scaling as iscale
+
+__author__ = "Oluwamayowa Amusat, Adam Atia, Alexander Dudchenko"
 
 
 # TODO: can consider adding NN model surrogate function and test
@@ -128,10 +130,22 @@ def test_rbf_surrogate():
 
     input_ions = ["Cl_-", "Na_+", "SO4_2-", "Mg_2+", "Ca_2+", "K_+", "HCO3_-"]
     solids_list = {
-        "Calcite_g": {"Ca_2+": 1, "HCO3_-": 1},
-        "Anhydrite_g": {"Ca_2+": 1, "SO4_2-": 1},
-        "Glauberite_g": {"Ca_2+": 1, "Na_+": 2, "SO4_2-": 2},
-        "Halite_g": {"Na_+": 1, "Cl_-": 1},
+        "Calcite_g": {
+            "precipitation_stoichiometric": {"Ca_2+": 1, "HCO3_-": 1},
+            "mw": 100.09 * pyunits.g / pyunits.mol,
+        },
+        "Anhydrite_g": {
+            "precipitation_stoichiometric": {"Ca_2+": 1, "SO4_2-": 1},
+            "mw": 136.14 * pyunits.g / pyunits.mol,
+        },
+        "Glauberite_g": {
+            "precipitation_stoichiometric": {"Ca_2+": 1, "Na_+": 2, "SO4_2-": 2},
+            "mw": 278.2 * pyunits.g / pyunits.mol,
+        },
+        "Halite_g": {
+            "precipitation_stoichiometric": {"Na_+": 1, "Cl_-": 1},
+            "mw": 58.44 * pyunits.g / pyunits.mol,
+        },
     }
     m.fs.cryst_prop_feed = MCASParameterBlock(
         solute_list=input_ions,
@@ -221,7 +235,17 @@ def test_rbf_surrogate():
     # 1. Simulate single case
     m.fs.cryst.temperature_operating.fix(40 + 273.15)
     m.fs.cryst.evaporation_percent.fix(60)
-
+    for k in feed["ion_composition_g_kg"].keys():
+        scale = 1 / (
+            feed["water_content_kg"] * feed["ion_composition_g_kg"][k] * g_to_kg
+        )
+        m.fs.cryst_prop_feed.set_default_scaling(
+            "flow_mass_phase_comp", scale, index=("Liq", k)
+        )  # scale to kg/s
+    m.fs.cryst_prop_feed.set_default_scaling(
+        "flow_mass_phase_comp", 1 / 10, index=("Liq", "H2O")
+    )
+    iscale.calculate_scaling_factors(m)
     # Initialize and solve
     assert degrees_of_freedom(m) == 0
     m.fs.cryst.initialize()
@@ -229,3 +253,24 @@ def test_rbf_surrogate():
     res = solver.solve(m)
     assert_optimal_termination(res)
     m.fs.cryst.report()
+
+    results_dict_mass = {
+        "Calcite_g": 1.2179710953429416e-07,
+        "Anhydrite_g": 0.0007157259139177164,
+        "Glauberite_g": 0.06134360751392775,
+        "Halite_g": 1.4701727299531218,
+    }
+    for key, obj in m.fs.cryst.flow_mass_sol_comp_apparent.items():
+        # results_dict_mass[key] = obj.value
+        assert pytest.approx(obj.value, rel=1e-6) == results_dict_mass[key]
+    results_dict_mol = {
+        "Calcite_g": 1.2168759070266173e-06,
+        "Anhydrite_g": 0.005257278639031265,
+        "Glauberite_g": 0.2205018242772385,
+        "Halite_g": 25.1569597870144,
+    }
+    for key, obj in m.fs.cryst.flow_mol_sol_comp_apparent.items():
+        # results_dict_mol[key] = obj.value
+        assert pytest.approx(obj.value, rel=1e-6) == results_dict_mol[key]
+    # print(results_dict_mass)
+    # print(results_dict_mol)

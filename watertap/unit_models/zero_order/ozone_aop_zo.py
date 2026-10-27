@@ -20,7 +20,6 @@ from idaes.core import declare_process_block_class
 from watertap.unit_models.zero_order.ozone_zo import OzoneZOData
 from watertap.unit_models.zero_order.aop_addition_zo import AOPAdditionMixin
 
-# Some more information about this module
 __author__ = "Kurban Sitterley"
 
 
@@ -35,9 +34,7 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
 
         self._tech_type = "ozone_aop"
 
-        self.oxidant_dose = Var(
-            self.flowsheet().time, units=pyunits.mg / pyunits.L, doc="Oxidant dosage"
-        )
+        self.oxidant_dose = Var(units=pyunits.mg / pyunits.L, doc="Oxidant dosage")
 
         self.chemical_flow_mass = Var(
             self.flowsheet().time,
@@ -47,46 +44,44 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
         )
 
         self.ozone_toc_ratio = Var(
-            self.flowsheet().time,
             units=pyunits.dimensionless,
             doc="Ratio of ozone to total organic carbon",
         )
 
         self.oxidant_ozone_ratio = Var(
-            self.flowsheet().time,
             units=pyunits.dimensionless,
             doc="Ratio of oxidant to ozone",
         )
 
         self._fixed_perf_vars.append(self.oxidant_ozone_ratio)
 
-        @self.Constraint(self.flowsheet().time, doc="Ozone/TOC ratio constraint")
-        def ozone_toc_ratio_constraint(b, t):
-            return b.ozone_toc_ratio[t] == 1 + pyunits.convert(
-                b.concentration_time[t]
-                / b.contact_time[t]
-                / b.properties_in[t].conc_mass_comp["toc"],
+        @self.Constraint(doc="Ozone/TOC ratio constraint")
+        def ozone_toc_ratio_constraint(b):
+            return b.ozone_toc_ratio == 1 + pyunits.convert(
+                b.concentration_time
+                / b.contact_time
+                / b.properties_in[0].conc_mass_comp["toc"],
                 to_units=pyunits.dimensionless,
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Oxidant dose constraint")
-        def oxidant_dose_constraint(b, t):
-            return b.oxidant_dose[t] == pyunits.convert(
-                b.oxidant_ozone_ratio[t]
-                * b.ozone_toc_ratio[t]
-                * b.properties_in[t].conc_mass_comp["toc"],
+        @self.Constraint(doc="Oxidant dose constraint")
+        def oxidant_dose_constraint(b):
+            return b.oxidant_dose == pyunits.convert(
+                b.oxidant_ozone_ratio
+                * b.ozone_toc_ratio
+                * b.properties_in[0].conc_mass_comp["toc"],
                 to_units=pyunits.mg / pyunits.L,
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Oxidant mass flow constraint")
-        def chemical_flow_mass_constraint(b, t):
-            return b.chemical_flow_mass[t] == pyunits.convert(
-                b.oxidant_dose[t] * b.properties_in[t].flow_vol,
+        @self.Constraint(doc="Oxidant mass flow constraint")
+        def chemical_flow_mass_constraint(b):
+            return b.chemical_flow_mass[0] == pyunits.convert(
+                b.oxidant_dose * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.s,
             )
 
         self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.oxidant_dose
-        self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
+        self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass[0]
         self._perf_var_dict["Oxidant/Ozone Ratio"] = self.oxidant_ozone_ratio
         self._perf_var_dict["Ozone/TOC Ratio"] = self.ozone_toc_ratio
 
@@ -100,7 +95,6 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
         General method for costing ozonation with AOP. Capital cost is
         based on the inlet flowrate, dosage of ozone and flow rate of H2O2.
         """
-        t0 = blk.flowsheet().time.first()
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
@@ -130,18 +124,30 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
             doc="Capital cost of unit operation",
         )
 
+        total_capex_expr = 0
         # Get costing term for ozone addition
         expr = blk.unit_model._get_ozone_capital_cost(blk, A, B, C, D)
+        blk.ozone_system_capital_cost = pyo.Expression(expr=expr)
+        total_capex_expr += expr
 
         # Add costing term for AOP addition
-        expr += blk.unit_model._get_aop_capital_cost(blk, E, F)
+        expr = blk.unit_model._get_aop_capital_cost(blk, E, F)
+        blk.aop_capital_cost = pyo.Expression(expr=expr)
+        total_capex_expr += expr
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        # Determine if a costing factor is required
+        blk.costing_package.add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * total_capex_expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.electricity[t0], "electricity"
+            blk.unit_model.electricity[0], "electricity"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide"
+            blk.unit_model.chemical_flow_mass[0], "hydrogen_peroxide"
         )

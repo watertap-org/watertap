@@ -120,7 +120,8 @@ def test_config():
 # -----------------------------------------------------------------------------
 class TestAsm2dAdm1_bioP_true(object):
     @pytest.fixture(scope="class")
-    def asmadm(self):
+    @classmethod
+    def asmadm(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -385,7 +386,8 @@ class TestAsm2dAdm1_bioP_true(object):
 # -----------------------------------------------------------------------------
 class TestAsm2dAdm1_bioP_false(object):
     @pytest.fixture(scope="class")
-    def asmadm(self):
+    @classmethod
+    def asmadm(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -649,7 +651,7 @@ class TestAsm2dAdm1_bioP_false(object):
 
 class TestADM1ASM2dScaler:
     @pytest.fixture
-    def model(self):
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -712,13 +714,13 @@ class TestADM1ASM2dScaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 21
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 32
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -741,7 +743,7 @@ class TestADM1ASM2dScaler:
         # Inlet state
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 21
         assert sfx_in[model.fs.unit.properties_in[0].flow_vol] == pytest.approx(
             1e1, rel=1e-8
         )
@@ -751,20 +753,26 @@ class TestADM1ASM2dScaler:
         assert sfx_in[model.fs.unit.properties_in[0].temperature] == pytest.approx(
             1e-2, rel=1e-8
         )
+        assert sfx_in[
+            model.fs.unit.properties_in[0].conc_mass_comp["S_A"]
+        ] == pytest.approx(1e2, rel=1e-8)
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 32
         assert sfx_out[model.fs.unit.properties_out[0].flow_vol] == pytest.approx(
             1e5, rel=1e-8
         )
         assert sfx_out[model.fs.unit.properties_out[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-5, rel=1e-8
         )
         assert sfx_out[model.fs.unit.properties_out[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
+            1e-2, rel=1e-8
         )
+        assert sfx_out[
+            model.fs.unit.properties_out[0].conc_mass_comp["S_su"]
+        ] == pytest.approx(1e1, rel=1e-8)
 
     @pytest.mark.integration
     def test_example_case_iscale(self):
@@ -918,5 +926,5 @@ class TestADM1ASM2dScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3969.50, rel=1e-3
+            317.7747, rel=1e-3
         )

@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestAirDissolvedFloatationZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -172,7 +173,8 @@ class TestAirDissolvedFloatationZO:
 
 class TestDissolvedAirFlotationZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

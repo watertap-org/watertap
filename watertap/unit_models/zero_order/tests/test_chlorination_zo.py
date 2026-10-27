@@ -23,6 +23,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -42,7 +43,8 @@ solver = get_solver()
 
 class TestChlorinationZO_with_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.db = Database()
@@ -144,7 +146,7 @@ class TestChlorinationZO_with_default_removal:
         assert pytest.approx(9.900873, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(9.5, rel=1e-5) == value(model.fs.unit.chlorine_dose[0])
+        assert pytest.approx(5.4, rel=1e-5) == value(model.fs.unit.chlorine_dose[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -154,7 +156,8 @@ class TestChlorinationZO_with_default_removal:
 
 class TestChlorinationZO_w_o_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.db = Database()
@@ -251,7 +254,7 @@ class TestChlorinationZO_w_o_default_removal:
         assert pytest.approx(0.003359960083, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]
         )
-        assert pytest.approx(9.5, rel=1e-5) == value(model.fs.unit.chlorine_dose[0])
+        assert pytest.approx(5.4, rel=1e-5) == value(model.fs.unit.chlorine_dose[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -259,39 +262,70 @@ class TestChlorinationZO_w_o_default_removal:
         model.fs.unit.report()
 
 
+@pytest.mark.component
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = WaterParameterBlock(
+        solute_list=["tds", "total_coliforms_fecal_ecoli", "viruses_enteric"]
+    )
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2014
 
-    m.fs.unit1 = ChlorinationZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = ChlorinationZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    rho = 997 * pyunits.kg / pyunits.m**3
+    flow_vol = 10 * pyunits.Mgallons / pyunits.day
+    chlorine_dose = 10 * pyunits.mg / pyunits.liter
+    flow_mass = rho * flow_vol
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(0.1)
+    m.fs.unit.inlet.flow_mass_comp[0, "total_coliforms_fecal_ecoli"].fix(1e-3)
+    m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1e-3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+    m.fs.unit.chlorine_dose.fix(chlorine_dose)
+    m.fs.unit.initial_chlorine_demand.unfix()
+    # CT and contact time from Example D-1 in EPA Guidance Manual Disinfection Profiling and Benchmarking
+    # Temperature = 10C, pH = 6, chlorine residual = 1 mg/L
+    m.fs.unit.concentration_time.fix(79)
+    m.fs.unit.contact_time.fix(30 * pyunits.minute)
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.unit.properties_in[0].flow_vol, name="SEC"
+    )
+
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
 
     assert isinstance(m.fs.costing.chlorination, Block)
     assert isinstance(m.fs.costing.chlorination.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.chlorination.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.chlorination.capital_c_parameter, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert (
+        pytest.approx(value(m.fs.unit.costing.direct_capital_cost), rel=1e-3)
+        == 5515652.77  # ~$5.4M from reference
+    )
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.0365031
+    assert pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == 5e-5
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert str(m.fs.costing._registered_flows["chlorine"][0]) == str(
-        m.fs.unit1.chlorine_dose[0] * m.fs.unit1.properties_in[0].flow_vol
+        m.fs.unit.chlorine_dose[0] * m.fs.unit.properties_in[0].flow_vol
     )

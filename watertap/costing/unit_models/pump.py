@@ -51,7 +51,7 @@ def cost_pump(blk, pump_type=PumpType.high_pressure, cost_electricity_flow=True)
 
 def build_high_pressure_pump_cost_param_block(blk):
 
-    blk.cost = pyo.Var(
+    blk.unit_cost = pyo.Var(
         initialize=53 / 1e5 * 3600,  # 1.908
         bounds=(0, None),
         doc="High pressure pump cost",
@@ -80,7 +80,7 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
         expr=blk.capital_cost
         == blk.cost_factor
         * pyo.units.convert(
-            blk.costing_package.high_pressure_pump.cost
+            blk.costing_package.high_pressure_pump.unit_cost
             * pyo.units.convert(blk.unit_model.work_mechanical[t0], pyo.units.W),
             to_units=blk.costing_package.base_currency,
         )
@@ -102,7 +102,7 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
 
 def build_low_pressure_pump_cost_param_block(blk):
 
-    blk.cost = pyo.Var(
+    blk.unit_cost = pyo.Var(
         initialize=889,
         doc="Low pressure pump cost",
         units=pyo.units.USD_2018 / (pyo.units.liter / pyo.units.second),
@@ -126,7 +126,7 @@ def cost_low_pressure_pump(blk, cost_electricity_flow=True):
     t0 = blk.flowsheet().time.first()
     cost_by_flow_volume(
         blk,
-        blk.costing_package.low_pressure_pump.cost,
+        blk.costing_package.low_pressure_pump.unit_cost,
         pyo.units.convert(
             blk.unit_model.control_volume.properties_in[t0].flow_vol,
             (pyo.units.m**3 / pyo.units.s),

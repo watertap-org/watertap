@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestNFZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -158,7 +159,8 @@ class TestNFZO:
 
 class TestNFZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -289,7 +291,8 @@ class TestNFZO_w_default_removal:
 
 class TestNFZO_non_default_subtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

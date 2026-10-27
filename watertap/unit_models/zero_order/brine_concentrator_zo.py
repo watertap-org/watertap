@@ -19,7 +19,6 @@ from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, ZeroOrderBaseData
 
-# Some more information about this module
 __author__ = "Adam Atia"
 
 
@@ -81,38 +80,33 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
             doc="Power consumption of brine concentrator",
         )
         self.electricity_intensity = Var(
-            self.flowsheet().config.time,
             units=pyunits.kWh / pyunits.m**3,
             doc="Specific energy consumption with respect to feed flowrate",
         )
 
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Electricity intensity constraint"
-        )
-        def electricity_intensity_constraint(b, t):
+        @self.Constraint(doc="Electricity intensity constraint")
+        def electricity_intensity_constraint(b):
             q_in = pyunits.convert(
-                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+                b.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.hour
             )
             tds_in = pyunits.convert(
-                b.properties_in[t].conc_mass_comp["tds"],
+                b.properties_in[0].conc_mass_comp["tds"],
                 to_units=pyunits.mg / pyunits.L,
             )
             return (
-                b.electricity_intensity[t]
+                b.electricity_intensity
                 == b.elec_coeff_1
                 + b.elec_coeff_2 * tds_in
-                + b.elec_coeff_3 * b.recovery_frac_mass_H2O[t]
+                + b.elec_coeff_3 * b.recovery_frac_mass_H2O[0]
                 + b.elec_coeff_4 * q_in
             )
 
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Power consumption constraint"
-        )
-        def electricity_constraint(b, t):
+        @self.Constraint(doc="Power consumption constraint")
+        def electricity_constraint(b):
             q_in = pyunits.convert(
-                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+                b.properties_in[0].flow_vol, to_units=pyunits.m**3 / pyunits.hour
             )
-            return b.electricity[t] == b.electricity_intensity[t] * q_in
+            return b.electricity[0] == b.electricity_intensity * q_in
 
         self._perf_var_dict["Power Consumption (kW)"] = self.electricity
         self._perf_var_dict["Electricity intensity per Inlet Flowrate  (kWh/m3)"] = (
@@ -151,9 +145,6 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
                 "capital_d_parameter",
             ],
         )
-
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(

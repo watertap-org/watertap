@@ -34,7 +34,8 @@ solver = get_solver()
 
 class TestDyewithROFlowsheetwithPretreatment:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(include_pretreatment=True)
         return m
 
@@ -136,7 +137,8 @@ class TestDyewithROFlowsheetwithPretreatment:
 
 class TestDyewithROFlowsheetDefault:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build()
         return m
 
@@ -236,7 +238,8 @@ class TestDyewithROFlowsheetDefault:
 
 class TestDyewith0DROFlowsheet:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(RO_1D=False)
         return m
 
@@ -336,7 +339,8 @@ class TestDyewith0DROFlowsheet:
 
 class TestDyewithROFlowsheetwithDewatering:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(include_dewatering=True)
         return m
 
@@ -439,7 +443,8 @@ class TestDyewithROFlowsheetwithDewatering:
 
 class TestDyewithROFlowsheetwithGAC:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(include_gac=True)
         return m
 

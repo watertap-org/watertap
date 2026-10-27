@@ -90,9 +90,9 @@ def list_ports(block, descend_into=False):
                     "Unit Model": type(unit).__name__.removeprefix("_Scalar"),
                     "Port Name": name,
                     "Port": port.name,
-                    "Source": connected["Source"] or None,
-                    "Destination": connected["Destination"] or None,
-                    "Arc": connected["Arc"] or None,
+                    "Source": connected["Source"] or "None",
+                    "Destination": connected["Destination"] or "None",
+                    "Arc": connected["Arc"] or "None",
                 }
             )
 

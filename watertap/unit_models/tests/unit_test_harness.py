@@ -103,7 +103,9 @@ class UnitTestHarness(abc.ABC):
         """
 
     @pytest.fixture(scope="class")
-    def frame(self):
+    @classmethod
+    def frame(cls):
+        self = cls()
         self.configure_class()
         return self._model, self.unit_model_block
 
@@ -129,7 +131,7 @@ class UnitTestHarness(abc.ABC):
             unit=blk,
             solver=blk._test_objs.solver,
             optarg=blk._test_objs.optarg,
-            outlvl=idaeslog.DEBUG,
+            outlvl=idaeslog.WARNING,
         )
 
     @pytest.mark.component

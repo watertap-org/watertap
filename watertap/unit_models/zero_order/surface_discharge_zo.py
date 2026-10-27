@@ -20,7 +20,6 @@ from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
 
-# Some more information about this module
 __author__ = "Travis Arnold"
 
 
@@ -74,7 +73,7 @@ class SurfaceDischargeData(ZeroOrderBaseData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, pipe_cost_basis, ref_state = blk.unit_model._get_tech_parameters(
+        A, B, pipe_cost_basis, reference_state = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -85,7 +84,32 @@ class SurfaceDischargeData(ZeroOrderBaseData):
                 "reference_state",
             ],
         )
+        # Have to convert to base currency here
+        pipe_cost_basis = pyo.units.convert(
+            pipe_cost_basis,
+            to_units=blk.config.flowsheet_costing_block.base_currency
+            / (pyunits.miles * pyunits.inches),
+        )
+        blk.pipe_cost = pyo.Expression(
+            expr=pyo.units.convert(
+                pipe_cost_basis
+                * blk.unit_model.pipe_distance[t0]
+                * blk.unit_model.pipe_diameter[t0],
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
 
+        blk.near_shore_discharge = pyo.Expression(
+            expr=pyo.units.convert(
+                A
+                * pyo.units.convert(
+                    blk.unit_model.properties[t0].flow_vol / reference_state,
+                    to_units=pyo.units.dimensionless,
+                )
+                ** B,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -94,20 +118,7 @@ class SurfaceDischargeData(ZeroOrderBaseData):
             doc="Capital cost of unit operation",
         )
 
-        expr = pyo.units.convert(
-            A
-            * pyo.units.convert(
-                blk.unit_model.properties[t0].flow_vol / ref_state,
-                to_units=pyo.units.dimensionless,
-            )
-            ** B,
-            to_units=blk.config.flowsheet_costing_block.base_currency,
-        ) + pyo.units.convert(
-            pipe_cost_basis
-            * blk.unit_model.pipe_distance[t0]
-            * blk.unit_model.pipe_diameter[t0],
-            to_units=blk.config.flowsheet_costing_block.base_currency,
-        )
+        expr = blk.near_shore_discharge + blk.pipe_cost
 
         blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]

@@ -9,17 +9,17 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "**Standard mixer**"
+   "**Standard mixer** (cost method = `cost_default_mixer`)"
    "Mixer unit cost", ":math:`C_{mix, standard}`", "``unit_cost``", "361", ":math:`\text{USD}_{2018}\text{/L/s}`"
 
-   "**NaOCl mixer**"
-   "Mixer unit cost", ":math:`C_{mix, NaOCl}`", "``cost``", "5.08", ":math:`\text{USD}_{2018}\text{/m}^{3}\text{/day}`"
-   "NaOCl cost", ":math:`C_{NaOCl}`", "``unit_cost``", "0.23", ":math:`\text{USD}_{2018}\text{/kg}`"
+   "**NaOCl mixer** (cost method = `cost_naocl_mixer`)"
+   "Mixer unit cost", ":math:`C_{mix, NaOCl}`", "``unit_cost``", "5.08", ":math:`\text{USD}_{2018}\text{/m}^{3}\text{/day}`"
+   "NaOCl cost", ":math:`C_{NaOCl}`", "``unit_cost_NaOCl``", "0.23", ":math:`\text{USD}_{2018}\text{/kg}`"
    "NaOCl purity", ":math:`p_{NaOCl}`", "``purity``", "0.15", ":math:`\text{dimensionless}`"
 
-   "**CaOH2 mixer**"
-   "Mixer unit cost", ":math:`C_{mix, CaOH2}`", "``cost``", "873.911", ":math:`\text{USD}_{2018}\text{/kg/day}`"
-   "CaOH2 cost", ":math:`C_{CaOH2}`", "``unit_cost``", "0.12", ":math:`\text{USD}_{2018}\text{/kg}`"
+   "**CaOH2 mixer** (cost method = `cost_caoh2_mixer`)"
+   "Mixer unit cost", ":math:`C_{mix, CaOH2}`", "``unit_cost``", "873.911", ":math:`\text{USD}_{2018}\text{/kg/day}`"
+   "CaOH2 cost", ":math:`C_{CaOH2}`", "``unit_cost_CaOH2``", "0.12", ":math:`\text{USD}_{2018}\text{/kg}`"
    "CaOH2 purity", ":math:`p_{CaOH2}`", "``purity``", "1", ":math:`\text{dimensionless}`"
 
 Costing Method Variables

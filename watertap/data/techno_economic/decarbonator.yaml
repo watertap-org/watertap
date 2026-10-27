@@ -5,6 +5,8 @@ default:
   capital_cost:
     basis: flow_vol
     cost_factor: None
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008). Table A2.2.
+    # validity range cannot be determined because this is the only data point for decabonator in Table A2.2
     reference_state:
       value: 1577.0
       units: m^3/hr

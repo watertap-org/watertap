@@ -28,7 +28,8 @@ solver = get_solver()
 @pytest.mark.requires_idaes_solver
 class TestPriceTakerWorkflow:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         price_data_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..",

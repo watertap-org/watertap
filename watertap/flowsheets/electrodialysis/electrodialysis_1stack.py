@@ -30,6 +30,7 @@ from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 from watertap.core.util.initialization import check_dof, check_solve
+from watertap.unit_models.electrodialysis_0D import Electrodialysis0D
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 
 from watertap.costing import WaterTAPCosting
@@ -41,30 +42,33 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "Xiangyu Bi"
 
 
-def main():
+def main(ED_1D=True):
     # set up solver
     solver = get_solver()
     # Simulate a fully defined operation
-    m = build()
-    set_operating_conditions(m)
+    m = build(ED_1D=ED_1D)
+    set_operating_conditions(m, ED_1D=ED_1D)
     initialize_system(m, solver=solver)
     solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
 
     print("\n***---Simulation results---***")
     m.fs.EDstack.report()
-    display_model_metrics(m)
+    display_model_metrics(m, ED_1D=ED_1D)
 
     # Perform an optimization over selected variables
     initialize_system(m, solver=solver)
     optimize_system(
-        m, solver=solver, checkpoint="solve flowsheet after optimizing system"
+        m,
+        solver=solver,
+        ED_1D=ED_1D,
+        checkpoint="solve flowsheet after optimizing system",
     )
     print("\n***---Optimization results---***")
     m.fs.EDstack.report()
-    display_model_metrics(m)
+    display_model_metrics(m, ED_1D=ED_1D)
 
 
-def build():
+def build(ED_1D=True, operation_mode="Constant_Voltage"):
     # ---building model---
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -75,7 +79,6 @@ def build():
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
     m.fs.properties = MCASParameterBlock(**ion_dict)
-    m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
         property_package=m.fs.properties,
@@ -83,11 +86,17 @@ def build():
     )  # "inlet_diluate" and "inlet_concentrate" are two separator's outlet ports that are connected to the two inlets of the ED stack.
 
     # Add electrodialysis (ED) stacks
-    m.fs.EDstack = Electrodialysis1D(
-        property_package=m.fs.properties,
-        operation_mode="Constant_Voltage",
-        finite_elements=20,
-    )
+    if ED_1D:
+        m.fs.EDstack = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=operation_mode,
+            finite_elements=20,
+        )
+    else:
+        m.fs.EDstack = Electrodialysis0D(
+            property_package=m.fs.properties,
+            operation_mode=operation_mode,
+        )
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
@@ -104,18 +113,9 @@ def build():
     m.fs.product.properties[0].flow_vol_phase[...]
     m.fs.disposal.properties[0].flow_vol_phase[...]
 
-    # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(
-        m.fs.product.properties[0].flow_vol_phase["Liq"]
-    )
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(
-        m.fs.product.properties[0].flow_vol_phase["Liq"]
-    )
+    add_costing(m)
 
-    # Add two variable for reporting
+    # Add two variables for reporting
     m.fs.mem_area = Var(
         initialize=1,
         bounds=(0, 1e3),
@@ -179,7 +179,21 @@ def build():
     return m
 
 
-def set_operating_conditions(m):
+def add_costing(m):
+    # costing
+    m.fs.costing = WaterTAPCosting()
+    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(
+        m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+
+
+def set_operating_conditions(m, ED_1D=True):
 
     solver = get_solver()
 
@@ -195,19 +209,25 @@ def set_operating_conditions(m):
     m.fs.separator.split_fraction[0, "inlet_diluate"].fix(0.5)
 
     # Fix ED unit vars
+    if ED_1D:
+        m.fs.EDstack.voltage_applied.fix(5)
+        m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
+        m.fs.EDstack.spacer_porosity.fix(1)
+        m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
+    else:
+        m.fs.EDstack.voltage.fix(0.5)
+
     m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
     m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
     m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
     m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
-    m.fs.EDstack.voltage_applied.fix(5)
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
     m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
-    m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
-    m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
     m.fs.EDstack.cell_width.fix(0.1)
     m.fs.EDstack.cell_length.fix(0.79)
     m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
@@ -220,8 +240,6 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
-    m.fs.EDstack.spacer_porosity.fix(1)
-    m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
@@ -256,24 +274,29 @@ def initialize_system(m, solver=None):
     m.fs.costing.initialize()
 
 
-def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
+def optimize_system(m, solver=None, ED_1D=True, checkpoint=None, fail_flag=True):
 
     # Below is an example of optimizing the operational voltage and cell pair number (which translates to membrane use)
     # Define a system with zero dof
-    set_operating_conditions(m)
+    set_operating_conditions(m, ED_1D=ED_1D)
 
     # Set an objective function
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # Choose and unfix variables to be optimized
-    m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.set_value(30)
     # Give narrower bounds to optimizing variables if available
-    m.fs.EDstack.voltage_applied[0].setlb(0.5)
-    m.fs.EDstack.voltage_applied[0].setub(20)
     m.fs.EDstack.cell_pair_num.setlb(5)
     m.fs.EDstack.cell_pair_num.setub(500)
+    if ED_1D:
+        m.fs.EDstack.voltage_applied[0].unfix()
+        m.fs.EDstack.voltage_applied[0].setlb(0.5)
+        m.fs.EDstack.voltage_applied[0].setub(20)
+    else:
+        m.fs.EDstack.voltage[0].unfix()
+        m.fs.EDstack.voltage[0].setlb(0.5)
+        m.fs.EDstack.voltage[0].setub(20)
 
     # Set a treatment goal
     # Example here is to reach a final product water containing NaCl = 1 g/L (from a 10 g/L feed)
@@ -287,7 +310,7 @@ def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
     solve(m, solver=solver, tee=True)
 
 
-def display_model_metrics(m):
+def display_model_metrics(m, ED_1D=True):
 
     print("---Flow properties in feed, product and disposal---")
 
@@ -318,12 +341,17 @@ def display_model_metrics(m):
 
     print("---Performance Metrics---")
 
+    if ED_1D:
+        voltage = m.fs.EDstack.voltage_applied[0]
+    else:
+        voltage = m.fs.EDstack.voltage[0]
+
     pm_table = DataFrame(
         data=[
             value(m.fs.EDstack.recovery_mass_H2O[0]),
             value(m.fs.mem_area),
             value(m.fs.EDstack.cell_pair_num),
-            value(m.fs.EDstack.voltage_applied[0]),
+            value(voltage),
             value(m.fs.costing.specific_energy_consumption),
             value(m.fs.costing.LCOW),
         ],
@@ -341,4 +369,4 @@ def display_model_metrics(m):
 
 
 if __name__ == "__main__":
-    main()
+    main(ED_1D=True)

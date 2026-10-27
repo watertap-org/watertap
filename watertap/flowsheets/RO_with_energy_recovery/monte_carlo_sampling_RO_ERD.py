@@ -69,7 +69,9 @@ def build_model(
 
     # Build, set, and initialize the system (these steps will change depending on the underlying model)
     m = build()
-    set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
+    set_operating_conditions(
+        m, water_recovery=0.5, over_pressure_factor=1.3, solver=solver
+    )
     initialize_system(m, solver=solver)
 
     # Check if we need to read in the default model values from a file

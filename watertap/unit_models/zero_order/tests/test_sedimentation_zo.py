@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestSedimentationZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -179,7 +180,8 @@ class TestSedimentationZO_w_default_removal:
 
 class TestSedimentationZO_phosphorus_capture_tss:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -313,7 +315,8 @@ class TestSedimentationZO_phosphorus_capture_tss:
 
 class TestSedimentationZO_phosphorus_capture_phosphates:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -451,7 +454,8 @@ params = db._get_technology("sedimentation")
 
 class TestSedimentationZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

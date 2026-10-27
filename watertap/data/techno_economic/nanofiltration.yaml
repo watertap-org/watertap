@@ -6,11 +6,12 @@ default:
     cost_method: cost_power_law_flow
     basis: flow_vol
     cost_factor: None
+    reference: Texas Water Development Board IT3P Table 3.21
     reference_state:
-      value: 4731.764235
-      units: m^3/hr
+      value: 1
+      units: Mgallons/day
     capital_a_parameter:
-      value: 75.0e6
+      value: 0.75e6
       units: USD_2014
     capital_b_parameter:
       value: 1.0

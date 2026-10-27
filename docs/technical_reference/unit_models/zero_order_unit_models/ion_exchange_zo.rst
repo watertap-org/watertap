@@ -1,3 +1,5 @@
+.. _ion_exchange_zo:
+
 Ion Exchange (ZO)
 =================
 
@@ -22,6 +24,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
+   "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", ":math:`kWh/m^3`"
    "Flowrate of NaCl addition", "NaCl_flowrate", ":math:`kg/s`"
    "Dosage of NaCl addition", "NaCl_dose", ":math:`kg/m^3`"
    "Replacement rate of ion exchange resin", "resin_demand", ":math:`kg/s`"

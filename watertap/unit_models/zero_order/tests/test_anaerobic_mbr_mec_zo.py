@@ -43,7 +43,8 @@ solver = get_solver()
 
 class TestAnaerobicMBRMECZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -194,7 +195,8 @@ params = db._get_technology("anaerobic_mbr_mec")
 
 class Test_AnMBRMEC_ZO_subtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

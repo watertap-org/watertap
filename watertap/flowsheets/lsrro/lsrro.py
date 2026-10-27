@@ -47,6 +47,12 @@ from watertap.unit_models.reverse_osmosis_1D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.unit_models.reverse_osmosis_0D import (
+    ReverseOsmosis0D,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
@@ -101,6 +107,7 @@ def run_lsrro_case(
     B_max=None,
     number_of_RO_finite_elements=10,
     set_default_bounds_on_module_dimensions=True,
+    RO_1D=True,
     quick_start=False,
 ):
     m = build(
@@ -110,6 +117,7 @@ def run_lsrro_case(
         has_calculated_ro_pressure_drop,
         number_of_RO_finite_elements,
         B_max,
+        RO_1D=RO_1D,
     )
     set_operating_conditions(m, Cin, Qin)
 
@@ -161,6 +169,7 @@ def build(
     has_calculated_ro_pressure_drop=True,
     number_of_RO_finite_elements=10,
     B_max=None,
+    RO_1D=True,
 ):
     # ---building model---
     m = ConcreteModel()
@@ -230,18 +239,29 @@ def build(
         cp_type = ConcentrationPolarizationType.none
         kf_type = MassTransferCoefficient.none
 
-    m.fs.ROUnits = ReverseOsmosis1D(
-        m.fs.Stages,
-        property_package=m.fs.properties,
-        has_pressure_change=has_calculated_ro_pressure_drop,
-        pressure_change_type=pressure_change_type,
-        mass_transfer_coefficient=kf_type,
-        concentration_polarization_type=cp_type,
-        transformation_scheme="BACKWARD",
-        transformation_method="dae.finite_difference",
-        finite_elements=number_of_RO_finite_elements,
-        has_full_reporting=True,
-    )
+    if RO_1D:
+        m.fs.ROUnits = ReverseOsmosis1D(
+            m.fs.Stages,
+            property_package=m.fs.properties,
+            has_pressure_change=has_calculated_ro_pressure_drop,
+            pressure_change_type=pressure_change_type,
+            mass_transfer_coefficient=kf_type,
+            concentration_polarization_type=cp_type,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=number_of_RO_finite_elements,
+            has_full_reporting=True,
+        )
+    else:
+        m.fs.ROUnits = ReverseOsmosis0D(
+            m.fs.Stages,
+            property_package=m.fs.properties,
+            has_pressure_change=has_calculated_ro_pressure_drop,
+            pressure_change_type=pressure_change_type,
+            mass_transfer_coefficient=kf_type,
+            concentration_polarization_type=cp_type,
+            has_full_reporting=True,
+        )
 
     for idx, ro_stage in m.fs.ROUnits.items():
         if idx == m.fs.FirstStage:
@@ -320,7 +340,7 @@ def build(
     m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
     m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
     m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+    m.fs.costing.energy_recovery_device.unit_cost.fix(535)
 
     m.fs.costing.cost_process()
 
@@ -1866,5 +1886,6 @@ if __name__ == "__main__":
         AB_gamma_factor=1,
         B_max=3.5e-6,
         number_of_RO_finite_elements=10,
+        RO_1D=False,
         set_default_bounds_on_module_dimensions=True,
     )

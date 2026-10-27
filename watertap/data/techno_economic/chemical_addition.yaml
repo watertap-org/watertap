@@ -9,19 +9,35 @@ default:
   ratio_in_solution:
     value: 0.5
     units: dimensionless
+  capital_cost:
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 10000
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.7
+      units: dimensionless
 alum:
   chemical_dosage:
     value: 10
     units: mg/L
   solution_density:
-    value: 1360
+    value: 1450
     units: kg/m^3
+    reference: https://www.pentachemicals.eu/data/Bezpecnostni_listy/en/Aluminium%20sulfate%20solution%2050%20in%20water_1459_1.0.pdf
   ratio_in_solution:
     value: 0.5
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.6 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 2
+        units: gal/hr
+      upper_bound:
+        value: 1000
+        units: gal/hr
     capital_a_parameter:
       value: 15408
       units: USD_2007
@@ -36,16 +52,50 @@ ammonia:
     value: 900
     units: kg/m^3
   ratio_in_solution:
-    value: 0.3
+    value: 0.29
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.15, Cost Estimating Manual for Water Treatment Facilities
+    # NOTE: the equation and for ammonia is different in Table 5.2.1; we use Figure 5.5.15 here. The validity range is stated in the text.
+    validity_range:
+      lower_bound:
+        value: 50
+        units: gal/day
+      upper_bound:
+        value: 750
+        units: gal/day
     capital_a_parameter:
       value: 6699.1
       units: USD_2007
     capital_b_parameter:
       value: 0.4219
+      units: dimensionless
+anhydrous_ammonia:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 600
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.14 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 240
+        units: lb/day
+      upper_bound:
+        value: 5080
+        units: lb/day
+    capital_a_parameter:
+      value: 7958.7
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.4235
       units: dimensionless
 anti-scalant:
   # Hydrazine
@@ -59,8 +109,16 @@ anti-scalant:
     value: 1
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.11 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    # note: this is the sulfuric acid cost curve
+    validity_range:
+      lower_bound:
+        value: 11
+        units: gal/day
+      upper_bound:
+        value: 5300
+        units: gal/day
     capital_a_parameter:
       value: 900.97
       units: USD_2007
@@ -78,33 +136,47 @@ caustic_soda:
     value: 0.5
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.12b + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 9
+        units: gal/day
+      upper_bound:
+        value: 10000
+        units: gal/day
     capital_a_parameter:
       value: 2262.8
       units: USD_2007
     capital_b_parameter:
       value: 0.6195
       units: dimensionless
-# coagulant:
-#   chemical_dosage:
-#     value: 10
-#     units: mg/L
-#   solution_density:
-#     value: 1360
-#     units: kg/m^3
-#   ratio_in_solution:
-#     value: 0.5
-#     units: dimensionless
-#   capital_cost:
-#     basis: chemical_flow_mass
-#     cost_factor: TPEC
-#     capital_a_parameter:
-#       value: 15408
-#       units: USD_2007
-#     capital_b_parameter:
-#       value: 0.5479
-#       units: dimensionless
+chlorine:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 1408
+    units: kg/m^3
+  ratio_in_solution:
+    value: 1
+    units: dimensionless
+  capital_cost:
+    cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.1b + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 200
+        units: lb/day
+      upper_bound:
+        value: 10000
+        units: lb/day
+    capital_a_parameter:
+      value: 5207.4
+      units: USD_2007
+    capital_b_parameter:
+      value: 0.5521
+      units: dimensionless
 ferric_chloride:
   chemical_dosage:
     value: 10
@@ -116,8 +188,15 @@ ferric_chloride:
     value: 0.42
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.13, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 2
+        units: gal/day
+      upper_bound:
+        value: 1450
+        units: gal/day
     capital_a_parameter:
       value: 34153
       units: USD_2007
@@ -135,8 +214,16 @@ hydrochloric_acid:
     value: 1
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.11 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    # note: this is the sulfuric acid cost curve
+    validity_range:
+      lower_bound:
+        value: 11
+        units: gal/day
+      upper_bound:
+        value: 5300
+        units: gal/day
     capital_a_parameter:
       value: 900.97
       units: USD_2007
@@ -154,8 +241,15 @@ lime:
     value: 1
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.9 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 10
+        units: lb/day
+      upper_bound:
+        value: 10000
+        units: lb/day
     capital_a_parameter:
       value: 12985
       units: USD_2007
@@ -173,8 +267,16 @@ sodium_bisulfite:
     value: 1
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.11 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    # note: this is the sulfuric acid cost curve
+    validity_range:
+      lower_bound:
+        value: 11
+        units: gal/day
+      upper_bound:
+        value: 5300
+        units: gal/day
     capital_a_parameter:
       value: 900.97
       units: USD_2007
@@ -189,11 +291,18 @@ sulfuric_acid:
     value: 1781
     units: kg/m^3
   ratio_in_solution:
-    value: 1
+    value: 0.93
     units: dimensionless
   capital_cost:
-    basis: chemical_flow_mass
     cost_factor: TPEC
+    reference: McGivney & Kawamura, Figure 5.5.11 + Table 5.2.1, Cost Estimating Manual for Water Treatment Facilities
+    validity_range:
+      lower_bound:
+        value: 11
+        units: gal/day
+      upper_bound:
+        value: 5300
+        units: gal/day
     capital_a_parameter:
       value: 900.97
       units: USD_2007

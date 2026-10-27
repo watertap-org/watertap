@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestSecondaryTreatmentWWTPZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -181,7 +182,8 @@ params = db._get_technology("secondary_treatment_wwtp")
 
 class Test_SecondaryTreatmentWWTPZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

@@ -41,8 +41,14 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.unit_models.reverse_osmosis_1D import (
+    ReverseOsmosis1D,
+)
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
+)
+from watertap.unit_models.osmotically_assisted_reverse_osmosis_1D import (
+    OsmoticallyAssistedReverseOsmosis1D,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
@@ -59,14 +65,16 @@ def erd_type_not_found(erd_type):
     )
 
 
-def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
+def main(
+    erd_type=ERDtype.pump_as_turbine, RO_1D=False, OARO_1D=False, raise_on_failure=False
+):
     # set up solver
     solver = get_solver()
 
     # build, set, and initialize
-    m = build(erd_type=erd_type)
+    m = build(erd_type=erd_type, RO_1D=RO_1D, OARO_1D=OARO_1D)
     set_operating_conditions(m)
-    initialize_system(m, solver=solver)
+    initialize_system(m, solver=solver, OARO_1D=OARO_1D)
 
     optimize_set_up(m)
     solve(m, solver=solver)
@@ -81,7 +89,7 @@ def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
     return m
 
 
-def build(erd_type=ERDtype.pump_as_turbine):
+def build(erd_type=ERDtype.pump_as_turbine, RO_1D=False, OARO_1D=False):
     # TODO: add costing later (OARO unit model does not have costing method)
 
     # flowsheet set up
@@ -89,7 +97,6 @@ def build(erd_type=ERDtype.pump_as_turbine):
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -98,55 +105,58 @@ def build(erd_type=ERDtype.pump_as_turbine):
 
     # --- Main pump ---
     m.fs.P1 = Pump(property_package=m.fs.properties)
-    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P2 = Pump(property_package=m.fs.properties)
-    m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P3 = Pump(property_package=m.fs.properties)
-    m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
-    m.fs.RO = ReverseOsmosis0D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
-    )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    if RO_1D:
+        m.fs.RO = ReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
+    else:
+        m.fs.RO = ReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
-    m.fs.OARO = OsmoticallyAssistedReverseOsmosis0D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
-    )
-    m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    if OARO_1D:
+        m.fs.OARO = OsmoticallyAssistedReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
+    else:
+        m.fs.OARO = OsmoticallyAssistedReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
         # add energy recovery turbine block
         m.fs.ERD1 = EnergyRecoveryDevice(property_package=m.fs.properties)
         m.fs.ERD2 = EnergyRecoveryDevice(property_package=m.fs.properties)
-        # add costing for ERD config
-        m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
-
-    # process costing and add system level metrics
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_electrical_carbon_intensity(
-        m.fs.product.properties[0].flow_vol
-    )
 
     # system water recovery
     m.fs.volumetric_recovery = Var(
@@ -216,7 +226,34 @@ def build(erd_type=ERDtype.pump_as_turbine):
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
+    add_costing(m)
+
     return m
+
+
+def add_costing(m, erd_type=ERDtype.pump_as_turbine):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
+
+    if erd_type == ERDtype.pump_as_turbine:
+        # add costing for ERD config
+        m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    else:
+        erd_type_not_found(erd_type)
 
 
 def set_operating_conditions(
@@ -352,7 +389,7 @@ def initialize_loop(m, solver):
     m.fs.disposal.initialize()
 
 
-def initialize_system(m, solver=None, verbose=True):
+def initialize_system(m, solver=None, OARO_1D=False, verbose=True):
     if solver is None:
         solver = get_solver()
 
@@ -375,7 +412,10 @@ def initialize_system(m, solver=None, verbose=True):
     # permeate side outlet pressure and unfix the RO pump
     # (which allows for control over the flow mass composition
     # into the OARO permeate_side).
-    m.fs.OARO.permeate_side.properties_out[0].pressure.fix(101325)
+    if OARO_1D:
+        m.fs.OARO.permeate_side.properties[0, 0].pressure.fix(101325)
+    else:
+        m.fs.OARO.permeate_side.properties_out[0].pressure.fix(101325)
     m.fs.P2.control_volume.properties_out[0].pressure.unfix()
 
     print(f"DOF: {degrees_of_freedom(m)}")
@@ -511,4 +551,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(erd_type=ERDtype.pump_as_turbine)
+    m = main(erd_type=ERDtype.pump_as_turbine, RO_1D=False, OARO_1D=False)

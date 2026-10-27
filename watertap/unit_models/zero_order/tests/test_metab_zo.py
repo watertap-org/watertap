@@ -41,7 +41,8 @@ solver = get_solver()
 
 class TestMetabZO_hydrogen:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -131,7 +132,8 @@ class TestMetabZO_hydrogen:
 
 class TestMetabZO_methane:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -222,7 +224,8 @@ class TestMetabZO_methane:
 
 class TestMetabZO_hydrogen_cost:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -322,7 +325,8 @@ class TestMetabZO_hydrogen_cost:
 
 class TestMetabZO_methane_cost:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

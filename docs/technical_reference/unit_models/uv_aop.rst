@@ -15,9 +15,9 @@ Ultraviolet Advanced Oxidation Process
 Introduction
 ------------
 
-Ultraviolet (UV) light is widely used in the water industry to inactivate microorganisms by damaging their nucleic acid, which prevents the pathogen from replicating and causing infection (Wright et al, 2006). Some contaminants resistant to biodegradation, such as N-Nitrosodimethylamine (NDMA), are susceptible to UV disinfection. The high oxidizing capability of UV is often used prior to chemical disinfection to ensure high microbial quality water as well as significantly reducing the chemical dosage required.
+Ultraviolet (UV) light is widely used in the water industry to inactivate microorganisms by damaging their nucleic acid, preventing the pathogen from replicating and causing infection (Wright et al, 2006). Some contaminants resistant to biodegradation, such as N-Nitrosodimethylamine (NDMA), are susceptible to UV degradation. The high oxidizing capability of UV is often used prior to chemical disinfection to ensure high microbial quality water as well as significantly reducing the chemical dosage required.
 
-Advanced oxidation processes (AOPs) are technologies involving the generation of highly reactive oxidative species, predominantly hydroxyl radicals (:math:`\text{HO} \cdot`). Unlike conventional chemical oxidation processes, such as using chlorine, which are selective as to which compounds they can degrade, AOPs are able to completely convert organic compounds into carbon dioxide, water and mineral acids. In addition, AOPs are feasible for full-scale use to destroy organic compounds because they generate hydroxyl radicals at ambient temperature and atmospheric pressure. Typically, the commercially available UV AOPs for industrial water treatment are:
+Advanced oxidation processes (AOPs) are technologies involving the generation of highly reactive oxidative species, predominantly hydroxyl radicals (:math:`\text{HO} \cdot`). Unlike conventional chemical oxidation processes, such as using chlorine, which are selective as to which compounds they can degrade, AOPs are able to completely convert organic compounds into carbon dioxide, water, and mineral acids. In addition, AOPs are feasible for full-scale use to destroy organic compounds because they generate hydroxyl radicals at ambient temperature and atmospheric pressure. Typically, the commercially available UV AOPs for industrial water treatment are:
 
 1) UV light and hydrogen peroxide (:math:`\text{H}_2\text{O}_2`)
 
@@ -152,53 +152,19 @@ if ``has_aop`` is set to ``True``, there are one additional equation:
 
    "Reaction rate constant", ":math:`k_i = k_{OH} \cdot c_{\text{H}_2\text{O}_2}`"
 
-Costing Method
----------------
-
-Costing Method Variables
-+++++++++++++++++++++++++
-
-The following variables are constructed when applying the UV-AOP costing method in the ``watertap_costing_package``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Units"
-
-   "UV reactor cost", ":math:`C_{cap,r}`", "reactor_cost", ":math:`$/(\text{m}^3\text{/h})`"
-   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_{cap,l}`", "lamp_cost", ":math:`$/\text{kW}`"
-   "Fraction of UV replaced per year", ":math:`f_l`", "factor_lamp_replacement", ":math:`\text{y}^{-1}`"
-
-Capital Cost Calculations
-+++++++++++++++++++++++++
-
-Capital costs are determined by the summation of reactor and lamp costing terms.
-The reactor costing term is determined based on inlet flow rate.
-The lamp costing term is determined based on electricity demand.
-
-.. csv-table::
-   :header: "Description", "Equation"
-
-   "Total capital cost", ":math:`C_{cap,tot} = C_{cap,r} \cdot F_{in} + C_{cap,l} \cdot E`"
-
-**NOTE: the default costing calculation is evaluated based on a UV system with low-pressure lamps.
-Users can provide corresponding costing variables for a specific UV system with other lamp types**
-
-Operating Cost Calculations
-+++++++++++++++++++++++++++
-
-Operating costs are calculated as the cost to replace lamps, sleeves, ballasts and sensors in a UV system.
-
-.. csv-table::
-   :header: "Description", "Equation"
-
-   "Fixed operating cost", ":math:`C_{op} = f_l \cdot C_{cap,l} \cdot E`"
-
 Class Documentation
 -------------------
 
 * :mod:`watertap.unit_models.uv_aop`
-* :meth:`watertap.costing.watertap_costing_package.WaterTAPCostingData.cost_uv_aop`
 
 References
 ----------
-Wright, H., Gaithuma, D., Greene, D., Aieta, M. (2006) Integration of validation, design, and operation provides optimal implementation of UV disinfection.
-American Water Works Association, 98, 81-92
+
+| Costing relationships and parameters were developed from data in the UV System Cost Analysis Tool (UVCAT)
+| https://www.nyserda.ny.gov/About/Publications/Energy-Analysis-Reports-and-Studies/Water-and-Wastewater-Technical-Reports/Optimization-of-UV-Disinfection
+| Prepared by Carollo for NYSERDA; Appendix A
+
+| Wright, H., Gaithuma, D., Greene, D., Aieta, M. (2006) 
+| Integration of validation, design, and operation provides optimal implementation of UV disinfection.
+| American Water Works Association, 98, 81-92
+| https://doi.org/10.1002/j.1551-8833.2006.tb07780.x

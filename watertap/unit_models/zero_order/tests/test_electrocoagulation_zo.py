@@ -50,7 +50,8 @@ solver = get_solver()
 
 class TestECZO_AL:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -234,7 +235,8 @@ class TestECZO_AL:
 
 class TestECZO_FE:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -426,7 +428,8 @@ class TestECZO_FE:
 
 class TestECZO_OverpotentialCalculation:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

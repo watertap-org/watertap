@@ -36,7 +36,8 @@ solver = get_solver()
 # -----------------------------------------------------------------------------
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine)
 
         return m
@@ -93,5 +94,10 @@ class TestOAROwithTurbine:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_main(self):
-        main(number_of_stages=3, system_recovery=0.5)
+    def test_main_0D(self):
+        main(number_of_stages=3, system_recovery=0.5, RO_1D=False)
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_main_1D(self):
+        main(number_of_stages=3, system_recovery=0.5, RO_1D=True)

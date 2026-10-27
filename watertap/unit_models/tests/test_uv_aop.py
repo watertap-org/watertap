@@ -57,7 +57,8 @@ solver = get_solver()
 
 class TestUV:
     @pytest.fixture(scope="class")
-    def UV_frame(self):
+    @classmethod
+    def UV_frame(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -269,7 +270,8 @@ class TestUV:
 
 class TestUV_standard:
     @pytest.fixture(scope="class")
-    def UV_frame(self):
+    @classmethod
+    def UV_frame(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -488,7 +490,8 @@ class TestUV_standard:
 # TODO: add test for single target species, and improve error message when list not provided.
 class TestUV_with_multiple_comps:
     @pytest.fixture(scope="class")
-    def UV_frame(self):
+    @classmethod
+    def UV_frame(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = MCASParameterBlock(
@@ -730,7 +733,8 @@ class TestUV_with_multiple_comps:
 
 class TestUV_detailed:
     @pytest.fixture(scope="class")
-    def UV_frame(self):
+    @classmethod
+    def UV_frame(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -959,7 +963,8 @@ class TestUV_detailed:
 
 class TestUVAOP:
     @pytest.fixture(scope="class")
-    def UV_frame(self):
+    @classmethod
+    def UV_frame(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -1183,7 +1188,8 @@ class TestUVAOP:
 
 class TestUV_with_MCAS_mass_basis:
     @pytest.fixture(scope="class")
-    def UV_frame(self):
+    @classmethod
+    def UV_frame(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = MCASParameterBlock(

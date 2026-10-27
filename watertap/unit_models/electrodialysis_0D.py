@@ -143,7 +143,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
            :header: "Configuration Options", "Description"
 
            "``PressureDropMethod.none``", "The frictional pressure drop is neglected." 
-           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit lenght."
+           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit length."
            "``PressureDropMethod.Darcy_Weisbach``", "The pressure drop is calculated by the Darcy-Weisbach equation."
        """,
         ),
@@ -1110,7 +1110,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             initialize=0.01,  # to reinspect
             bounds=(-50, 50),
             units=pyunits.volt,
-            doc="Nonohmic potential across a membane",
+            doc="Nonohmic potential across a membrane",
         )
 
         # ioa = in-out average
@@ -1120,7 +1120,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.electrode_side,
             self.flowsheet().time,
             self.ion_set,
-            doc="calcualte current density from the electrical input",
+            doc="calculate current density from the electrical input",
         )
         def eq_set_surface_conc_ioa(self, mem, side, t, j):
             if not self.config.has_Nernst_diffusion_layer:
@@ -1144,7 +1144,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.membrane_set,
             self.flowsheet().time,
-            doc="Calculate the total non-ohmic potential across an iem; this takes account of diffusion and Donnan Potentials",
+            doc="Calculate the total non-ohmic potential across an iem; this takes into account of diffusion and Donnan Potentials",
         )
         def eq_potential_nonohm_membrane_ioa(self, mem, t):
 

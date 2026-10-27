@@ -21,8 +21,7 @@ from idaes.core.util.exceptions import ConfigurationError
 
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
 
-# Some more inforation about this module
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Kurban Sitterley"
 
 
 @declare_process_block_class("ChemicalAdditionZO")
@@ -47,7 +46,6 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
         build_pt(self)
 
         self.chemical_dosage = pyo.Var(
-            self.flowsheet().time,
             units=pyo.units.mg / pyo.units.L,
             bounds=(0, None),
             doc="Dosing rate of chemical",
@@ -71,6 +69,13 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
             doc="Volumetric flow rate of chemical solution",
         )
 
+        self.chemical_flow_mass = pyo.Var(
+            initialize=1,
+            units=pyo.units.kg / pyo.units.s,
+            bounds=(0, None),
+            doc="Mass flow rate of chemical solution",
+        )
+
         self._fixed_perf_vars.append(self.chemical_dosage)
         self._fixed_perf_vars.append(self.solution_density)
         self._fixed_perf_vars.append(self.ratio_in_solution)
@@ -78,17 +83,23 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
         self._perf_var_dict["Chemical Dosage"] = self.chemical_dosage
         self._perf_var_dict["Chemical Flow"] = self.chemical_flow_vol
 
-        def rule_chem_flow(blk, t):
-            return blk.chemical_flow_vol[t] == pyo.units.convert(
-                blk.chemical_dosage[t]
-                * blk.properties[t].flow_vol
-                / (blk.solution_density * blk.ratio_in_solution),
+        def rule_chem_flow_mass(blk):
+            return blk.chemical_flow_mass == pyo.units.convert(
+                blk.chemical_dosage
+                * blk.properties[0].flow_vol
+                / blk.ratio_in_solution,
+                to_units=pyo.units.kg / pyo.units.s,
+            )
+
+        self.chemical_flow_mass_constraint = pyo.Constraint(rule=rule_chem_flow_mass)
+
+        def rule_chem_flow_vol(blk):
+            return blk.chemical_flow_vol[0] == pyo.units.convert(
+                blk.chemical_flow_mass / blk.solution_density,
                 to_units=pyo.units.m**3 / pyo.units.s,
             )
 
-        self.chemical_flow_constraint = pyo.Constraint(
-            self.flowsheet().time, rule=rule_chem_flow
-        )
+        self.chemical_flow_vol_constraint = pyo.Constraint(rule=rule_chem_flow_vol)
 
         pump_electricity(self, self.chemical_flow_vol)
 
@@ -109,15 +120,15 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
         """
         chem_name = blk.unit_model.config.process_subtype
 
-        t0 = blk.flowsheet().time.first()
-        chem_flow_mass = (
-            blk.unit_model.chemical_dosage[t0]
-            * blk.unit_model.properties[t0].flow_vol
-            / blk.unit_model.ratio_in_solution
-        )
-        sizing_term = blk.unit_model.chemical_flow_vol[t0] / (
-            pyo.units.gal / pyo.units.day
-        )
+        if chem_name in ["alum"]:
+            basis_units = pyo.units.gal / pyo.units.hr
+            sizing_term = blk.unit_model.chemical_flow_vol[0] / basis_units
+        elif chem_name in ["lime", "anhydrous_ammonia", "chlorine"]:
+            basis_units = pyo.units.lb / pyo.units.day
+            sizing_term = blk.unit_model.chemical_flow_mass / basis_units
+        else:
+            basis_units = pyo.units.gal / pyo.units.day
+            sizing_term = blk.unit_model.chemical_flow_vol[0] / basis_units
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
@@ -142,6 +153,8 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.electricity[t0], "electricity"
+            blk.unit_model.electricity[0], "electricity"
         )
-        blk.config.flowsheet_costing_block.cost_flow(chem_flow_mass, chem_name)
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.chemical_flow_mass, chem_name
+        )

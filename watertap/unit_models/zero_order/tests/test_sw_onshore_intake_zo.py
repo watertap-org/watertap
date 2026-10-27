@@ -43,7 +43,8 @@ solver = get_solver()
 
 class TestSWOnshoreIntakeZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -120,26 +121,26 @@ def test_costing():
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = SWOnshoreIntakeZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = SWOnshoreIntakeZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.sw_onshore_intake, Block)
     assert isinstance(m.fs.costing.sw_onshore_intake.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.sw_onshore_intake.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.sw_onshore_intake.reference_state, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

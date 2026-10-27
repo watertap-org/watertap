@@ -35,7 +35,8 @@ from watertap.flowsheets.activated_sludge.ASM1_flowsheet import (
 
 class TestASM1Flowsheet:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m, res = build_flowsheet()
 
         m.results = res

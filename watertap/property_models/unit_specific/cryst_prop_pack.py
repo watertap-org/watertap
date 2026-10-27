@@ -69,6 +69,10 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -149,6 +153,12 @@ class NaClParameterData(PhysicalParameterBlock):
         Fundamentals of Salt Water Desalination, Elsevier Science B.V., 2002, 525-563
 
         - Tavare, N. S. Industrial Crystallization, Springer US, 2013.
+
+        - M. Affandi, N. Mamat, S. N. A. M. Kanafiah and N. S. Khalid
+          Simplified Equations for Saturated Steam Properties for Simulation Purpose
+          Procedia Engineering 2013 Vol. 53 Pages 722-726
+          DOI: 10.1016/j.proeng.2013.02.095
+          
         """
 
         # Unit definitions
@@ -796,6 +806,45 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Solution enthalpy parameter E5",
         )
 
+        # Specific volume parameters, computed from Affandi expression (Eq 5)
+
+        self.sp_vol_phase_param_A1 = Var(
+            within=Reals,
+            initialize=-7.75883,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A1",
+        )
+        self.sp_vol_phase_param_A2 = Var(
+            within=Reals,
+            initialize=3.23753,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A2",
+        )
+        self.sp_vol_phase_param_A3 = Var(
+            within=Reals,
+            initialize=2.05755,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A3",
+        )
+        self.sp_vol_phase_param_A4 = Var(
+            within=Reals,
+            initialize=-0.06052,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A4",
+        )
+        self.sp_vol_phase_param_A5 = Var(
+            within=Reals,
+            initialize=0.00529,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A5",
+        )
+        self.temperature_crit = Var(
+            within=Reals,
+            initialize=647.096,
+            units=pyunits.degK,
+            doc="Critical temperature of steam",
+        )
+
         for v in self.component_objects(Var):
             v.fix()
 
@@ -814,6 +863,19 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dh_vap_mass_solvent", 1e-6)
         self.set_default_scaling("dh_crystallization_mass_comp", 1e-5, index="NaCl")
 
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units(
@@ -831,10 +893,6 @@ class NaClParameterData(PhysicalParameterBlock):
                 "flow_mass_phase_comp": {"method": None},
                 "temperature": {"method": None},
                 "pressure": {"method": None},
-                "solubility_mass_phase_comp": {"method": "_solubility_mass_phase_comp"},
-                "solubility_mass_frac_phase_comp": {
-                    "method": "_solubility_mass_frac_phase_comp"
-                },
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
@@ -843,9 +901,6 @@ class NaClParameterData(PhysicalParameterBlock):
                 "pressure_sat": {"method": "_pressure_sat"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "dh_crystallization_mass_comp": {
-                    "method": "_dh_crystallization_mass_comp"
-                },
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
             }
@@ -853,15 +908,71 @@ class NaClParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "dens_mass_solute": {"method": "_dens_mass_solute"},
-                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
-                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
-                "cp_mass_solute": {"method": "_cp_mass_solute"},
-                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
-                "enth_mass_solvent": {"method": "_enth_mass_solvent"},
-                "enth_mass_solute": {"method": "_enth_mass_solute"},
-                "enth_flow": {"method": "_enth_flow"},
+                "dens_mass_solvent": {
+                    "doc": "Mass density of pure water",
+                    "units": pyunits.kg / pyunits.m**3,
+                    "method": "_dens_mass_solvent",
+                },
+                "dens_mass_solute": {
+                    "doc": "Mass density of solid NaCl crystals",
+                    "units": pyunits.kg / pyunits.m**3,
+                    "method": "_dens_mass_solute",
+                },
+                "dh_vap_mass_solvent": {
+                    "doc": "Latent heat of vaporization of pure water",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_dh_vap_mass_solvent",
+                },
+                "dh_crystallization_mass_comp": {
+                    "doc": "NaCl heat of crystallization",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_dh_crystallization_mass_comp",
+                },
+                "cp_mass_solvent": {
+                    "doc": "Specific heat capacity of pure solvent",
+                    "units": pyunits.J / pyunits.kg / pyunits.K,
+                    "method": "_cp_mass_solvent",
+                },
+                "cp_mass_solute": {
+                    "doc": "Specific heat capacity of solid NaCl crystals",
+                    "units": pyunits.J / pyunits.kg / pyunits.K,
+                    "method": "_cp_mass_solute",
+                },
+                "temperature_sat_solvent": {
+                    "doc": "Vapour saturation temperature of pure solvent at crystallization pressure",
+                    "units": pyunits.K,
+                    "method": "_temperature_sat_solvent",
+                },
+                "enth_mass_solvent": {
+                    "doc": "Specific saturated enthalpy of pure solvent",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_enth_mass_solvent",
+                },
+                "enth_mass_solute": {
+                    "doc": "Specific enthalpy of solid NaCl crystals",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_enth_mass_solute",
+                },
+                "enth_flow": {
+                    "doc": "Total enthalpy flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow",
+                },
+                "solubility_mass_phase_comp": {
+                    "doc": "Solubility of NaCl in water",
+                    "units": pyunits.g / pyunits.L,
+                    "method": "_solubility_mass_phase_comp",
+                },
+                "solubility_mass_frac_phase_comp": {
+                    "doc": "Solubility of NaCl in water as a mass fraction",
+                    "units": pyunits.dimensionless,
+                    "method": "_solubility_mass_frac_phase_comp",
+                },
+                "specific_vol_sat_phase": {
+                    "doc": "Specific volume of steam",
+                    "units": pyunits.m**3 / pyunits.kg,
+                    "method": "_specific_vol_sat_phase",
+                },
             }
         )
 
@@ -1750,7 +1861,7 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_enth_mass_solute(b, p):
             ############################
-            # Shomate equation for molar enthalpy ofNaCl, NIST
+            # Shomate equation for molar enthalpy of NaCl, NIST
             # Note: Tref is 298 K, so changing the Tref to 273 K to match IAPWS is necessary.
             # Computation formula for reference temperature change:
             #    Enthalpy at T relative to 273 K = Enthalpy change relative to 298 K + (Enthalpy at 298 K - Enthalpy at 273 K)
@@ -1798,7 +1909,7 @@ class NaClStateBlockData(StateBlockData):
         self.eq_enth_mass_solute = Constraint(["Sol"], rule=rule_enth_mass_solute)
 
     # 20. Total enthalpy flow for any stream: adds up the enthalpies for the solid, liquid and vapour phases
-    # Assumes no NaCl is vapour stream or water in crystals
+    # Assumes no NaCl in vapour stream or water in crystals
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
 
@@ -1858,6 +1969,33 @@ class NaClStateBlockData(StateBlockData):
 
         self.eq_mole_frac_phase_comp = Constraint(
             self.phase_component_set, rule=rule_mole_frac_phase_comp
+        )
+
+    def _specific_vol_sat_phase(self):
+        self.specific_vol_sat_phase = Var(
+            ["Vap"],
+            initialize=100,
+            bounds=(0, None),
+            units=pyunits.m**3 / pyunits.kg,
+            doc="Specific volume of steam",
+        )
+
+        def rule_specific_vol_sat_phase(b, p):
+            t_red = self.temperature / self.params.temperature_crit
+            log_sp_vol = (
+                self.params.sp_vol_phase_param_A1
+                + self.params.sp_vol_phase_param_A2 * (log(1 / t_red)) ** 0.4
+                + self.params.sp_vol_phase_param_A3 / (t_red**2)
+                + self.params.sp_vol_phase_param_A4 / (t_red**4)
+                + self.params.sp_vol_phase_param_A5 / (t_red**5)
+            )
+            return (
+                b.specific_vol_sat_phase[p]
+                == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
+            )
+
+        self.eq_specific_vol_sat_phase = Constraint(
+            ["Vap"], rule=rule_specific_vol_sat_phase
         )
 
     # -----------------------------------------------------------------------------
@@ -1935,6 +2073,10 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed("solubility_mass_frac_phase_comp"):
             if iscale.get_scaling_factor(self.solubility_mass_frac_phase_comp) is None:
                 iscale.set_scaling_factor(self.solubility_mass_frac_phase_comp, 1e0)
+
+        if self.is_property_constructed("specific_vol_sat_phase"):
+            if iscale.get_scaling_factor(self.specific_vol_sat_phase["Vap"]) is None:
+                iscale.set_scaling_factor(self.specific_vol_sat_phase["Vap"], 0.1)
 
         # Scaling for flow_vol_phase: scaled as scale of dominant component in phase / density of phase
         if self.is_property_constructed("flow_vol_phase"):
@@ -2136,6 +2278,7 @@ class NaClStateBlockData(StateBlockData):
             "enth_mass_solute",
             "cp_mass_solvent",
             "cp_mass_solute",
+            "specific_vol_sat_phase",
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):

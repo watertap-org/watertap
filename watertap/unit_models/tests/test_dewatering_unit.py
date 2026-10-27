@@ -138,7 +138,8 @@ def test_list_error():
 # -----------------------------------------------------------------------------
 class TestDu(object):
     @pytest.fixture(scope="class")
-    def du(self):
+    @classmethod
+    def du(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -201,9 +202,9 @@ class TestDu(object):
         assert hasattr(du.fs.unit.overflow, "pressure")
         assert hasattr(du.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(du) == 83
+        assert number_variables(du) == 82
         assert number_total_constraints(du) == 62
-        assert number_unused_variables(du) == 4
+        assert number_unused_variables(du) == 3
 
     @pytest.mark.unit
     def test_dof(self, du):
@@ -310,7 +311,8 @@ class TestDu(object):
 
 class TestDUASM2d(object):
     @pytest.fixture(scope="class")
-    def du_asm2d(self):
+    @classmethod
+    def du_asm2d(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -384,7 +386,8 @@ class TestDUASM2d(object):
 
 class TestDUModifiedASM2d(object):
     @pytest.fixture(scope="class")
-    def du_mod_asm2d(self):
+    @classmethod
+    def du_mod_asm2d(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 

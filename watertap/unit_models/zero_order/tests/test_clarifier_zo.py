@@ -24,6 +24,7 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -43,7 +44,8 @@ solver = get_solver()
 
 class TestClarifierZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -154,7 +156,8 @@ class TestClarifierZO:
 
 class TestClarifierZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -278,7 +281,8 @@ class TestClarifierZO_w_default_removal:
 
 class TestClarifierZO_non_default_subtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -419,41 +423,58 @@ class TestClarifierZO_non_default_subtype:
         model.fs.unit.report()
 
 
+@pytest.mark.component
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = WaterParameterBlock(solute_list=["toc"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2007
 
-    m.fs.unit1 = ClarifierZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = ClarifierZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    rho = 1000 * pyunits.kg / pyunits.m**3
+    flow_vol = 34.554 * pyunits.Mgallons / pyunits.day  # =reference_state
+    flow_mass = rho * flow_vol
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
+
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
     assert isinstance(m.fs.costing.clarifier, Block)
     assert isinstance(m.fs.costing.clarifier.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.clarifier.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.clarifier.reference_state, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
+    assert (
+        pytest.approx(value(m.fs.unit.costing.direct_capital_cost), rel=1e-3)
+        == 177591.07  # = cost basis
+    )
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.0010514
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
 
-
+@pytest.mark.component
 def test_costing_non_default_subtype():
     m = ConcreteModel()
     m.db = Database()
@@ -474,32 +495,32 @@ def test_costing_non_default_subtype():
 
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit1 = ClarifierZO(
+    m.fs.unit = ClarifierZO(
         property_package=m.fs.params,
         database=m.db,
         process_subtype="HRCS_clarifier",
     )
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "cod"].fix(1)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(1)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.clarifier, Block)
     assert isinstance(m.fs.costing.clarifier.HRT, Var)
     assert isinstance(m.fs.costing.clarifier.sizing_cost, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert (
-        m.fs.unit1.ferric_chloride_demand[0]
+        m.fs.unit.ferric_chloride_demand[0]
         in m.fs.costing._registered_flows["ferric_chloride"]
     )

@@ -1,3 +1,5 @@
+.. _metab_zo:
+
 Modular Encapsulated Two-stage Anaerobic Biological Reactor (ZO)
 ================================================================
 
