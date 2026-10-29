@@ -109,7 +109,7 @@ and set up the necessary environment as described in the previous sections.
 Stop any running UI before installing the local WaterTAP package, then restart it to load the updated flowsheets. Repeat the local installation and restart
 after making further changes to WaterTAP.
 
-Custom flowsheets must expose the UI interface described in :ref:`how_to_ui-api` to be available in the GUI.
+Custom flowsheets must expose the UI interface described in :ref:`how_to_ui_api` to be available in the GUI.
 
 .. note::
    For detailed information on developer testing of custom flowsheets, refer to the README instructions on the `IDAES Flowsheet Processor UI repository <https://github.com/prommis/idaes-flowsheet-processor-ui>`_.
