@@ -228,9 +228,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit cost data, NF pump
     exports.add(
-        obj=fs.zo_costing.pump_electricity.pump_cost["default"],
+        obj=fs.costing.pump_electricity.pump_cost["default"],
         name="Pump cost",
-        ui_units=fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.hr),
+        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
         display_units="$/(m^3/hr)",
         rounding=0,
         description="Pump capital cost parameter",
@@ -239,7 +239,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     # Unit cost data, NF
-    v = fs.zo_costing.nanofiltration.membrane_cost
+    v = fs.costing.nanofiltration.membrane_cost
     exports.add(
         obj=v["rHGO_dye_rejection"],
         name="NF membrane cost",
@@ -250,7 +250,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="rHGO NF costing",
         is_output=False,
     )
-    v = fs.zo_costing.nanofiltration.membrane_replacement_rate
+    v = fs.costing.nanofiltration.membrane_replacement_rate
     exports.add(
         obj=v["rHGO_dye_rejection"],
         name="NF membrane replacement rate",
@@ -319,7 +319,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.waste_disposal_cost
+    v = fs.costing.waste_disposal_cost
     exports.add(
         obj=v,
         name="Waste disposal cost per volume",
@@ -330,7 +330,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.dye_disposal_cost
+    v = fs.costing.dye_disposal_cost
     exports.add(
         obj=v,
         name="Dye disposal cost per volume",
@@ -341,7 +341,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="System Costs",
         is_output=False,
     )
-    v = fs.zo_costing.recovered_water_cost
+    v = fs.costing.recovered_water_cost
     exports.add(
         obj=v,
         name="Value of recovered water",
@@ -470,7 +470,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.LCOT_wo_revenue,
         name="Levelized cost of treatment",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Levelized cost of treatment with respect to influent flow",
@@ -481,7 +481,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.LCOT,
         name="Levelized cost of treatment w/revenue and disposal costs",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Net levelized cost of treatment wrt to influent flow accounting for revenue and disposal costs",
@@ -492,7 +492,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.LCOW_wo_revenue,
         name="Levelized cost of water",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
         description="Levelized cost of water with respect to product water",
@@ -503,7 +503,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.LCOW,
         name="Net levelized cost of water w/revenue and disposal costs",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
         description="Net levelized cost of water wrt to product flow accounting for revenue and disposal costs`",
@@ -517,7 +517,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=total_capital_norm,
         name="Normalized total capital cost",
-        ui_units=fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.day),
+        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
         description="Normalized total capital costs accounting for indirect "
@@ -531,17 +531,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             fs.feed.properties[0].flow_vol,
             to_units=pyunits.m**3 / pyunits.year,
         )
-        * fs.zo_costing.utilization_factor
+        * fs.costing.utilization_factor
     )
 
     elec_operating_norm = (
-        fs.zo_costing.aggregate_flow_costs["electricity"]
+        fs.costing.aggregate_flow_costs["electricity"]
         + fs.ro_costing.aggregate_flow_costs["electricity"]
     ) / annual_water_inlet
     exports.add(
         obj=elec_operating_norm,
         name="Normalized annual electricity cost",
-        ui_units=fs.zo_costing.base_currency / pyunits.m**3,
+        ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Normalized electricity cost - [annual electricity costs/annual "
@@ -582,7 +582,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.total_capital_cost,
         name="Total capital cost",
-        ui_units=fs.zo_costing.base_currency,
+        ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=2,
         description="Total capital costs - including investment factor to account "
@@ -596,7 +596,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         exports.add(
             obj=wwtp_capex,
             name="Secondary WWTP capital cost",
-            ui_units=fs.zo_costing.base_currency,
+            ui_units=fs.costing.base_currency,
             display_units="$",
             rounding=2,
             description="Secondary WWTP representative of conventional activated sludge with secondary clarifier",
@@ -613,7 +613,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=nf_capex,
         name="rHGO Nanofiltration system capital cost",
-        ui_units=fs.zo_costing.base_currency,
+        ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=2,
         description="rHGO Nanofiltration system costs including pump",
@@ -624,7 +624,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.ro_costing.total_capital_cost,
         name="RO system capital cost",
-        ui_units=fs.zo_costing.base_currency,
+        ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=2,
         description="RO total investment cost, including pumps and ERD",
@@ -637,7 +637,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.total_operating_cost,
         name="Total operating cost",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Total annual operating costs - including electricity "
@@ -646,12 +646,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Operating costs",
     )
-    total_elec_cost = fs.zo_costing.aggregate_flow_costs["electricity"]
+    total_elec_cost = fs.costing.aggregate_flow_costs["electricity"]
     +fs.ro_costing.aggregate_flow_costs["electricity"]
     exports.add(
         obj=total_elec_cost,
         name="Annual electricity cost",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Annual electricity costs ",
@@ -662,7 +662,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.brine_cost,
         name="Annual RO brine disposal cost",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Annual brine disposal",
@@ -673,7 +673,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.dye_cost,
         name="Annual dye disposal cost",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Annual dye disposal",
@@ -685,7 +685,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         exports.add(
             obj=fs.sludge_disposal_cost,
             name="Annual WWTP sludge disposal cost",
-            ui_units=fs.zo_costing.base_currency / pyunits.year,
+            ui_units=fs.costing.base_currency / pyunits.year,
             display_units="$/year",
             rounding=2,
             description="Annual sludge disposal",
@@ -699,7 +699,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.water_recovery_revenue,
         name="Annual water recovery revenue",
-        ui_units=fs.zo_costing.base_currency / pyunits.year,
+        ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
         description="Revenue from selling water or value of freshwater savings",
