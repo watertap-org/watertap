@@ -637,7 +637,6 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
     )
 
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
-    m.fs.costing.base_currency = pyunits.USD_2023
 
     # cost nanofiltration module and pump
     if hasattr(m.fs, "pretreatment"):
@@ -689,7 +688,7 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
 
     # Add specific energy consumption
     feed_flowrate = m.fs.feed.flow_vol[0]
-    m.fs.costing.add_electricity_intensity(feed_flowrate)
+    m.fs.costing.add_specific_energy_consumption(feed_flowrate)
 
     # RO Train
     # RO equipment is costed using more detailed costing package
@@ -706,26 +705,6 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         desal.P3.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_method_arguments={"cost_electricity_flow": True},
-        )
-
-        m.fs.costing.add_specific_energy_consumption(feed_flowrate)
-
-        m.fs.specific_energy_intensity = Expression(
-            expr=(
-                m.fs.costing.electricity_intensity
-                + m.fs.costing.specific_energy_consumption
-            ),
-            doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
-        )
-    elif hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
-        m.fs.specific_energy_intensity = Expression(
-            expr=m.fs.costing.electricity_intensity,
-            doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
-        )
-    else:
-        m.fs.specific_energy_intensity = Expression(
-            expr=m.fs.costing.electricity_intensity,
-            doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
         )
 
     # Annual disposal of brine
@@ -1453,7 +1432,7 @@ def display_costing(m):
     else:
         pass
 
-    sec = m.fs.specific_energy_intensity()
+    sec = m.fs.costing.specific_energy_consumption()
 
     print("\n System costing metrics:")
     print(f"\nTotal Capital Cost: {capex:.4f} M$")
