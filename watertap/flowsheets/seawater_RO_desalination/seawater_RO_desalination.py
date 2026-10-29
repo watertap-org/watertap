@@ -142,17 +142,17 @@ def build(
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.rho = Var(initialize=rho, units=pyunits.kg / pyunits.m**3)
-    m.fs.rho.fix()
+    # m.fs.rho = Var(initialize=rho, units=pyunits.kg / pyunits.m**3)
+    # m.fs.rho.fix()
 
-    m.fs.flow_vol = Var(initialize=flow_vol, units=pyunits.m**3 / pyunits.s)
-    m.fs.flow_vol.fix()
+    # m.fs.flow_vol = Var(initialize=flow_vol, units=pyunits.m**3 / pyunits.s)
+    # m.fs.flow_vol.fix()
 
-    m.fs.conc_mass_tds = Var(initialize=conc_mass_tds, units=pyunits.g / pyunits.L)
-    m.fs.conc_mass_tds.fix()
+    # m.fs.conc_mass_tds = Var(initialize=conc_mass_tds, units=pyunits.g / pyunits.L)
+    # m.fs.conc_mass_tds.fix()
 
-    m.fs.conc_mass_tss = Var(initialize=conc_mass_tss, units=pyunits.g / pyunits.L)
-    m.fs.conc_mass_tss.fix()
+    # m.fs.conc_mass_tss = Var(initialize=conc_mass_tss, units=pyunits.g / pyunits.L)
+    # m.fs.conc_mass_tss.fix()
 
     m.fs.properties = MCASParameterBlock(
         solute_list=["TDS", "TSS"],
@@ -362,6 +362,7 @@ def scale_model(m):
 
     iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-5)
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
+    iscale.set_scaling_factor(desal.RO.width, 1e-3)
 
     if m.erd_type == "pressure_exchanger":
         iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
@@ -392,31 +393,32 @@ def set_operating_conditions(m):
             ("temperature", None): m.temperature,
             ("pressure", None): m.pressure,
         },
-        hold_state=False,
+        # hold_state=False,
+        hold_state=True,
     )
 
-    m.fs.feed.properties[0].pressure.fix()
-    m.fs.feed.properties[0].temperature.fix()
+    # m.fs.feed.properties[0].pressure.fix()
+    # m.fs.feed.properties[0].temperature.fix()
     # re-fix density after calculating state
-    rho = value(m.fs.feed.properties[0].dens_mass_phase["Liq"])
-    m.fs.rho.fix(rho)
+    # rho = value(m.fs.feed.properties[0].dens_mass_phase["Liq"])
+    # m.fs.rho.fix(rho)
 
-    m.fs.feed.flow_mass_water_constr = Constraint(
-        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-        == pyunits.convert(m.fs.flow_vol * m.fs.rho, to_units=pyunits.kg / pyunits.s)
-    )
-    m.fs.feed.flow_mass_tds_constr = Constraint(
-        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
-        == pyunits.convert(
-            m.fs.flow_vol * m.fs.conc_mass_tds, to_units=pyunits.kg / pyunits.s
-        )
-    )
-    m.fs.feed.flow_mass_tss_constr = Constraint(
-        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TSS"]
-        == pyunits.convert(
-            m.fs.flow_vol * m.fs.conc_mass_tss, to_units=pyunits.kg / pyunits.s
-        )
-    )
+    # m.fs.feed.flow_mass_water_constr = Constraint(
+    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+    #     == pyunits.convert(m.fs.flow_vol * m.fs.rho, to_units=pyunits.kg / pyunits.s)
+    # )
+    # m.fs.feed.flow_mass_tds_constr = Constraint(
+    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+    #     == pyunits.convert(
+    #         m.fs.flow_vol * m.fs.conc_mass_tds, to_units=pyunits.kg / pyunits.s
+    #     )
+    # )
+    # m.fs.feed.flow_mass_tss_constr = Constraint(
+    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TSS"]
+    #     == pyunits.convert(
+    #         m.fs.flow_vol * m.fs.conc_mass_tss, to_units=pyunits.kg / pyunits.s
+    #     )
+    # )
 
     # ---Pretreatment---
     # Intake
