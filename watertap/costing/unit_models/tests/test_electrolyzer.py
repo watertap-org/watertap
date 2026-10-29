@@ -35,8 +35,7 @@ class TestElectrolyzerCosting:
         solver.solve(m)
 
         # build costing model block
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
+        m.fs.costing = WaterTAPCosting(base_currency_year=2020)
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -67,6 +66,6 @@ class TestElectrolyzerCosting:
         assert pytest.approx(82.50, rel=1e-3) == pyo.value(
             m.fs.costing.aggregate_flow_electricity
         )
-        assert pytest.approx(50040, rel=1e-3) == pyo.value(
+        assert pytest.approx(50623.64, rel=1e-3) == pyo.value(
             m.fs.costing.aggregate_flow_costs["electricity"]
         )

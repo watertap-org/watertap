@@ -11,13 +11,139 @@
 #################################################################################
 
 import pytest
+import re
 
 from pyomo.util.check_units import assert_units_consistent
 import pyomo.environ as pyo
 import idaes.core as idc
+from idaes.core.util.exceptions import ConfigurationError
 
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 import watertap.flowsheets.lsrro.lsrro as lsrro
+
+
+@pytest.mark.component
+def test_watertap_costing_config():
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting()
+    assert m.fs.costing._base_currency_period_defined is True
+
+    m.fs.costing.cost_process()
+
+    # Assert default base currency and period
+    assert m.fs.costing.config.base_currency_year == 2018
+    assert m.fs.costing.base_currency == pyo.units.USD_2018
+    assert m.fs.costing.config.base_period == "year"
+    assert m.fs.costing.base_period == pyo.units.year
+
+    # Test invalid base currency year
+    with pytest.raises(
+        ConfigurationError,
+        match="Base currency year must be between 1990 and 2023, but got 1901",
+    ):
+        m = pyo.ConcreteModel()
+        m.fs = idc.FlowsheetBlock(dynamic=False)
+        m.fs.costing = WaterTAPCosting(base_currency_year=1901)
+
+    # Test invalid base period units
+    with pytest.raises(
+        ConfigurationError,
+        match="pierogis is not a valid unit.",
+    ):
+        m = pyo.ConcreteModel()
+        m.fs = idc.FlowsheetBlock(dynamic=False)
+        m.fs.costing = WaterTAPCosting(base_period="pierogis")
+
+    # Test base period with a unit of mass instead of time
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_period configuration must be a unit of time but got kilogram [mass]."
+        ),
+    ):
+        m = pyo.ConcreteModel()
+        m.fs = idc.FlowsheetBlock(dynamic=False)
+        m.fs.costing = WaterTAPCosting(base_period="kilogram")
+
+    # If user called internal validation, the base currency and period should be set correctly based on config arguments or the case study yml definition
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting(base_currency_year=2000, base_period="year")
+    assert m.fs.costing._base_currency_period_defined is True
+
+    m.fs.costing._validate_watertap_costing_config()
+    assert m.fs.costing.base_currency == pyo.units.USD_2000
+    assert m.fs.costing.base_period == pyo.units.year
+
+    # Test units for total capital cost, total operating cost, electricity cost, plant lifetime, capital recovery factor, and maintenance labor chemical factor
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting(base_currency_year=2009, base_period="month")
+    m.fs.costing.cost_process()
+
+    assert m.fs.costing.config.base_currency_year == 2009
+    assert m.fs.costing.base_currency == pyo.units.USD_2009
+    assert m.fs.costing.config.base_period == "month"
+    assert m.fs.costing.base_period == pyo.units.month
+
+    assert pyo.units.get_units(m.fs.costing.total_capital_cost) == pyo.units.get_units(
+        pyo.units.USD_2009
+    )
+    assert pyo.units.get_units(
+        m.fs.costing.total_operating_cost
+    ) == pyo.units.get_units(pyo.units.USD_2009 / pyo.units.month)
+    assert pyo.units.get_units(m.fs.costing.electricity_cost) == pyo.units.get_units(
+        pyo.units.USD_2009 / pyo.units.kWh
+    )
+    assert pyo.units.get_units(m.fs.costing.plant_lifetime) == pyo.units.get_units(
+        pyo.units.year
+    )
+    assert pyo.units.get_units(
+        m.fs.costing.capital_recovery_factor
+    ) == pyo.units.get_units(pyo.units.year**-1)
+    assert pyo.units.get_units(
+        m.fs.costing.maintenance_labor_chemical_factor
+    ) == pyo.units.get_units(pyo.units.month**-1)
+
+    # Test that units are reverted correctly to configuration values when changing base currency and period after build
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting(base_currency_year=2009, base_period="month")
+    m.fs.costing.cost_process()
+
+    m.fs.costing.base_currency_year = 2010
+    m.fs.costing.add_LCOW(10 * pyo.units.m**3 / pyo.units.s)
+    assert m.fs.costing.config.base_currency_year == 2009
+    assert m.fs.costing.base_currency == pyo.units.USD_2009
+    assert m.fs.costing.config.base_period == "month"
+    assert m.fs.costing.base_period == pyo.units.month
+
+    # Test that units are reverted correctly to configuration values when changing base currency and period after build
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting(base_currency_year=2009, base_period="month")
+    m.fs.costing.cost_process()
+
+    m.fs.costing.base_currency = pyo.units.USD_2010
+    m.fs.costing.add_LCOW(10 * pyo.units.m**3 / pyo.units.s)
+    assert m.fs.costing.base_currency is m.fs.costing._base_currency
+    assert m.fs.costing.config.base_currency_year == 2009
+    assert m.fs.costing.base_currency == pyo.units.USD_2009
+    assert m.fs.costing.config.base_period == "month"
+    assert m.fs.costing.base_period == pyo.units.month
+
+    # Test that units are reverted correctly to case study yaml values when changing base currency configuration after build
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.cost_process()
+
+    m.fs.costing.config.base_currency_year = 2020
+    m.fs.costing.add_LCOW(10 * pyo.units.m**3 / pyo.units.s)
+
+    assert m.fs.costing.base_currency == pyo.units.USD_2018
+    assert m.fs.costing.base_period == pyo.units.year
 
 
 @pytest.mark.component
