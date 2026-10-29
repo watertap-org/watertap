@@ -52,7 +52,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     CONFIG.declare(
         "base_period",
         ConfigValue(
-            default="year",
+            default=None,
             doc="Base period for operating costs. If not provided, default is year.",
         ),
     )
@@ -134,23 +134,25 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # If the base currency year and base currency is not set or specified in the config, use the default base_currency USD_2018
         elif self.config.base_currency_year is None and self.base_currency is None:
             _log.info(
-                "Base currency year not specified in config, using default value: 2018"
+                "Base currency year not specified in config or case_study_definition, using default value: 2018"
             )
             self.config.base_currency_year = 2018
             self.base_currency = pyo.units.USD_2018
             self._base_currency = self.base_currency
 
-        # For ZO unit models where a config argument was provided, update the base period to use config argument
-        if self.base_period is not self.config.base_period:
+        # For ZO unit models where a config argument was provided, update the base period to use config argument if it is valid
+        if self.config.base_period is not None:
             self._check_base_period(self.config.base_period)
             self.base_period = getattr(pyo.units, self.config.base_period)
             # Assign the base period to the internal variable
             self._base_period = self.base_period
             _log.info(f"Setting base_period from config: {self.config.base_period}")
 
-        # If the base period is not set or specified in the config, use the default base_period year
+        # If the base period is not set or specified in the config, use the default base_period 'year'
         elif self.config.base_period is None and self.base_period is None:
-            _log.info("Base period not specified in config, using default value: 2018")
+            _log.info(
+                "Base period not specified in config or case_study_definition, using default value: year"
+            )
             self.config.base_period = "year"
             self.base_period = pyo.units.year
             self._base_period = self.base_period
@@ -687,7 +689,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         self.plant_lifetime = pyo.Var(
-            initialize=30, units=self.base_period, doc="Plant lifetime"
+            initialize=30, units=pyo.units.year, doc="Plant lifetime"
         )
 
         self.wacc = pyo.Var(
@@ -700,8 +702,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.capital_recovery_factor = pyo.Var(
             initialize=0.1,
-            units=self.base_period**-1,
-            doc="Capital annualization factor [fraction of investment cost/base period]",
+            units=pyo.units.year**-1,
+            doc="Capital annualization factor [fraction of investment cost/year]",
         )
 
         # used in initialize_build to check for fixed variable consistency
@@ -714,11 +716,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.capital_recovery_factor_constraint = pyo.Constraint(
             expr=self.capital_recovery_factor
             == (
-                (self.wacc / self.base_period)
-                / (
-                    1
-                    - 1 / ((1 + self.wacc) ** (self.plant_lifetime / self.base_period))
-                )
+                (self.wacc / pyo.units.year)
+                / (1 - 1 / ((1 + self.wacc) ** (self.plant_lifetime / pyo.units.year)))
             )
         )
 
@@ -945,7 +944,7 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
             + self.maintenance_costs_percent_FCI
             + self.laboratory_fees_percent_FCI
             + self.insurance_and_taxes_percent_FCI,
-            doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
+            doc="Maintenance-labor-chemical factor [fraction of equipment cost/base period]",
         )
 
         self.fix_all_vars()

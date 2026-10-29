@@ -97,11 +97,11 @@ def test_watertap_costing_config():
         pyo.units.USD_2009 / pyo.units.kWh
     )
     assert pyo.units.get_units(m.fs.costing.plant_lifetime) == pyo.units.get_units(
-        pyo.units.month
+        pyo.units.year
     )
     assert pyo.units.get_units(
         m.fs.costing.capital_recovery_factor
-    ) == pyo.units.get_units(pyo.units.month**-1)
+    ) == pyo.units.get_units(pyo.units.year**-1)
     assert pyo.units.get_units(
         m.fs.costing.maintenance_labor_chemical_factor
     ) == pyo.units.get_units(pyo.units.month**-1)

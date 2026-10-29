@@ -535,6 +535,7 @@ def test_watertap_costing_config_zo():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path1)
     assert m.fs.costing.base_currency == pyunits.USD_2018
+    assert m.fs.costing.base_period == pyunits.year
 
     # # Check that the base_currency_year from the config is used and base_period default in watertap_costing is applied
     m = ConcreteModel()
@@ -548,7 +549,7 @@ def test_watertap_costing_config_zo():
     assert m.fs.costing.base_currency == pyunits.USD_2000
 
     # Check that base_period will be used from yaml despite being in config
-    assert m.fs.costing.config.base_period == "year"
+    assert m.fs.costing.config.base_period == None
     assert m.fs.costing.base_period == pyunits.year
     assert pyunits.get_units(m.fs.costing.total_capital_cost) == pyunits.get_units(
         pyunits.USD_2000
@@ -604,10 +605,10 @@ def test_watertap_costing_config_zo():
         pyunits.USD_2000 / pyunits.kWh
     )
     assert pyunits.get_units(m.fs.costing.plant_lifetime) == pyunits.get_units(
-        pyunits.day
+        pyunits.year
     )
     assert pyunits.get_units(m.fs.costing.capital_recovery_factor) == pyunits.get_units(
-        pyunits.day**-1
+        pyunits.year**-1
     )
     assert pyunits.get_units(m.fs.costing.salaries_percent_FCI) == pyunits.get_units(
         pyunits.day**-1
@@ -657,7 +658,7 @@ def test_watertap_costing_config_zo():
             case_study_definition=temp_path1, base_period="kilogram"
         )
 
-    # Check that you can't re-set base_currency or base_period
+    # Check that base_currency or base_period match config arguments even if yaml is provided
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(
@@ -678,6 +679,7 @@ def test_watertap_costing_config_zo():
     with open(temp_path2, "w", encoding="utf-8") as tf:
         yaml.safe_dump(cs, tf, sort_keys=False)
 
+    # Raises error due to invalid base currency year in the yaml first
     with pytest.raises(
         ConfigurationError,
         match=re.escape("Base currency year must be between 1990 and 2023, but got 42"),
@@ -758,3 +760,34 @@ def test_watertap_costing_config_zo():
         m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
 
     os.remove(temp_path3)
+
+    # Test is valid base_period is overridden by an invalid config argument
+    cs["base_period"] = "day"
+    temp_path4 = f"{here}/valid_base_period.yaml"
+
+    with open(temp_path4, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_period configuration must be a unit of time but got kilogram [mass]."
+        ),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path4,
+            base_period="kilogram",
+        )
+
+    # The base_period in the YAML is "day", and not overriden by default config argument base_period
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path4,
+    )
+
+    assert m.fs.costing.base_period == pyunits.day
+
+    os.remove(temp_path4)
