@@ -1,9 +1,9 @@
 .. _how_to_test_custom_flowsheets_in_watertap_ui:
 
-How to test custom flowsheets in the WaterTAP UI
-=================================================
+How to test custom flowsheets in the WaterTAP User Interface
+============================================================
 
-This guide describes how to install and run the IDAES Flowsheet Processor UI
+This guide describes how to install and run the IDAES Flowsheet Processor User Interface (UI)
 and test flowsheets from a local WaterTAP pull request (PR). The installation
 and UI launch steps follow the `IDAES Flowsheet Processor UI instructions
 <https://github.com/prommis/idaes-flowsheet-processor-ui>`_.
@@ -11,17 +11,17 @@ and UI launch steps follow the `IDAES Flowsheet Processor UI instructions
 Installation
 ------------
 
-Before starting, clone the UI repository:
+Before starting, clone the IDAES Flowsheet Processor User Interface repository and navigate to its root directory. Replace ``<idaes-flowsheet-processor-ui-path>`` below with the actual path to the UI repository:
 
 .. code-block:: python
 
 	git clone https://github.com/prommis/idaes-flowsheet-processor-ui.git
-	cd idaes-flowsheet-processor-ui
+	cd <idaes-flowsheet-processor-ui-path>
 
 Create the Conda environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From the UI repository root, create and activate the
+From the UI repository root (the directory containing ``environment.yml``), create and activate the
 ``flowsheet-processor-env`` environment:
 
 .. code-block:: python
@@ -31,7 +31,7 @@ From the UI repository root, create and activate the
 Install the JavaScript dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Change to the ``frontend`` directory and install the UI dependencies. This
+Change to the ``frontend`` directory within the UI repository path and install the UI dependencies. This
 creates ``frontend/node_modules``:
 
 .. code-block:: python
@@ -69,12 +69,11 @@ Ensure that all dependencies are installed and activate the Conda environment:
 
 	conda activate flowsheet-processor-env
 
-From the UI repository root, change to ``frontend`` and start the UI in your
-browser. If you are already in ``frontend``, skip the ``cd`` command:
+From the UI repository root change to ``frontend`` and run ``app-start`` to start the UI. Replace ``<idaes-flowsheet-processor-ui-path>`` below with the actual path to the UI repository.
 
 .. code-block:: python
 
-	cd frontend
+	cd <idaes-flowsheet-processor-ui-path>/frontend
 	npm run app-start
 
 .. _how_to_gui_local_watertap:
@@ -82,21 +81,30 @@ browser. If you are already in ``frontend``, skip the ``cd`` command:
 Running custom WaterTAP flowsheets
 ----------------------------------
 
-1. In your local WaterTAP repository, check out the branch containing the flowsheet you want to test.
-2. Activate ``flowsheet-processor-env`` and install WaterTAP from the local WaterTAP repository root (the directory containing ``pyproject.toml``):
+Follow the detailed steps below to test custom WaterTAP flowsheets in the GUI. 
+Before starting, ensure that you have cloned the IDAES Flowsheet Processor User Interface repository 
+and set up the necessary environment as described in the previous sections.	
 
-	.. code-block:: console
-
-		conda activate flowsheet-processor-env
-		pip install .
-
-3. Return to the UI repository's ``frontend`` directory and run:
+1. Go to you local WaterTAP repository. Replace ``<local-watertap-repo-path>`` below with the actual path to your local WaterTAP repository.
+2. Activate ``flowsheet-processor-env``
+3. Check out the branch in your local WaterTAP repository containing the flowsheet you want to test in the UI. Replace ``<branch-containing-flowsheet>`` below with the actual branch name containing the flowsheet.
+4. Install WaterTAP from the local WaterTAP repository root. This is the directory containing ``pyproject.toml``.
 
 	.. code-block:: python
 
+		conda activate flowsheet-processor-env
+		cd <local-watertap-repo-path>
+		git checkout <branch-containing-flowsheet>
+		pip install .
+
+5. Return to the UI repository's ``frontend`` directory and run the UI. Replace ``<idaes-flowsheet-processor-ui-path>`` below with the actual path to the UI repository.
+
+	.. code-block:: python
+
+		cd <idaes-flowsheet-processor-ui-path>/frontend
 		npm run app-start
 
-This launches the WaterTAP GUI in your web browser.
+	This launches the WaterTAP GUI in your web browser.
 
 Stop any running UI before installing the local WaterTAP package, then restart it to load the updated flowsheets. Repeat the local installation and restart
 after making further changes to WaterTAP.
