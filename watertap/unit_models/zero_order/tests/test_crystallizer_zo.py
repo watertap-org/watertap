@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CrystallizerZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.core.solvers import get_solver
 
@@ -46,7 +46,7 @@ def test_no_tds_in_solute_list_error():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["foo"])
+    m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
@@ -65,7 +65,7 @@ class TestCrystallizerZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds"])
 
         m.fs.unit = CrystallizerZO(property_package=m.fs.params, database=m.db)
 
@@ -174,7 +174,7 @@ class TestCrystallizerZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds", "foo"])
 
         m.fs.unit = CrystallizerZO(property_package=m.fs.params, database=m.db)
 
@@ -287,7 +287,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["tds"])
+    m.fs.params = ZOParameterBlock(solute_list=["tds"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2007

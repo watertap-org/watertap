@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CartridgeFiltrationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     MaterialFlowBasis,
@@ -53,7 +53,7 @@ class TestCartridgeFiltrationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["nonvolatile_toc", "tss"])
 
         m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params, database=m.db)
 
@@ -174,7 +174,7 @@ class TestCartridgeFiltrationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "tss", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["nonvolatile_toc", "tss", "foo"])
 
         m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params, database=m.db)
 
@@ -308,7 +308,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2014
@@ -363,7 +363,7 @@ def test_no_database():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["nonvolatile_toc", "tss"])
 
     m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params)
 

@@ -26,14 +26,14 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
 
   from watertap.costing.zero_order_costing import ZeroOrderCosting
   from watertap.core.wt_database import Database
-  from watertap.core.zero_order_properties import WaterParameterBlock
+  from watertap.property_models import ZOParameterBlock
   from watertap.unit_models.zero_order import MyZOUnit
 
 
   m = ConcreteModel()
   m.db = Database()
   m.fs = FlowsheetBlock(dynamic=False)
-  m.fs.params = WaterParameterBlock(solute_list=["comp_a", "comp_b", "comp_c"])
+  m.fs.params = ZOParameterBlock(solute_list=["comp_a", "comp_b", "comp_c"])
   m.fs.costing = ZeroOrderCosting()
   m.fs.unit = MyZOUnit(property_package=m.fs.params, database=m.db)
 
