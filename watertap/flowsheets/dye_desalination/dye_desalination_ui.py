@@ -262,7 +262,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     # Unit cost data, RO
-    v = fs.ro_costing.reverse_osmosis.membrane_cost
+    v = fs.costing.reverse_osmosis.membrane_cost
     exports.add(
         obj=v,
         name="RO membrane cost",
@@ -273,7 +273,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.reverse_osmosis.factor_membrane_replacement
+    v = fs.costing.reverse_osmosis.factor_membrane_replacement
     exports.add(
         obj=v,
         name="RO membrane replacement rate",
@@ -284,7 +284,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.high_pressure_pump.unit_cost
+    v = fs.costing.high_pressure_pump.unit_cost
     exports.add(
         obj=v,
         name="RO unit pump cost",
@@ -296,7 +296,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.pressure_exchanger.unit_cost
+    v = fs.costing.pressure_exchanger.unit_cost
     exports.add(
         obj=v,
         name=v.doc,
@@ -308,7 +308,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     # System costs
-    v = fs.ro_costing.electricity_cost
+    v = fs.costing.electricity_cost
     exports.add(
         obj=v,
         name="Electricity cost",
@@ -536,7 +536,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     elec_operating_norm = (
         fs.costing.aggregate_flow_costs["electricity"]
-        + fs.ro_costing.aggregate_flow_costs["electricity"]
     ) / annual_water_inlet
     exports.add(
         obj=elec_operating_norm,
@@ -622,7 +621,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.ro_costing.total_capital_cost,
+        obj=fs.costing.total_capital_cost,
         name="RO system capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
@@ -647,7 +646,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     total_elec_cost = fs.costing.aggregate_flow_costs["electricity"]
-    +fs.ro_costing.aggregate_flow_costs["electricity"]
     exports.add(
         obj=total_elec_cost,
         name="Annual electricity cost",
