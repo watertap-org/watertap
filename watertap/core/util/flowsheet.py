@@ -223,7 +223,7 @@ def export_block_data_to_csv(
 
     if save_as is None:
         save_as = f"{os.getcwd()}/watertap_model_results"
-    save_as = save_as.replace(".csv", "")
+    save_as = save_as.removesuffix(".csv")
 
     components = kwargs.get("components", [Var, Expression, Param])
     descend_into = kwargs.get("descend_into", True)
