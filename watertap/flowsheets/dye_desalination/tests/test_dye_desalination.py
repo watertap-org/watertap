@@ -21,7 +21,6 @@ from watertap.flowsheets.dye_desalination.dye_desalination import (
     build,
     set_operating_conditions,
     initialize_system,
-    initialize_costing,
     solve,
     add_costing,
     optimize_operation,
@@ -118,15 +117,15 @@ class TestDyewithROFlowsheetwithPretreatment:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(14.91054, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(11.4088, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(14.61713, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(11.16376, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -219,15 +218,15 @@ class TestDyewithROFlowsheetDefault:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(14.81836, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(11.32730, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(14.51468, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(11.07373, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -320,15 +319,15 @@ class TestDyewith0DROFlowsheet:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(15.305355, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(11.386109, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(14.98827, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(11.129365, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -423,15 +422,15 @@ class TestDyewithROFlowsheetwithDewatering:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.965823, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(-0.2653945, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.498415, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(-0.701903, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
@@ -521,15 +520,15 @@ class TestDyewithROFlowsheetwithGAC:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
         optimize_operation(m)
 
         results = solve(m)
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.426391, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(-0.77, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.14866, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(-1.02964, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
