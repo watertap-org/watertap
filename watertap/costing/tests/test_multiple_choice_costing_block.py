@@ -11,7 +11,7 @@
 #################################################################################
 
 import pytest
-
+import os
 import re
 
 import pyomo.environ as pyo
@@ -222,6 +222,7 @@ def setup_flowsheet():
     return m
 
 
+@pytest.mark.component
 def test_multiple_choice_costing_block():
 
     m = setup_flowsheet()
@@ -269,3 +270,35 @@ def test_multiple_choice_costing_block():
         + m.fs.RO3.costing.costing_blocks["high_pressure"].capital_cost.value
     )
     assert m.fs.costing.aggregate_variable_operating_cost.value == 0
+
+    here = os.path.dirname(__file__)
+    cwd = os.getcwd()
+
+    # Test display results
+    m.fs.costing.display_results()
+    # Test default save location in cwd
+    _ = m.fs.costing.export_results_to_csv()
+    assert os.path.exists(f"{cwd}/watertap_model_results.csv")
+    os.remove(f"{cwd}/watertap_model_results.csv")
+
+    # Test user-defined save location
+    save_as = f"{here}/test-export.csv"
+    _ = m.fs.costing.export_results_to_csv(save_as=save_as)
+    assert os.path.exists(save_as)
+    os.remove(save_as)
+
+    # Test export with only Vars
+    components = [pyo.Var]
+    save_as = f"{here}/test-only-vars.csv"
+    df_only_vars = m.fs.costing.export_results_to_csv(
+        save_as=save_as, components=components
+    )
+    assert df_only_vars["component_type"].eq("Var").all()
+    assert os.path.exists(save_as)
+    os.remove(save_as)
+
+    with pytest.raises(
+        ValueError,
+        match="The only accepted components for export are Var, Expression, Param, and Objective.",
+    ):
+        m.fs.costing.export_results_to_csv(components=[pyo.Constraint])

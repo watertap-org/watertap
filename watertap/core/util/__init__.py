@@ -10,6 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from .flowsheet import (
+    list_ports,
+    export_block_data_to_csv,
+    block_data_to_df,
+    get_block_data,
+)
 from .initialization import (
     check_solve,
     assert_no_degrees_of_freedom,
