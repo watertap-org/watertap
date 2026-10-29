@@ -512,11 +512,13 @@ The following snippet shows how to add costing to the unit models on our flowshe
         # Add flow component breakdown for electricity and bazchem
         m.fs.costing.add_flow_component_breakdown(
             "electricity",
+            "electricity_flow",
             flow_rate,
             period=pyunits.hr,
         )
         m.fs.costing.add_flow_component_breakdown(
             "bazchem",
+            "bazchem_flow",
             flow_rate,
             period=pyunits.hr,
         )
