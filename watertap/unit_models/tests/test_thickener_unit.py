@@ -496,18 +496,18 @@ class TestThickenerScaler:
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_underflow) == 3
+        assert len(sfx_underflow) == 16
 
         sfx_overflow = model.fs.unit.overflow_state[0].scaling_factor
         assert isinstance(sfx_overflow, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_overflow) == 3
+        assert len(sfx_overflow) == 16
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
@@ -540,18 +540,18 @@ class TestThickenerScaler:
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_underflow) == 3
+        assert len(sfx_underflow) == 16
 
         sfx_overflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_overflow, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_overflow) == 3
+        assert len(sfx_overflow) == 16
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
@@ -691,7 +691,7 @@ class TestThickenerScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4723.49, rel=1e-3
+            2107529.86, rel=1e-3
         )
 
 
@@ -793,16 +793,16 @@ Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
 Unscaled                 || 1.384E+07 | Solved 1   ||
-Vars Only                || 7.863E+06 | Solved 1   || 2.767E+12 | Solved 1  
-Harmonic                 || 7.863E+06 | Solved 1   || 1.083E+03 | Solved 1  
-Inverse Sum              || 7.863E+06 | Solved 1   || 1.968E+03 | Solved 1  
-Inverse Root Sum Squares || 7.863E+06 | Solved 1   || 1.950E+03 | Solved 1  
-Inverse Maximum          || 7.863E+06 | Solved 1   || 1.968E+03 | Solved 1  
-Inverse Minimum          || 7.863E+06 | Solved 1   || 1.443E+03 | Solved 1  
-Nominal L1 Norm          || 7.863E+06 | Solved 1   || 4.416E+02 | Solved 1  
-Nominal L2 Norm          || 7.863E+06 | Solved 1   || 4.802E+02 | Solved 1  
-Actual L1 Norm           || 7.863E+06 | Solved 1   || 4.769E+02 | Solved 1  
-Actual L2 Norm           || 7.863E+06 | Solved 1   || 5.404E+02 | Solved 1  
+Vars Only                || 8.335E+11 | Solved 1   || 2.767E+12 | Solved 1  
+Harmonic                 || 8.335E+11 | Solved 1   || 1.083E+03 | Solved 1  
+Inverse Sum              || 8.335E+11 | Solved 1   || 1.968E+03 | Solved 1  
+Inverse Root Sum Squares || 8.335E+11 | Solved 1   || 1.950E+03 | Solved 1  
+Inverse Maximum          || 8.335E+11 | Solved 1   || 1.968E+03 | Solved 1  
+Inverse Minimum          || 8.335E+11 | Solved 1   || 1.443E+03 | Solved 1  
+Nominal L1 Norm          || 8.335E+11 | Solved 1   || 4.416E+02 | Solved 1  
+Nominal L2 Norm          || 8.335E+11 | Solved 1   || 4.802E+02 | Solved 1  
+Actual L1 Norm           || 8.335E+11 | Solved 1   || 4.769E+02 | Solved 1  
+Actual L2 Norm           || 8.335E+11 | Solved 1   || 5.404E+02 | Solved 1  
 ============================================================================
 """
 

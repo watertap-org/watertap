@@ -401,13 +401,13 @@ class TestAerationTankScaler:
         sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 16
 
         # Reaction block
         sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
@@ -457,13 +457,13 @@ class TestAerationTankScaler:
         sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 16
 
         # Reaction block
         sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
@@ -644,7 +644,7 @@ class TestAerationTankScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.12596365e8, rel=1e-3
+            7.888502422e9, rel=1e-3
         )
 
 

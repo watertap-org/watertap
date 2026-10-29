@@ -338,7 +338,6 @@ class ASM1ReactionScaler(CustomScalerBase):
     are scaled using the inverse maximum scheme.
     """
 
-    # TODO: Revisit this scaling factor
     DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
 
     def variable_scaling_routine(
