@@ -102,6 +102,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
+            module_type=self.config.module_type,
         )
 
         self.feed_side.add_control_volume_isothermal_conditions()
@@ -112,6 +113,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         self.feed_side.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
+            module_type=self.config.module_type,
         )
 
         self.feed_side.apply_transformation()
