@@ -91,7 +91,7 @@ def get_eff_fr(case=None, df=None):
         if df is None:
             df = pd.DataFrame(fr_dict)
         else:
-            df.loc[len(df)] = fr_dict
+            df = pd.concat([df, pd.DataFrame(fr_dict)], ignore_index=True)
     return df
 
 
@@ -133,7 +133,7 @@ def get_ch4_fr(case=None, df=None):
         if df is None:
             df = pd.DataFrame(fr_dict)
         else:
-            df.loc[len(df)] = fr_dict
+            df = pd.concat([df, pd.DataFrame(fr_dict)], ignore_index=True)
     return df
 
 
@@ -174,7 +174,7 @@ def get_h2_fr(case=None, df=None):
         if df is None:
             df = pd.DataFrame(fr_dict)
         else:
-            df.loc[len(df)] = fr_dict
+            df = pd.concat([df, pd.DataFrame(fr_dict)], ignore_index=True)
     return df
 
 
@@ -216,7 +216,7 @@ def get_r1_ex_biogas_fr(case=None, df=None):
         if df is None:
             df = pd.DataFrame(fr_dict)
         else:
-            df.loc[len(df)] = fr_dict
+            df = pd.concat([df, pd.DataFrame(fr_dict)], ignore_index=True)
     return df
 
 
@@ -249,7 +249,7 @@ def get_mass_flowrate(case=None, df=None, stream=None):
     if df is None:
         df = pd.DataFrame(fr_dict)
     else:
-        df.loc[len(df)] = fr_dict
+        df = pd.concat([df, pd.DataFrame(fr_dict)], ignore_index=True)
 
     df = df.loc[:, (df != 0).any(axis=0)]
 
