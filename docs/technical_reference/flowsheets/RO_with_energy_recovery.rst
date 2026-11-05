@@ -7,7 +7,7 @@ Introduction
 ------------
 
 This flowsheet represents a reverse osmosis (RO) with energy recovery device (ERD). 
-The flowsheet is similar to the desalination block of the full-scale seawater RO treatment facility flowsheet,
+The flowsheet is similar to the desalination block of the :ref:`full-scale seawater RO treatment facility flowsheet <seawater_RO_flowsheet>`,
 but includes a demonstration for optimization of the process. The user can select between pressure exchanger ERD, 
 pump-as-turbine ERD, or no ERD.
 
