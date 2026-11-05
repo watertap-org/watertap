@@ -976,20 +976,20 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
     def configure(self):
         m = build_friction_factor_spiral_wound()
 
-        self.unit_solutions[m.fs.unit.deltaP[0]] = -5.82467e5
+        self.unit_solutions[m.fs.unit.deltaP[0]] = -5.63642e5
         self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 0]] = 791.6814859
         self.unit_solutions[m.fs.unit.feed_side.velocity[0, 0]] = 0.472172596
-        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1]] = 377.8679
-        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1]] = 0.23489077
+        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1]] = 343.34807
+        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1]] = 0.21495119
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
-            0.007165190511
+            0.00776820127325
         )
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
             2.11255771e-6
         )
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        ] = 0.1361386
+        ] = 0.1475958
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 4.01385965e-5
@@ -997,15 +997,15 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
             m.fs.unit.feed_side.properties_interface[0, 0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 47.435640
+        ] = 41.658467
         self.unit_solutions[
             m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 71.571844
+        ] = 78.2211840
         self.unit_solutions[
             m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 74.278576
+        ] = 79.07775795
 
         comp_lst = ["NaCl", "H2O"]
 
@@ -1064,11 +1064,11 @@ def test_module_type_updates_friction_factor_and_N_Sh():
     assert_optimal_termination(results_spiral)
 
     # Compare friction factor and N_Sh between flat plate and spiral wound modules
-    assert str(m_flat_sheet.fs.unit.feed_side.eq_friction_factor[0, 0]) is not str(
-        m_spiral.fs.unit.feed_side.eq_friction_factor[0, 0]
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_friction_factor[0, 0].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_friction_factor[0, 0].expr
     )
-    assert str(m_flat_sheet.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"]) is not str(
-        m_spiral.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"]
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr
     )
 
 

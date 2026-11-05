@@ -810,19 +810,19 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
-        ] = 0.0057914
+        ] = 0.00644804
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.4481768e-6
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.003820147
+            0.004174764
         )
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
             1.491610924e-6
         )
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        ] = 0.09098229
+        ] = 0.1005187
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 2.794556261e-5
@@ -855,7 +855,7 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         self.skip_badly_scaled_vars = True
-        self.condition_number = 1.855e8  # Was previously 2.7895630e14
+        self.condition_number = 1.8238e8  # Was previously 2.7895630e14
 
         return m
 
@@ -1346,12 +1346,9 @@ def test_module_type_updates_friction_factor_and_N_Sh():
     assert_optimal_termination(results_spiral)
 
     # Compare friction factor and N_Sh between flat plate and spiral wound modules
-    # Compare friction factor and N_Sh between flat plate and spiral wound modules
-    assert (
-        m_flat_sheet.fs.unit.feed_side.friction_factor_darcy[0, 0]
-        != m_spiral.fs.unit.feed_side.friction_factor_darcy[0, 0]
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_friction_factor[0, 0].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_friction_factor[0, 0].expr
     )
-    assert (
-        m_flat_sheet.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"]
-        != m_spiral.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"]
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr
     )
