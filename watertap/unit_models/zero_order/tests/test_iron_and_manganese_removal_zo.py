@@ -15,7 +15,6 @@ Tests for zero-order iron and manganese removal model
 
 import pytest
 
-
 from pyomo.environ import (
     Block,
     check_optimal_termination,
@@ -23,6 +22,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -52,10 +52,12 @@ class TestIronManganeseRemovalZO_w_default_removal:
 
         m.fs.unit = IronManganeseRemovalZO(property_package=m.fs.params, database=m.db)
 
-        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-        m.fs.unit.inlet.flow_mass_comp[0, "iron"].fix(250)
-        m.fs.unit.inlet.flow_mass_comp[0, "manganese"].fix(250)
-        m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
+        m.fs.unit.properties_in[0].flow_vol
+        m.fs.unit.properties_in[0].conc_mass_comp
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1310.50)
+        m.fs.unit.inlet.flow_mass_comp[0, "iron"].fix(0.15)
+        m.fs.unit.inlet.flow_mass_comp[0, "manganese"].fix(0.15)
+        m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(0.15)
 
         return m
 
@@ -90,13 +92,11 @@ class TestIronManganeseRemovalZO_w_default_removal:
             else:
                 assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
-        assert model.fs.unit.air_water_ratio[0].fixed
-        assert (
-            model.fs.unit.air_water_ratio[0].value == data["air_water_ratio"]["value"]
-        )
+        assert model.fs.unit.air_water_ratio.fixed
+        assert model.fs.unit.air_water_ratio.value == data["air_water_ratio"]["value"]
 
-        assert model.fs.unit.flow_basis[0].fixed
-        assert model.fs.unit.flow_basis[0].value == data["flow_basis"]["value"]
+        assert model.fs.unit.flow_basis.fixed
+        assert model.fs.unit.flow_basis.value == data["flow_basis"]["value"]
 
         assert model.fs.unit.electricity_intensity_parameter.fixed
         assert (
@@ -132,40 +132,40 @@ class TestIronManganeseRemovalZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(10.501, rel=1e-5) == value(
+        assert pytest.approx(1.3109, rel=1e-3) == value(
             model.fs.unit.properties_in[0].flow_vol
         )
-        assert pytest.approx(23.8073, rel=1e-5) == value(
+        assert pytest.approx(0.11442, rel=1e-3) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["iron"]
         )
-        assert pytest.approx(23.8073, rel=1e-5) == value(
+        assert pytest.approx(0.11442, rel=1e-3) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["manganese"]
         )
-        assert pytest.approx(0.095229, rel=1e-5) == value(
+        assert pytest.approx(0.11442, rel=1e-3) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(10.050, rel=1e-5) == value(
+        assert pytest.approx(1.3109, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(2.48756, rel=1e-5) == value(
+        assert pytest.approx(0.011442, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["iron"]
         )
-        assert pytest.approx(2.48756, rel=1e-5) == value(
+        assert pytest.approx(0.011442, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["manganese"]
         )
-        assert pytest.approx(0.099502, rel=1e-5) == value(
+        assert pytest.approx(0.11442, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.45100, rel=1e-5) == value(
+        assert pytest.approx(0.0004010, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(498.89, rel=1e-5) == value(
+        assert pytest.approx(336.616, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["iron"]
         )
-        assert pytest.approx(498.89, rel=1e-5) == value(
+        assert pytest.approx(336.616, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["manganese"]
         )
-        assert pytest.approx(2.2173e-08, rel=1e-5) == value(
+        assert pytest.approx(7.0525548e-6, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(521.534735, abs=1e-5) == value(
@@ -191,6 +191,7 @@ class TestIronManganeseRemovalZO_w_default_removal:
         model.fs.unit.report()
 
 
+@pytest.mark.component
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
@@ -200,22 +201,32 @@ def test_costing():
     m.fs.params = WaterParameterBlock(solute_list=["iron", "manganese", "foo"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2007
 
-    m.fs.unit1 = IronManganeseRemovalZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = IronManganeseRemovalZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "iron"].fix(250)
-    m.fs.unit1.inlet.flow_mass_comp[0, "manganese"].fix(250)
-    m.fs.unit1.inlet.flow_mass_comp[0, "foo"].fix(1)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1310.50)
+    m.fs.unit.inlet.flow_mass_comp[0, "iron"].fix(0.15)
+    m.fs.unit.inlet.flow_mass_comp[0, "manganese"].fix(0.15)
+    m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(0.15)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    assert_units_consistent(m.fs)
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.unit.properties_in[0].flow_vol, name="SEC"
+    )
+
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
 
     assert isinstance(m.fs.costing.iron_and_manganese_removal, Block)
-    assert isinstance(
-        m.fs.costing.iron_and_manganese_removal.capital_blower_a_parameter, Var
-    )
+    assert isinstance(m.fs.costing.iron_and_manganese_removal.capital_blower, Var)
     assert isinstance(
         m.fs.costing.iron_and_manganese_removal.capital_backwash_a_parameter, Var
     )
@@ -230,10 +241,11 @@ def test_costing():
     )
     assert isinstance(m.fs.costing.iron_and_manganese_removal.flow_exponent, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.010337
+    assert pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == 0.110508
+    assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 2428815.23
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
