@@ -117,42 +117,12 @@ def build(
     erd_type=None, RO_1D=False, flow_vol=0.3092, conc_mass_tds=35, conc_mass_tss=0.03
 ):
 
-    # Define flow conditions and attach to model
-
-    rho = 1023.027 * pyunits.kg / pyunits.m**3
     m = ConcreteModel()
-    m.flow_vol = flow_vol * pyunits.m**3 / pyunits.s
-
-    m.flow_mass_water = pyunits.convert(
-        m.flow_vol * rho, to_units=pyunits.kg / pyunits.s
-    )
-    m.conc_mass_tds = conc_mass_tds * pyunits.g / pyunits.liter
-    m.flow_mass_tds = pyunits.convert(
-        m.flow_vol * m.conc_mass_tds, to_units=pyunits.kg / pyunits.s
-    )
-    m.conc_mass_tss = conc_mass_tss * pyunits.g / pyunits.liter
-    m.flow_mass_tss = pyunits.convert(
-        m.flow_vol * m.conc_mass_tss, to_units=pyunits.kg / pyunits.s
-    )
-    m.temperature = 298.15 * pyunits.K
-    m.pressure = 1 * pyunits.bar
 
     m.db = Database()
     m.erd_type = erd_type
 
     m.fs = FlowsheetBlock(dynamic=False)
-
-    # m.fs.rho = Var(initialize=rho, units=pyunits.kg / pyunits.m**3)
-    # m.fs.rho.fix()
-
-    # m.fs.flow_vol = Var(initialize=flow_vol, units=pyunits.m**3 / pyunits.s)
-    # m.fs.flow_vol.fix()
-
-    # m.fs.conc_mass_tds = Var(initialize=conc_mass_tds, units=pyunits.g / pyunits.L)
-    # m.fs.conc_mass_tds.fix()
-
-    # m.fs.conc_mass_tss = Var(initialize=conc_mass_tss, units=pyunits.g / pyunits.L)
-    # m.fs.conc_mass_tss.fix()
 
     m.fs.properties = MCASParameterBlock(
         solute_list=["TDS", "TSS"],
@@ -337,6 +307,24 @@ def build(
     )
     TransformationFactory("network.expand_arcs").apply_to(m)
 
+    # Used for scaling
+    rho = 1023.027 * pyunits.kg / pyunits.m**3
+    m.flow_vol = flow_vol * pyunits.m**3 / pyunits.s
+
+    m.flow_mass_water = pyunits.convert(
+        m.flow_vol * rho, to_units=pyunits.kg / pyunits.s
+    )
+    m.conc_mass_tds = conc_mass_tds * pyunits.g / pyunits.liter
+    m.flow_mass_tds = pyunits.convert(
+        m.flow_vol * m.conc_mass_tds, to_units=pyunits.kg / pyunits.s
+    )
+    m.conc_mass_tss = conc_mass_tss * pyunits.g / pyunits.liter
+    m.flow_mass_tss = pyunits.convert(
+        m.flow_vol * m.conc_mass_tss, to_units=pyunits.kg / pyunits.s
+    )
+    m.temperature = 298.15 * pyunits.K
+    m.pressure = 1 * pyunits.bar
+
     return m
 
 
@@ -393,32 +381,8 @@ def set_operating_conditions(m):
             ("temperature", None): m.temperature,
             ("pressure", None): m.pressure,
         },
-        # hold_state=False,
         hold_state=True,
     )
-
-    # m.fs.feed.properties[0].pressure.fix()
-    # m.fs.feed.properties[0].temperature.fix()
-    # re-fix density after calculating state
-    # rho = value(m.fs.feed.properties[0].dens_mass_phase["Liq"])
-    # m.fs.rho.fix(rho)
-
-    # m.fs.feed.flow_mass_water_constr = Constraint(
-    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    #     == pyunits.convert(m.fs.flow_vol * m.fs.rho, to_units=pyunits.kg / pyunits.s)
-    # )
-    # m.fs.feed.flow_mass_tds_constr = Constraint(
-    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
-    #     == pyunits.convert(
-    #         m.fs.flow_vol * m.fs.conc_mass_tds, to_units=pyunits.kg / pyunits.s
-    #     )
-    # )
-    # m.fs.feed.flow_mass_tss_constr = Constraint(
-    #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TSS"]
-    #     == pyunits.convert(
-    #         m.fs.flow_vol * m.fs.conc_mass_tss, to_units=pyunits.kg / pyunits.s
-    #     )
-    # )
 
     # ---Pretreatment---
     # Intake
@@ -860,4 +824,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m = main(erd_type="pressure_exchanger", RO_1D=True)
+    m = main(erd_type="pressure_exchanger", RO_1D=False)
