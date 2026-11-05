@@ -701,6 +701,16 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
 
+def unfix_feed_mass_flows(m):
+    m.fs.feed.properties[0].flow_mass_phase_comp[("Liq", "H2O")].unfix()
+    m.fs.feed.properties[0].flow_mass_phase_comp[("Liq", "TDS")].unfix()
+    m.fs.feed.properties[0].flow_mass_phase_comp[("Liq", "TSS")].unfix()
+
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
+    m.fs.feed.properties[0].conc_mass_phase_comp[("Liq", "TDS")].fix()
+    m.fs.feed.properties[0].conc_mass_phase_comp[("Liq", "TSS")].fix()
+
+
 def build_flowsheet(build_options=None, **kwargs):
     if build_options is not None:
         if build_options["ERD_type"].value == "pump_as_turbine":
@@ -719,6 +729,8 @@ def build_flowsheet(build_options=None, **kwargs):
     add_costing(m)
     m.fs.costing.initialize()
     # Solve flowsheet with costing
+    solve(m)
+    unfix_feed_mass_flows(m)
     solve(m)
 
     return m
