@@ -29,6 +29,14 @@ default: # TODO: confirm any differentiation in removal across subtypes
     units: kg/m^3
   capital_cost:
     cost_factor: None
+    reference: United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated Carbon Drinking Water Treatment.
+    validity_range:
+      lower_bound:
+        value: 0.124
+        units: Mgallons/day
+      upper_bound:
+        value: 75.072
+        units: Mgallons/day
     contactor_cost_coeff_0:
       value: 10010.9
       units: USD_2020
@@ -87,6 +95,14 @@ pressure_vessel:
     units: kg/m^3
   capital_cost:
     cost_factor: None
+    reference: United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated Carbon Drinking Water Treatment.
+    validity_range:
+      lower_bound:
+        value: 0.124
+        units: Mgallons/day
+      upper_bound:
+        value: 75.072
+        units: Mgallons/day
     contactor_cost_coeff_0:
       value: 10010.9
       units: USD_2020
@@ -145,6 +161,14 @@ gravity:
     units: kg/m^3
   capital_cost:
     cost_factor: None
+    reference: United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated Carbon Drinking Water Treatment.
+    validity_range:
+      lower_bound:
+        value: 0.124
+        units: Mgallons/day
+      upper_bound:
+        value: 75.072
+        units: Mgallons/day
     contactor_cost_coeff_0:
       value: 75131.3
       units: USD_2020
