@@ -198,8 +198,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(solute_list=["tss"])
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2007
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2007)
 
     m.fs.unit = FilterPressZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype

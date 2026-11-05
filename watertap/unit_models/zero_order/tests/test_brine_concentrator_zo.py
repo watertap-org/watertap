@@ -296,8 +296,7 @@ def test_costing():
 
     m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2007
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2007)
 
     m.fs.unit = BrineConcentratorZO(
         property_package=m.fs.params,

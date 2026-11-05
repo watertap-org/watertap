@@ -341,8 +341,7 @@ def test_costing():
 
     m.fs.params = WaterParameterBlock(solute_list=["tss"])
 
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2014
+    m.fs.costing = ZeroOrderCosting(base_currency_year=2014)
 
     m.fs.unit = MicroFiltrationZO(property_package=m.fs.params, database=m.db)
     rho = 997 * pyunits.kg / pyunits.m**3
