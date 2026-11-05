@@ -15,11 +15,11 @@ This module contains a zero-order representation of a Ozone reactor unit.
 
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, ZeroOrderBaseData
 
-__author__ = "Kurban Sitterley"
+__author__ = "Kurban Sitterley, Adam Atia"
 
 
 @declare_process_block_class("OzoneZO")
@@ -37,9 +37,22 @@ class OzoneZOData(ZeroOrderBaseData):
 
         build_siso(self)
 
-        if "toc" not in self.config.property_package.config.solute_list:
+        # Check for TOC component in the property package
+        accepted_names = {"toc", "total_organic_carbon"}
+
+        # Scans the component list and grabs the first one that matches our accepted names
+        self._toc_comp = next(
+            (
+                c
+                for c in self.config.property_package.component_list
+                if c.lower() in accepted_names
+            ),
+            None,
+        )
+
+        if self._toc_comp is None:
             raise ConfigurationError(
-                "toc must be in solute list for Ozonation or Ozone/AOP"
+                f"A TOC component was not found in the solute list for the OzoneZO model. Accepted names (case-insensitive) are: {accepted_names}"
             )
 
         self.contact_time = Var(
@@ -70,6 +83,17 @@ class OzoneZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.mass_transfer_efficiency)
         self._fixed_perf_vars.append(self.specific_energy_coeff)
 
+        if hasattr(self.properties_in[0], "conc_mass_comp"):
+            self._inlet_conc_toc = self.properties_in[0].conc_mass_comp[self._toc_comp]
+        elif hasattr(self.properties_in[0], "conc_mass_phase_comp"):
+            self._inlet_conc_toc = self.properties_in[0].conc_mass_phase_comp[
+                "Liq", self._toc_comp
+            ]
+        else:
+            raise PropertyPackageError(
+                f"Inlet concentration of {self._toc_comp} not found. Property package does not contain conc_mass_comp or conc_mass_phase_comp."
+            )
+
         self.ozone_flow_mass = Var(
             initialize=1,
             bounds=(0, None),
@@ -99,7 +123,7 @@ class OzoneZOData(ZeroOrderBaseData):
                 == (
                     (
                         pyunits.convert(
-                            b.properties_in[0].conc_mass_comp["toc"],
+                            b._inlet_conc_toc,
                             to_units=pyunits.mg / pyunits.liter,
                         )
                         + self.concentration_time / self.contact_time
