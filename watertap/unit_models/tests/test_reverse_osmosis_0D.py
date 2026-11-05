@@ -1345,6 +1345,8 @@ def test_RO_with_MCAS_NaCl_CaSO4():
     m.fs.unit.rejection_phase_comp[0, "Liq", "Ca_2+"].fix(0.98)
     m.fs.unit.rejection_phase_comp[0, "Liq", "SO4_2-"].fix(0.98)
 
+    # Reducing flux lower bound to 0 to avoid infeasible solutions
+    m.fs.unit.flux_mass_phase_comp.setlb(0)
     for r in np.linspace(0.9, 0.99, 10):
         m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)
         results = solver.solve(m, tee=True)
