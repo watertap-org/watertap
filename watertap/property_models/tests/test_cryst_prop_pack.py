@@ -12,7 +12,7 @@
 import pytest
 import watertap.property_models.unit_specific.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel
-from idaes.core import FlowsheetBlock, ControlVolume0DBlock
+from idaes.core import FlowsheetBlock, ControlVolume0DBlock, MaterialBalanceType
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -47,7 +47,7 @@ class TestDefaultNaClwaterProperty:
         dynamic=False, has_holdup=False, property_package=m.fs.properties
     )
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_material_balances()
+    m.fs.cv.add_material_balances(balance_type=MaterialBalanceType.componentPhase)
     m.fs.cv.add_energy_balances()
     m.fs.cv.add_momentum_balances()
 
