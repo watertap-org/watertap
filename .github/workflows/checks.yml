@@ -129,7 +129,7 @@ jobs:
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         # Install WaterTAP + dev dependencies from pyproject.toml
-        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/mrmundt/idaes-pse@new-idaes-ext"
+        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
         echo '::endgroup::'
         echo '::group::Output of "conda install -c conda-forge reaktoro cyipopt" command'
         conda install -c conda-forge reaktoro cyipopt
@@ -254,7 +254,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install "watertap @ ${_install_url}" pytest "idaes-pse @ git+https://github.com/mrmundt/idaes-pse@new-idaes-ext"
+        pip install "watertap @ ${_install_url}" pytest "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -303,7 +303,7 @@ jobs:
         conda install --quiet --yes pip setuptools wheel pandoc reaktoro
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/mrmundt/idaes-pse@new-idaes-ext"
+        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
