@@ -176,8 +176,8 @@ def add_costing(m):
     # Add breakdown of NaCl usage per unit product flow to costing package with name "regenerant_usage"
     m.fs.costing.add_flow_component_breakdown(
         "NaCl",
+        "regenerant_usage",
         m.fs.product.properties[0].flow_vol_phase["Liq"],
-        name="regenerant_usage",
     )
 
 
