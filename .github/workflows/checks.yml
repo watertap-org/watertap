@@ -54,7 +54,7 @@ jobs:
           pip --no-cache-dir install "black" 
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .s
+          black --check .
 
   pylint:
     name: Code linting (pylint)
