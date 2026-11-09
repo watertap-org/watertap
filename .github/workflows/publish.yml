@@ -154,14 +154,27 @@ jobs:
       - name: Install watertap==${{ github.ref_name }} from TestPyPI
         env:
           _wait_time_s: 15
+          _max_attempts: 20
           _pip_install_flags: --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/
           _pip_install_target: watertap[testing]==${{ github.ref_name }}
         run: |
-          until pip install $_pip_install_flags "$_pip_install_target"
+          for attempt in $(seq 1 "$_max_attempts")
           do
-            echo "pip install failed; waiting $_wait_time_s seconds"
-            sleep "$_wait_time_s"
+            if pip install $_pip_install_flags "$_pip_install_target"
+            then
+              exit 0
+            fi
+
+            echo "pip install failed; attempt $attempt/$_max_attempts"
+            if [ "$attempt" -lt "$_max_attempts" ]
+            then
+              echo "waiting $_wait_time_s seconds before retrying"
+              sleep "$_wait_time_s"
+            fi
           done
+
+          echo "::error title=TestPyPI install failed::Could not install $_pip_install_target from TestPyPI after $_max_attempts attempts"
+          exit 1
       - name: Install OS deps for ipopt
         run: |
           sudo apt-get update

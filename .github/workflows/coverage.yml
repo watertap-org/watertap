@@ -1,0 +1,89 @@
+# Optional pull request coverage and automatic coverage for main.
+
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [labeled, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+env:
+  PYTEST_ADDOPTS: "--color=yes"
+  PIP_PROGRESS_BAR: "off"
+
+jobs:
+  coverage:
+    name: Coverage (py3.12/linux)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-coverage')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.12
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          activate-environment: watertap-coverage
+          python-version: '3.12'
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
+      - name: Install dependencies
+        run: |
+          echo '::group::Output of "conda install" commands'
+          conda install --quiet --yes pip setuptools wheel pandoc
+          echo '::endgroup::'
+          echo '::group::Output of "pip install" commands'
+          pip install -e ".[dev]"
+          echo '::endgroup::'
+          echo '::group::Output of "conda install -c conda-forge reaktoro cyipopt" command'
+          conda install -c conda-forge reaktoro cyipopt
+          echo '::endgroup::'
+          echo '::group::Display installed packages'
+          conda list
+          pip list
+          pip show idaes-pse
+          echo '::endgroup::'
+          echo '::group::Output of "idaes get-extensions" command'
+          idaes get-extensions --extra petsc --verbose
+          echo '::endgroup::'
+      - name: Environment summary
+        uses: ./.github/actions/environment-summary
+        with:
+          python-version: '3.12'
+          os: linux
+          job-name: coverage
+      - name: Test with pytest and collect coverage
+        run: |
+          pytest --cov=watertap --cov-report=xml --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
+      - name: Upload pytest duration reports as job artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-duration-reports-linux-py3.12-coverage
+          path: pytest-duration-reports/*.csv
+          if-no-files-found: warn
+      - name: Upload coverage report as job artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report-linux
+          path: coverage.xml
+          if-no-files-found: warn
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
