@@ -50,14 +50,11 @@ jobs:
           python-version: '3.11'
       - name: Install Black
         # unlike the other jobs, we don't need to install WaterTAP and/or all the dev dependencies,
-        # but we still want to specify the Black version to use in requirements-dev.txt for local development
-        # so we extract the relevant line and pass it to a simple `pip install`
         run: |
-          black_requirement="$(grep -Eo '"black==[^"]+"' pyproject.toml | tr -d '"')"
-          pip --no-cache-dir install "$black_requirement" 
+          pip --no-cache-dir install "black" 
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check .s
 
   pylint:
     name: Code linting (pylint)
