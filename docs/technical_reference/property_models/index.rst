@@ -17,3 +17,4 @@ Property Models
    ASM2D_N2O
    mc_aq_sol
    air_water_equil
+   zo
