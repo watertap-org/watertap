@@ -234,6 +234,7 @@ Kinetic Parameters
     ":lime:`NOB affinity constant for nitrite`", ":math:`K_{NOB, NO2}`", "KNOB_NO2", 1e-6, ":math:`\text{dimensionless}`"
     ":lime:`NOB affinity constant for phosphate`", ":math:`K_{NOB, P}`", "KNOB_P", 0.00001, ":math:`\text{kg P/}\text{m}^3`"
     ":lime:`NOB affinity constant for nitrate`", ":math:`K_{NOB, NO3}`", "KNOB_NO3", 0.0005, ":math:`\text{kg N/}\text{m}^3`"
+
 Properties
 ----------
 .. csv-table::
