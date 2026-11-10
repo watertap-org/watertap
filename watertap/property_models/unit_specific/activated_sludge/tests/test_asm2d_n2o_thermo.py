@@ -372,6 +372,13 @@ class TestStateBlock(object):
     def check_units(self, model):
         assert_units_consistent(model)
 
+    @pytest.mark.unit
+    def test_expressions(self, model):
+        assert value(model.props[1].TSS) == pytest.approx(0.853399, rel=1e-3)
+        assert value(model.props[1].COD) == pytest.approx(1, rel=1e-3)
+        assert value(model.props[1].BOD5) == pytest.approx(0.1875, rel=1e-3)
+        assert value(model.props[1].TKN) == pytest.approx(0.15317, rel=1e-3)
+
 
 class TestASM2dN2OPropertiesScaler:
     @pytest.mark.unit

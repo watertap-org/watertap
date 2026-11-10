@@ -451,7 +451,7 @@ class TestParamBlock(object):
             "S_O2": 0,
             "S_F": value(prop.i_PSF),
             "S_A": 0,
-            "S_I": 0,
+            "S_I": value(prop.i_PSI),
             "S_NH4": 0,
             "S_NH2OH": 0,
             "S_N2O": 0,

@@ -127,8 +127,8 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
         self.X_PHA = Solute(
             doc="A cell internal storage product of phosphorus-accumulating organisms, primarily comprising poly-hydroxy-alkanoates (PHA). [kg COD/m^3]"
         )
-        self.X_AOB = Solute(doc="Ammonia oxidizing bacteria. [kg N/m^3]")
-        self.X_NOB = Solute(doc="Nitrite oxidizing bacteria. [kg N/m^3]")
+        self.X_AOB = Solute(doc="Ammonia oxidizing bacteria. [kg COD/m^3]")
+        self.X_NOB = Solute(doc="Nitrite oxidizing bacteria. [kg COD/m^3]")
 
         # Create sets for use across ASM models and associated unit models
         self.non_particulate_component_set = pyo.Set(
@@ -191,6 +191,32 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
             default=288.15,
             doc="Reference temperature",
             units=pyo.units.K,
+        )
+
+        # Stoichiometric Parameters - found in asm2dinit_bsm2.c
+        self.f_SI = pyo.Var(
+            initialize=0.00,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
+        )
+        self.f_XIH = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
+        )
+        self.f_XIP = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
+        )
+        self.f_XIA = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
         )
 
         # COD to VSS coefficients - asm2dinit_bsm2.m [1]
@@ -406,10 +432,7 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
                 "TSS": {"method": "_TSS"},
                 "COD": {"method": "_COD"},
                 "TKN": {"method": "_TKN"},
-                "SNOX": {"method": "_SNOX"},
                 "BOD5": {"method": "_BOD5"},
-                "SP_organic": {"method": "_SP_organic"},
-                "SP_inorganic": {"method": "_SP_inorganic"},
                 "total_phosphorus_flow": {"method": "_total_phosphorus_flow"},
                 "total_carbon_flow": {"method": "_total_carbon_flow"},
                 "total_nitrogen_flow": {"method": "_total_nitrogen_flow"},
@@ -644,10 +667,12 @@ class ASM2dN2OStateBlockData(StateBlockData):
 
         self.TSS = pyo.Expression(rule=_TSS, doc="Total suspended solids")
 
+        # Relationships defined in Gujer matrix
         def _total_phosphorus_flow(self):
             total_phosphorus = self.flow_vol * (
                 self.conc_mass_comp["S_PO4"]
                 + self.params.i_PSF * self.conc_mass_comp["S_F"]
+                + self.params.i_PSI * self.conc_mass_comp["S_I"]
                 + self.params.i_PXI * self.conc_mass_comp["X_I"]
                 + self.params.i_PXS * self.conc_mass_comp["X_S"]
                 + self.params.i_PBM
@@ -747,6 +772,67 @@ class ASM2dN2OStateBlockData(StateBlockData):
         self.total_COD_flow = pyo.Expression(
             rule=_total_COD_flow,
             doc="Total COD-equivalent mass flowrate [kg COD/s]",
+        )
+
+        # Effluent metrics derived from perf_plant_ss.m
+        def _BOD5(self):
+            bod5 = 0.25 * (
+                self.conc_mass_comp["S_F"]
+                + self.conc_mass_comp["S_A"]
+                + (1 - self.params.f_SI) * self.conc_mass_comp["X_S"]
+                + (1 - self.params.f_XIH) * self.conc_mass_comp["X_H"]
+                + (1 - self.params.f_XIP)
+                * (self.conc_mass_comp["X_PAO"] + self.conc_mass_comp["X_PHA"])
+                + (1 - self.params.f_XIA)
+                * (self.conc_mass_comp["X_AOB"] + self.conc_mass_comp["X_NOB"])
+            )
+            return bod5
+
+        self.BOD5 = pyo.Expression(
+            rule=_BOD5,
+            doc="Five-Day Biological Oxygen Demand",
+        )
+
+        def _COD(self):
+            cod = (
+                self.conc_mass_comp["S_F"]
+                + self.conc_mass_comp["S_A"]
+                + self.conc_mass_comp["S_I"]
+                + self.conc_mass_comp["X_I"]
+                + self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_H"]
+                + self.conc_mass_comp["X_PAO"]
+                + self.conc_mass_comp["X_PHA"]
+                + self.conc_mass_comp["X_AOB"]
+                + self.conc_mass_comp["X_NOB"]
+            )
+            return cod
+
+        self.COD = pyo.Expression(
+            rule=_COD,
+            doc="Chemical Oxygen Demand",
+        )
+
+        def _TKN(self):
+            tkn = (
+                self.conc_mass_comp["S_NH4"]
+                + self.params.i_NSF * self.conc_mass_comp["S_F"]
+                + self.params.i_NSI * self.conc_mass_comp["S_I"]
+                + self.params.i_NXI * self.conc_mass_comp["X_I"]
+                + self.params.i_NXS * self.conc_mass_comp["X_S"]
+                + self.params.i_NBM
+                * (
+                    self.conc_mass_comp["X_H"]
+                    + self.conc_mass_comp["X_PAO"]
+                    + self.conc_mass_comp["X_AOB"]
+                    + self.conc_mass_comp["X_NOB"]
+                )
+            )
+            return tkn
+
+        self.TKN = pyo.Expression(
+            rule=_TKN,
+            doc="Total Kjeldahl Nitrogen",
         )
 
     def get_material_flow_terms(self, p, j):

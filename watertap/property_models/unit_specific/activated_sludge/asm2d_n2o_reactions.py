@@ -160,12 +160,6 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
         )
 
         # Stoichiometric Parameters - found in asm2dinit_bsm2.c
-        self.f_SI = pyo.Var(
-            initialize=0.00,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
-        )
         self.Y_H = pyo.Var(
             initialize=0.625,
             units=pyo.units.dimensionless,
@@ -203,24 +197,6 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="Yield of nitrite oxidizing bacteria, [kg COD/kg N]",
         )
         self.f_XI = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
-        )
-        self.f_XIH = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
-        )
-        self.f_XIP = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
-        )
-        self.f_XIA = pyo.Var(
             initialize=0.1,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
@@ -920,11 +896,11 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R1: Aerobic hydrolysis
             ("R1", "Liq", "H2O"): 0,
             ("R1", "Liq", "S_O2"): 0,
-            ("R1", "Liq", "S_F"): 1 - self.f_SI,
+            ("R1", "Liq", "S_F"): 1 - prop.f_SI,
             ("R1", "Liq", "S_A"): 0,
-            ("R1", "Liq", "S_I"): self.f_SI,
+            ("R1", "Liq", "S_I"): prop.f_SI,
             ("R1", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * prop.i_NSF + self.f_SI * prop.i_NSI - prop.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R1", "Liq", "S_NH2OH"): 0,
             ("R1", "Liq", "S_N2O"): 0,
@@ -933,10 +909,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "S_N2"): 0,
             ("R1", "Liq", "S_NO3"): 0,
             ("R1", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * prop.i_PSF + self.f_SI * prop.i_PSI - prop.i_PXS
+                (1 - prop.f_SI) * prop.i_PSF + prop.f_SI * prop.i_PSI - prop.i_PXS
             ),
             ("R1", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * prop.i_CSF + self.f_SI * prop.i_CSI - prop.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R1", "Liq", "X_I"): 0,
             ("R1", "Liq", "X_S"): -1,
@@ -951,11 +927,11 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R2: Anoxic hydrolysis (NO3-)
             ("R2", "Liq", "H2O"): 0,
             ("R2", "Liq", "S_O2"): 0,
-            ("R2", "Liq", "S_F"): 1 - self.f_SI,
+            ("R2", "Liq", "S_F"): 1 - prop.f_SI,
             ("R2", "Liq", "S_A"): 0,
-            ("R2", "Liq", "S_I"): self.f_SI,
+            ("R2", "Liq", "S_I"): prop.f_SI,
             ("R2", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * prop.i_NSF + self.f_SI * prop.i_NSI - prop.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R2", "Liq", "S_NH2OH"): 0,
             ("R2", "Liq", "S_N2O"): 0,
@@ -964,10 +940,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R2", "Liq", "S_N2"): 0,
             ("R2", "Liq", "S_NO3"): 0,
             ("R2", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * prop.i_PSF + self.f_SI * prop.i_PSI - prop.i_PXS
+                (1 - prop.f_SI) * prop.i_PSF + prop.f_SI * prop.i_PSI - prop.i_PXS
             ),
             ("R2", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * prop.i_CSF + self.f_SI * prop.i_CSI - prop.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R2", "Liq", "X_I"): 0,
             ("R2", "Liq", "X_S"): -1,
@@ -982,11 +958,11 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R3: Anoxic hydrolysis (NO2-)
             ("R3", "Liq", "H2O"): 0,
             ("R3", "Liq", "S_O2"): 0,
-            ("R3", "Liq", "S_F"): 1 - self.f_SI,
+            ("R3", "Liq", "S_F"): 1 - prop.f_SI,
             ("R3", "Liq", "S_A"): 0,
-            ("R3", "Liq", "S_I"): self.f_SI,
+            ("R3", "Liq", "S_I"): prop.f_SI,
             ("R3", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * prop.i_NSF + self.f_SI * prop.i_NSI - prop.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R3", "Liq", "S_NH2OH"): 0,
             ("R3", "Liq", "S_N2O"): 0,
@@ -995,10 +971,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R3", "Liq", "S_N2"): 0,
             ("R3", "Liq", "S_NO3"): 0,
             ("R3", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * prop.i_PSF + self.f_SI * prop.i_PSI - prop.i_PXS
+                (1 - prop.f_SI) * prop.i_PSF + prop.f_SI * prop.i_PSI - prop.i_PXS
             ),
             ("R3", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * prop.i_CSF + self.f_SI * prop.i_CSI - prop.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R3", "Liq", "X_I"): 0,
             ("R3", "Liq", "X_S"): -1,
@@ -1013,11 +989,11 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R4: Anaerobic hydrolysis
             ("R4", "Liq", "H2O"): 0,
             ("R4", "Liq", "S_O2"): 0,
-            ("R4", "Liq", "S_F"): 1 - self.f_SI,
+            ("R4", "Liq", "S_F"): 1 - prop.f_SI,
             ("R4", "Liq", "S_A"): 0,
-            ("R4", "Liq", "S_I"): self.f_SI,
+            ("R4", "Liq", "S_I"): prop.f_SI,
             ("R4", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * prop.i_NSF + self.f_SI * prop.i_NSI - prop.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R4", "Liq", "S_NH2OH"): 0,
             ("R4", "Liq", "S_N2O"): 0,
@@ -1026,10 +1002,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R4", "Liq", "S_N2"): 0,
             ("R4", "Liq", "S_NO3"): 0,
             ("R4", "Liq", "S_PO4"): -(
-                (1 - self.f_SI) * prop.i_PSF + self.f_SI * prop.i_PSI - prop.i_PXS
+                (1 - prop.f_SI) * prop.i_PSF + prop.f_SI * prop.i_PSI - prop.i_PXS
             ),
             ("R4", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * prop.i_CSF + self.f_SI * prop.i_CSI - prop.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R4", "Liq", "X_I"): 0,
             ("R4", "Liq", "X_S"): -1,
