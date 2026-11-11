@@ -829,6 +829,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # Start plotting
         fig, ax = plt.subplots()
         x = -1  # location of bar
+        width = 0.5  # bar width
+        xmin = x - width
+        xmax = x + 3 * width
 
         # Starting bottom needs to be at zero
         bottom = 0
@@ -842,13 +845,15 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # For checking LCOW calculation
         lcow_check = 0
 
-        # Starting from the bottom: add negative opex, flows, then positive opex/capex for each unit
+        # Starting from the bottom:
+        # add negative OPEX, then flows, then positive OPEX/CAPEX for each unit
         if lcow_neg < 0:
             d_pos = lcow_pos * 1e-2 if relative else 1
-            bottom = sum(v / d for v in neg_opex.values())
+            d_neg = -lcow_neg * 1e-2 if relative else -1
+            bottom = sum(v / -d_neg for v in neg_opex.values())
             for k, v in neg_opex.items():
                 label = k if k not in component_labels else component_labels[k]
-                neg_o = v / d
+                neg_o = v / -d_neg
                 ax.bar(
                     [x],
                     [abs(neg_o)],
@@ -856,26 +861,25 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     hatch=hatch_dict["OPEX"],
                     color=color_dict[k],
                     edgecolor="red",
-                    width=0.5,
+                    width=width,
                     zorder=3,
                 )
                 bottom += abs(neg_o)
-                lcow_check += neg_o
+                lcow_check += v / d
                 if k not in list(pos_opex.keys()) + list(capex.keys()):
                     handles.append(Patch(facecolor=color_dict[k], edgecolor="k"))
                     labels.append(label)
 
         for f in flows:
-            v = flows[f] / d_pos
             label = f if f not in component_labels else component_labels[f]
-
+            v = flows[f] / d_pos
             ax.bar(
                 [x],
                 [v],
                 bottom=bottom,
                 hatch=hatch_dict["Flows"],
                 color=color_dict[f],
-                width=0.5,
+                width=width,
                 edgecolor="black",
                 zorder=3,
             )
@@ -897,7 +901,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 hatch=hatch_dict["OPEX"],
                 color=color_dict[u],
                 edgecolor="black",
-                width=0.5,
+                width=width,
                 zorder=3,
             )
             bottom += o
@@ -911,7 +915,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 hatch=hatch_dict["CAPEX"],
                 color=color_dict[u],
                 edgecolor="black",
-                width=0.5,
+                width=width,
                 zorder=3,
             )
             bottom += c
@@ -931,47 +935,48 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         ]
         labels[0:0] = list(hatch_dict.keys())
 
-        if lcow_neg < 0:
-            handles.insert(
-                0,
-                Line2D(
-                    [0],
-                    [0],
-                    color="w",
-                    markersize=150**0.5,
-                    marker="*",
-                    markerfacecolor="yellow",
-                    markeredgecolor="black",
-                ),
-            )
-            labels.insert(0, "Net LCOW")
-            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=1)
-            ax.set_ylim(ax.get_ylim()[0] * 1.5, ax.get_ylim()[1])
-
         ax.set_axisbelow(True)
         ax.grid(visible=True, zorder=0)
-        ax.legend(handles=handles, labels=labels)
         ax.set_xticks([])
-        ax.set_xlim(-1.5, 0.5)
+        ax.set_xlim(xmin, xmax)
         ax.set_ylabel(
             f"{lcow_name} (\\$/m$^3$)" if not relative else f"Relative {lcow_name} (%)"
         )
 
-        ax.scatter(
-            [x],
-            [lcow_check],
-            s=150,
-            marker="*",
-            color="yellow",
-            edgecolor="black",
-            zorder=100,
-        )
+        if lcow_neg < 0:
+            if not relative:
+                xs = [x - width * 0.75, x + width * 0.75]
+                ax.plot(
+                    xs,
+                    [lcow_check, lcow_check],
+                    marker=None,
+                    color="k",
+                    lw=3,
+                    ls=":",
+                    zorder=100,
+                )
+                handles.insert(
+                    0,
+                    Line2D(
+                        [0],
+                        [0],
+                        color="k",
+                        ls=":",
+                        lw=3,
+                        marker=None,
+                    ),
+                )
+                labels.insert(0, "Net LCOW")
+                ax.set_ylim(ax.get_ylim()[0] * 1.5, ax.get_ylim()[1])
+            ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
+
+        ax.legend(handles=handles, labels=labels)
         fig.tight_layout()
 
         if save_as is not None:
             fig.savefig(f"{save_as}.png", dpi=300, bbox_inches="tight")
 
-        if not isclose(lcow_check, lcow_actual, rel_tol=tol):
+        if not isclose(lcow_check, lcow_actual / d, rel_tol=tol):
             print(f"Calculated LCOW: {lcow_check * d:.6f}")
             print(f"Actual LCOW: {lcow_actual:.6f}")
             if relative:
