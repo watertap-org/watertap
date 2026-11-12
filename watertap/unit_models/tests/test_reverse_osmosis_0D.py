@@ -242,6 +242,7 @@ class TestReverseOsmosis0D(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
 
         return m
 
@@ -357,6 +358,8 @@ class TestReverseOsmosis0D_SKK(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
+
         return m
 
 
@@ -480,6 +483,7 @@ class TestReverseOsmosis0D_kf_fixed(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
 
         return m
 
@@ -609,6 +613,8 @@ class TestReverseOsmosis0D_kf_calculated(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
+
         return m
 
 
@@ -736,6 +742,7 @@ class TestReverseOsmosis0D_p_drop_calculation(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
 
         return m
 
@@ -864,6 +871,7 @@ class TestReverseOsmosis0D_p_drop_fixed_per_unit_length(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
 
         return m
 
@@ -993,6 +1001,7 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+        m.fs.unit.list_vars_to_fix()
 
         return m
 
@@ -1172,6 +1181,8 @@ def test_RO_with_MCAS_NaCl():
         m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
+
+    m.fs.unit.list_vars_to_fix()
 
 
 @pytest.mark.requires_idaes_solver
