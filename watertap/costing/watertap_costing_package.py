@@ -947,9 +947,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         ax.grid(visible=True, zorder=0)
         ax.set_xticks([])
         ax.set_xlim(xmin, xmax)
-        ax.set_ylabel(
-            f"{lcow_name} (\\$/m$^3$)" if not relative else f"Relative {lcow_name} (%)"
-        )
+        ax.set_ylabel(f"LCOW (\\$/m$^3$)" if not relative else f"Relative LCOW (%)")
 
         if lcow_neg < 0:
             if relative:
@@ -982,7 +980,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 ),
             )
             labels.insert(0, f"Net LCOW: {lcow_actual:.2f}")
-            ax.set_ylim(ax.get_ylim()[0] * 1.5, ax.get_ylim()[1])
+            ax.use_sticky_edges = False
+            ax.autoscale(axis="y")
+
             ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
 
         max_per_col = 16
@@ -1024,10 +1024,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         sec_name="specific_energy_consumption",
         fs_name="fs",
         relative=False,
-        colormap="tab20",
+        colormap=None,
         save_as=None,
         close_fig=False,
         tol=1e-5,
+        plot_tol=1e-4,
         component_labels={},
     ):
         """
@@ -1039,15 +1040,23 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             sec_name: name of the specific energy consumption Expression to plot (default: "specific_energy_consumption")
             fs_name: name of the flowsheet (default: "fs")
             relative: whether to plot as fraction of total SEC (default: False)
-            colormap: colormap to use for the plot (default: "tab20")
+            colormap: colormap to use for the plot (default: None; a custom colormap of tab20b + tab20c is created)
             save_as: filename to save the plot (default: None)
             close_fig: whether to close the figure after creation (default: False)
+            tol: tolerance for SEC calculation check (default: 1e-5)
+            plot_tol: minimum absolute value of SEC contribution to include in the plot (default: 1e-4)
             component_labels: dictionary mapping flowsheet unit names to custom unit names (default: {})
-            tol: tolerance for LCOW calculation check (default: 1e-5)
         """
 
         import matplotlib.pyplot as plt
         from matplotlib.patches import Patch
+        from matplotlib.lines import Line2D
+        import matplotlib.colors as mcolors
+
+        def _get_label(u):
+            if u not in component_labels:
+                return u.split(".")[-1]
+            return component_labels[u]
 
         if self.find_component(sec_name) is None:
             msg = f"{self.name} does not have a component named {sec_name}."
@@ -1055,27 +1064,40 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             msg += " block before calling plot_SEC_breakdown."
             raise RuntimeError(msg)
 
-        if relative:
-            d = pyo.value(self.find_component(sec_name)) * 1e-2
-        else:
-            d = 1
-
+        sec_actual = pyo.value(self.find_component(sec_name))
         sec_expr = self.find_component(f"{sec_name}_component")
         sec_comp = {
-            k.replace(f"{fs_name}.", ""): pyo.value(v) for k, v in sec_expr.items()
+            k.replace(f"{fs_name}.", ""): pyo.value(v)
+            for k, v in sec_expr.items()
+            if pyo.value(v) > 0
         }
-        # Sort so plotting starts with negative contributions
-        sec_comp = dict(sorted(sec_comp.items(), key=lambda i: i[1], reverse=False))
+        neg_sec_comp = {
+            k.replace(f"{fs_name}.", ""): pyo.value(v)
+            for k, v in sec_expr.items()
+            if pyo.value(v) < 0
+        }
 
-        all_units = list(sec_comp.keys())
+        all_units = set(
+            list(k for k in sec_comp.keys() if sec_comp[k] > plot_tol)
+            + list(k for k in neg_sec_comp.keys() if abs(neg_sec_comp[k]) > plot_tol)
+        )
 
-        cmap = plt.get_cmap(colormap)
+        if colormap is None:
+            # Create a custom colormap with 40 unique colors
+            cmap = plt.get_cmap("tab20b").colors + plt.get_cmap("tab20c").colors
+            cmap = mcolors.ListedColormap(cmap)
+        else:
+            cmap = plt.get_cmap(colormap)
+
         colors = [cmap(i / len(all_units)) for i in range(len(all_units))]
         color_dict = dict(zip(all_units, colors))
 
         # Start plotting
         fig, ax = plt.subplots()
-        x = -1  # location of bar
+        x = 0  # location of bar
+        width = 0.5  # bar width
+        xmin = x - width
+        xmax = x + width
 
         # Create legend
         handles = []
@@ -1083,60 +1105,131 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         # For checking SEC calculation
         sec_check = 0
+        # Sum of negative SEC contributions
+        sec_neg = sum(neg_sec_comp.values())
 
-        # Need to start at lowest point
-        bottom = sum(ec for ec in sec_comp.values() if ec < 0) / d * 2
-        bottoms = [bottom]
+        # Starting bottom needs to be at zero
+        bottom = 0
+        d = sec_actual * 1e-2 if relative else 1
 
-        for u in all_units:
+        if sec_neg < 0:
+            _log.info(
+                "Cannot plot relative values with negative SEC contributions; setting 'relative' to False."
+            )
+            relative = False
+            d = 1
+            # Set bottom to the sum of negative SEC contributions
+            bottom = sum(v / d for v in neg_sec_comp.values())
+            for u, v in neg_sec_comp.items():
+                neg_ec = v / d
+                label = _get_label(u)
+                if abs(v) > plot_tol:
+                    # Only plot negative contributions above tolerance
+                    ax.bar(
+                        [x],
+                        [abs(neg_ec)],
+                        bottom=bottom,
+                        color=color_dict[u],
+                        edgecolor="red",
+                        width=width,
+                        zorder=3,
+                    )
+                    bottom += abs(neg_ec)
+                sec_check += neg_ec
+
+                if u not in sec_comp:
+                    handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
+                    labels.append(label)
+
+        for u in sec_comp:
+
+            label = _get_label(u)
             ec = sec_comp.get(u, 0) / d
 
-            if u in component_labels.keys():
-                label = component_labels[u]
-            else:
-                label = u
-
-            ax.bar(
-                [x],
-                [abs(ec)],
-                bottom=bottom,
-                color=color_dict[u],
-                edgecolor="black",
-                width=0.5,
-                zorder=3,
-            )
-            bottom += abs(ec)
-            bottoms.append(bottom)
+            if sec_comp.get(u, 0) > plot_tol:
+                # Only plot absolute contributions above tolerance
+                ax.bar(
+                    [x],
+                    [ec],
+                    bottom=bottom,
+                    color=color_dict[u],
+                    edgecolor="black",
+                    width=width,
+                    zorder=3,
+                )
+                bottom += ec
+                handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
+                labels.append(label)
             sec_check += ec
-
-            handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
-            labels.append(label)
 
         # Reverse order to align with plot order (bottom to top)
         handles = handles[::-1]
         labels = labels[::-1]
 
-        if bottoms[0] < 0:
-            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=1)
-            ax.set_ylim(bottoms[0] * 1.1, ax.get_ylim()[1])
-
         ax.set_axisbelow(True)
         ax.grid(visible=True, zorder=0)
-        ax.legend(handles=handles, labels=labels)
-        ax.set_xlim(-1.5, 0.5)
         ax.set_xticks([])
+        ax.set_xlim(xmin, xmax)
         ax.set_ylabel(f"SEC (kWh/m$^3$)" if not relative else f"Relative SEC (%)")
 
+        if sec_neg < 0:
+            if relative:
+                # This should not happen
+                msg = "Cannot plot relative values with negative SEC contributions. "
+                msg += "Contact a WaterTAP developer."
+                raise FrozenPipes(msg)
+            # If there are negative SEC contributions, the net SEC
+            # is plotted with a yellow star
+            ax.scatter(
+                x,
+                sec_actual,
+                marker="*",
+                color="yellow",
+                edgecolor="black",
+                zorder=100,
+                s=150,
+            )
+            handles.insert(
+                0,
+                Line2D(
+                    [0],
+                    [0],
+                    marker="*",
+                    color="white",
+                    markeredgecolor="black",
+                    markerfacecolor="yellow",
+                    zorder=100,
+                    markersize=150**0.5,
+                ),
+            )
+            labels.insert(0, f"Net SEC: {sec_actual:.2f}")
+            ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
+            ax.use_sticky_edges = False
+            ax.autoscale(axis="y")
+
+        max_per_col = 16
+        ncols = ceil(len(labels) / max_per_col)
+
+        ax.legend(
+            handles=handles,
+            labels=labels,
+            ncols=ncols,
+            bbox_to_anchor=(1.05, 1.0),
+            loc="upper left",
+            borderaxespad=0.0,
+        )
+
         fig.tight_layout()
+        fig.subplots_adjust(right=0.8)
 
         if save_as is not None:
             fig.savefig(f"{save_as}.png", dpi=300, bbox_inches="tight")
 
-        if not isclose(
-            sec_check, pyo.value(self.find_component(sec_name) / d), rel_tol=tol
-        ):
+        _log.debug(f"Calculated SEC: {sec_check * d:.4f}, Actual SEC: {sec_actual}")
+
+        if not isclose(sec_check, sec_actual / d, rel_tol=tol):
             print(f"Calculated SEC: {sec_check}")
-            print(f"Actual SEC: {pyo.value(self.find_component(sec_name) / d)}")
+            print(f"Actual SEC: {sec_actual / d}")
             raise ValueError(
                 f"Calculated SEC and actual SEC differ by more than tolerance ({tol})"
             )
