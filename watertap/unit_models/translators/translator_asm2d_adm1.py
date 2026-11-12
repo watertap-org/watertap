@@ -332,7 +332,7 @@ see reaction package for documentation.}""",
         def SNH4_AS1(blk, t):
             return (
                 blk.properties_in[t].conc_mass_comp["S_NH4"]
-                - blk.config.inlet_reaction_package.i_NBM * self.COD_SO2[t]
+                - blk.config.inlet_property_package.i_NBM * self.COD_SO2[t]
             )
 
         @self.Expression(
@@ -341,7 +341,7 @@ see reaction package for documentation.}""",
         def SPO4_AS1(blk, t):
             return (
                 blk.properties_in[t].conc_mass_comp["S_PO4"]
-                - blk.config.inlet_reaction_package.i_PBM * self.COD_SO2[t]
+                - blk.config.inlet_property_package.i_PBM * self.COD_SO2[t]
             )
 
         @self.Expression(
@@ -352,8 +352,8 @@ see reaction package for documentation.}""",
                 blk.properties_in[t].conc_mass_comp["S_IC"]
                 - (-1 / blk.config.inlet_reaction_package.Y_H)
                 * self.COD_SO2[t]
-                * blk.config.inlet_reaction_package.i_CSA
-                + self.COD_SO2[t] * blk.config.inlet_reaction_package.i_CXB
+                * blk.config.inlet_property_package.i_CSA
+                + self.COD_SO2[t] * blk.config.inlet_property_package.i_CXB
             )
 
         @self.Expression(
@@ -391,7 +391,7 @@ see reaction package for documentation.}""",
         def SNH4_AS2(blk, t):
             return (
                 blk.SNH4_AS1[t]
-                - self.COD_SNO3[t] * blk.config.inlet_reaction_package.i_NBM
+                - self.COD_SNO3[t] * blk.config.inlet_property_package.i_NBM
             )
 
         @self.Expression(
@@ -432,7 +432,7 @@ see reaction package for documentation.}""",
         def SPO4_AS2(blk, t):
             return (
                 blk.SPO4_AS1[t]
-                - self.COD_SNO3[t] * blk.config.inlet_reaction_package.i_PBM
+                - self.COD_SNO3[t] * blk.config.inlet_property_package.i_PBM
             )
 
         @self.Expression(
@@ -443,8 +443,8 @@ see reaction package for documentation.}""",
                 blk.SIC_AS1[t]
                 - (-1 / blk.config.inlet_reaction_package.Y_H)
                 * self.COD_SNO3[t]
-                * blk.config.inlet_reaction_package.i_CSA
-                + self.COD_SNO3[t] * blk.config.inlet_reaction_package.i_CXB
+                * blk.config.inlet_property_package.i_CSA
+                + self.COD_SNO3[t] * blk.config.inlet_property_package.i_CXB
             )
 
         @self.Expression(
@@ -460,7 +460,7 @@ see reaction package for documentation.}""",
         def S_ND(blk, t):
             return (
                 blk.properties_in[t].conc_mass_comp["S_F"]
-                * blk.config.inlet_reaction_package.i_NSF
+                * blk.config.inlet_property_package.i_NSF
             )
 
         @self.Expression(
@@ -469,7 +469,7 @@ see reaction package for documentation.}""",
         def S_PD(blk, t):
             return (
                 blk.properties_in[t].conc_mass_comp["S_F"]
-                * blk.config.inlet_reaction_package.i_PSF
+                * blk.config.inlet_property_package.i_PSF
             )
 
         @self.Expression(
@@ -525,7 +525,7 @@ see reaction package for documentation.}""",
             return (
                 blk.SNH4_AS2[t]
                 + blk.properties_in[t].conc_mass_comp["S_F"]
-                * blk.config.inlet_reaction_package.i_NSF
+                * blk.config.inlet_property_package.i_NSF
                 - blk.Saa_mapping[t]
                 * blk.config.outlet_reaction_package.Ni["S_aa"]
                 * mw_n
@@ -538,7 +538,7 @@ see reaction package for documentation.}""",
             return (
                 blk.SPO4_AS2[t]
                 + blk.properties_in[t].conc_mass_comp["S_F"]
-                * blk.config.inlet_reaction_package.i_PSF
+                * blk.config.inlet_property_package.i_PSF
             )
 
         @self.Expression(
@@ -548,7 +548,7 @@ see reaction package for documentation.}""",
             return (
                 blk.SIC_AS2[t]
                 + blk.properties_in[t].conc_mass_comp["S_F"]
-                * blk.config.inlet_reaction_package.i_CSF
+                * blk.config.inlet_property_package.i_CSF
                 - blk.Ssu_mapping[t]
                 * blk.config.outlet_reaction_package.Ci["S_su"]
                 * mw_c
@@ -594,13 +594,13 @@ see reaction package for documentation.}""",
             def SNH4_AS4(blk, t):
                 return (
                     blk.SNH4_AS3[t]
-                    + blk.biomass[t] * blk.config.inlet_reaction_package.i_NBM
+                    + blk.biomass[t] * blk.config.inlet_property_package.i_NBM
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_NSI
+                    * blk.config.inlet_property_package.i_NSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_xI_xc
-                    * blk.config.inlet_reaction_package.i_NSI
+                    * blk.config.inlet_property_package.i_NSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ni["X_pr"]
@@ -613,13 +613,13 @@ see reaction package for documentation.}""",
             def SPO4_AS4(blk, t):
                 return (
                     blk.SPO4_AS3[t]
-                    + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
+                    + blk.biomass[t] * blk.config.inlet_property_package.i_PBM
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_sI_xc
                     * self.i_PSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_xI_xc
-                    * blk.config.inlet_reaction_package.i_PXI
+                    * blk.config.inlet_property_package.i_PXI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_ch_xc
                     * blk.config.outlet_reaction_package.P_ch
@@ -636,13 +636,13 @@ see reaction package for documentation.}""",
             def SIC_AS4(blk, t):
                 return (
                     blk.SIC_AS3[t]
-                    + blk.biomass[t] * blk.config.inlet_reaction_package.i_CXB
+                    + blk.biomass[t] * blk.config.inlet_property_package.i_CXB
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_CSI
+                    * blk.config.inlet_property_package.i_CSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_xI_xc
-                    * blk.config.inlet_reaction_package.i_CXI
+                    * blk.config.inlet_property_package.i_CXI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ci["X_pr"]
@@ -709,7 +709,7 @@ see reaction package for documentation.}""",
             def X_ND(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_NXS
+                    * blk.config.inlet_property_package.i_NXS
                 )
 
             @self.Expression(
@@ -718,7 +718,7 @@ see reaction package for documentation.}""",
             def X_PD(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_PXS
+                    * blk.config.inlet_property_package.i_PXS
                 )
 
             @self.Expression(
@@ -796,7 +796,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SNH4_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_NXS
+                    * blk.config.inlet_property_package.i_NXS
                     - blk.Xpr_mapping[t]
                     * blk.config.outlet_reaction_package.Ni["X_pr"]
                     * mw_n
@@ -815,7 +815,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_PXS
+                    * blk.config.inlet_property_package.i_PXS
                     - blk.Xch_mapping[t]
                     * blk.config.outlet_reaction_package.P_ch
                     * mw_p
@@ -831,7 +831,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SIC_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_CXS
+                    * blk.config.inlet_property_package.i_CXS
                     - blk.Xch_mapping[t]
                     * blk.config.outlet_reaction_package.Ci["X_ch"]
                     * mw_c
@@ -1042,13 +1042,13 @@ see reaction package for documentation.}""",
             def SNH4_AS4(blk, t):
                 return (
                     blk.SNH4_AS3[t]
-                    + blk.biomass[t] * blk.config.inlet_reaction_package.i_NBM
+                    + blk.biomass[t] * blk.config.inlet_property_package.i_NBM
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_NSI
+                    * blk.config.inlet_property_package.i_NSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_xI_xc
-                    * blk.config.inlet_reaction_package.i_NSI
+                    * blk.config.inlet_property_package.i_NSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ni["X_pr"]
@@ -1061,13 +1061,13 @@ see reaction package for documentation.}""",
             def SPO4_AS4(blk, t):
                 return (
                     blk.SPO4_AS3[t]
-                    + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
+                    + blk.biomass[t] * blk.config.inlet_property_package.i_PBM
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_sI_xc
                     * self.i_PSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_xI_xc
-                    * blk.config.inlet_reaction_package.i_PXI
+                    * blk.config.inlet_property_package.i_PXI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_ch_xc
                     * blk.config.outlet_reaction_package.P_ch
@@ -1084,13 +1084,13 @@ see reaction package for documentation.}""",
             def SIC_AS4(blk, t):
                 return (
                     blk.SIC_AS3[t]
-                    + blk.biomass[t] * blk.config.inlet_reaction_package.i_CXB
+                    + blk.biomass[t] * blk.config.inlet_property_package.i_CXB
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_sI_xc
-                    * blk.config.inlet_reaction_package.i_CSI
+                    * blk.config.inlet_property_package.i_CSI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_xI_xc
-                    * blk.config.inlet_reaction_package.i_CXI
+                    * blk.config.inlet_property_package.i_CXI
                     - blk.biomass[t]
                     * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ci["X_pr"]
@@ -1159,7 +1159,7 @@ see reaction package for documentation.}""",
             def X_ND(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_NXS
+                    * blk.config.inlet_property_package.i_NXS
                 )
 
             @self.Expression(
@@ -1168,7 +1168,7 @@ see reaction package for documentation.}""",
             def X_PD(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_PXS
+                    * blk.config.inlet_property_package.i_PXS
                 )
 
             @self.Expression(
@@ -1246,7 +1246,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SNH4_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_NXS
+                    * blk.config.inlet_property_package.i_NXS
                     - blk.Xpr_mapping[t]
                     * blk.config.outlet_reaction_package.Ni["X_pr"]
                     * mw_n
@@ -1265,7 +1265,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_PXS
+                    * blk.config.inlet_property_package.i_PXS
                     - blk.Xch_mapping[t]
                     * blk.config.outlet_reaction_package.P_ch
                     * mw_p
@@ -1287,7 +1287,7 @@ see reaction package for documentation.}""",
                 return (
                     blk.SIC_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
-                    * blk.config.inlet_reaction_package.i_CXS
+                    * blk.config.inlet_property_package.i_CXS
                     - blk.Xch_mapping[t]
                     * blk.config.outlet_reaction_package.Ci["X_ch"]
                     * mw_c

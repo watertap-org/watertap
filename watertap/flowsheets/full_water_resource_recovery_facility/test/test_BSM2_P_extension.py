@@ -56,7 +56,7 @@ class TestFullFlowsheetBioPFalse:
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
         assert len(warnings) == 1
-        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -85,10 +85,10 @@ class TestFullFlowsheetBioPFalse:
         ) == pytest.approx(0.009043, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-        ) == pytest.approx(0.0008358, rel=1e-3)
+        ) == pytest.approx(0.000834887, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.000421, rel=1e-3)
+        ) == pytest.approx(0.0004187, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
             0.3642, rel=1e-3
         )
@@ -175,7 +175,7 @@ class TestFullFlowsheetBioPTrue:
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
         assert len(warnings) == 1
-        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -207,7 +207,7 @@ class TestFullFlowsheetBioPTrue:
         ) == pytest.approx(0.0011696, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.002821278, rel=1e-3)
+        ) == pytest.approx(0.0028184, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
             0.37, rel=1e-3
         )
