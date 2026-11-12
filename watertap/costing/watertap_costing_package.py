@@ -700,7 +700,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
     def plot_LCOW_breakdown(self, **kwargs):
         return plot_LCOW_breakdown(self, _log, **kwargs)
-    
+
     def plot_SEC_breakdown(self, **kwargs):
         return plot_SEC_breakdown(self, _log, **kwargs)
 
