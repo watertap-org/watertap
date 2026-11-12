@@ -35,7 +35,8 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import OzoneAOPZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -49,7 +50,7 @@ class TestOzoneAOPZO_with_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "cryptosporidium",
                 "toc",
@@ -81,12 +82,12 @@ class TestOzoneAOPZO_with_default_removal:
         model.db = Database()
 
         model.fs = FlowsheetBlock(dynamic=False)
-        model.fs.params = WaterParameterBlock(
+        model.fs.params = ZOParameterBlock(
             solute_list=["cryptosporidium", "giardia_lamblia", "eeq"]
         )
         with pytest.raises(
             ConfigurationError,
-            match="toc must be in solute list for Ozonation or Ozone/AOP",
+            match="A TOC component was not found in the solute list",
         ):
             model.fs.unit = OzoneAOPZO(
                 property_package=model.fs.params, database=model.db
@@ -206,7 +207,7 @@ class TestOzoneAOPZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "cryptosporidium",
                 "toc",
@@ -235,12 +236,12 @@ class TestOzoneAOPZO_w_o_default_removal:
         model.db = Database()
 
         model.fs = FlowsheetBlock(dynamic=False)
-        model.fs.params = WaterParameterBlock(
+        model.fs.params = ZOParameterBlock(
             solute_list=["cryptosporidium", "viruses_enteric"]
         )
         with pytest.raises(
             ConfigurationError,
-            match="toc must be in solute list for Ozonation or Ozone/AOP",
+            match="A TOC component was not found in the solute list",
         ):
             model.fs.unit = OzoneAOPZO(
                 property_package=model.fs.params, database=model.db
@@ -364,7 +365,7 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = WaterParameterBlock(
+    m.fs.properties = ZOParameterBlock(
         solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 
@@ -429,3 +430,27 @@ def test_costing():
     assert (
         pytest.approx(value(m.fs.unit.costing.aop_capital_cost), rel=1e-3) == 4611108.51
     )
+
+
+@pytest.mark.component
+def test_with_mcas():
+    m = ConcreteModel()
+    m.db = Database()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=[
+            "TOC",
+        ],
+        ignore_neutral_charge=True,
+        mw_data={"TOC": 12e-3},
+        material_flow_basis="mass",
+    )
+
+    m.fs.unit = OzoneAOPZO(property_package=m.fs.properties, database=m.db)
+
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(100)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TOC"].fix(0.00033735)
+    m.fs.unit.load_parameters_from_database()
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+    assert check_optimal_termination(results)

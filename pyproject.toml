@@ -65,7 +65,7 @@ testing = [
     "nbconvert",
     "idaes-flowsheet-processor>=0.3.2",
 ]
-notebooks = ["jupyter", "ipykernel"]
+notebooks = ["jupyter", "ipykernel", "ipywidgets"]
 oli_api = [
     "requests",
     "cryptography", # for encrypting OLI credentials
@@ -80,7 +80,7 @@ exposan = [
 ]
 
 dev = [
-    "black==26.3.1",
+    "black",
     "pre-commit",
 
     # coverage
