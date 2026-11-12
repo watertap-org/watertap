@@ -16,8 +16,6 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     Block,
-    Var,
-    Constraint,
 )
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
