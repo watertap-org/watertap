@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import os
 import pytest
 
 from pyomo.util.check_units import assert_units_consistent
@@ -18,6 +19,7 @@ import idaes.core as idc
 
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 import watertap.flowsheets.lsrro.lsrro as lsrro
+import watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination as swro
 
 
 @pytest.mark.component
@@ -216,3 +218,42 @@ def test_breakdowns_with_no_unit():
     )
     assert hasattr(m.fs.costing, "biff_component")
     assert "fs.electricity_flow_with_no_unit" in m.fs.costing.biff_component.index_set()
+
+
+@pytest.mark.component
+def test_export_to_csv():
+
+    here = os.path.dirname(__file__)
+    cwd = os.getcwd()
+
+    m = swro.main()
+
+    # Test display results
+    m.fs.costing.display_results()
+
+    # Test default save location in cwd
+    _ = m.fs.costing.export_results_to_csv()
+    assert os.path.exists(f"{cwd}/watertap_model_results.csv")
+    os.remove(f"{cwd}/watertap_model_results.csv")
+
+    # Test user-defined save location
+    save_as = f"{here}/test-export.csv"
+    _ = m.fs.costing.export_results_to_csv(save_as=save_as)
+    assert os.path.exists(save_as)
+    os.remove(save_as)
+
+    # Test export with only Vars
+    components = [pyo.Var]
+    save_as = f"{here}/test-only-vars.csv"
+    df_only_vars = m.fs.costing.export_results_to_csv(
+        save_as=save_as, components=components
+    )
+    assert df_only_vars["component_type"].eq("Var").all()
+    assert os.path.exists(save_as)
+    os.remove(save_as)
+
+    with pytest.raises(
+        ValueError,
+        match="The only accepted components for export are Var, Expression, Param, and Objective.",
+    ):
+        m.fs.costing.export_results_to_csv(components=[pyo.Constraint])
