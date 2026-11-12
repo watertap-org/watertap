@@ -870,7 +870,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     zorder=3,
                 )
                 bottom += abs(neg_o)
-                lcow_check += abs(neg_o)
+                lcow_check += neg_o
 
                 if u not in list(pos_opex.keys()) + list(capex.keys()):
                     handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
