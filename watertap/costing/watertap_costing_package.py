@@ -709,8 +709,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         colormap=None,
         save_as=None,
         close_fig=False,
-        component_labels={},
         tol=1e-5,
+        plot_tol=0,
+        component_labels={},
     ):
         """
         This method creates a bar chart showing the breakdown of the LCOW calculation
@@ -727,8 +728,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             colormap: colormap to use for the plot (default: None; a custom colormap of tab20b + tab20c is created)
             save_as: filename to save the plot (default: None)
             close_fig: whether to close the figure after creation (default: False)
-            component_labels: dictionary mapping flowsheet unit names to custom unit names (default: {})
             tol: tolerance for LCOW calculation check (default: 1e-5)
+            plot_tol: minimum absolute value of SEC contribution to include in the plot (default: 0)
+            component_labels: dictionary mapping flowsheet unit names to custom unit names (default: {})
 
         Returns:
             fig, ax: matplotlib figure and axis objects for the plot
@@ -810,8 +812,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         else:
             # Aggregate flows are included as part of variable OPEX
             for k, v in self.find_component(f"{lcow_name}_{by}_variable_opex").items():
-                if k.replace(f"{fs_name}.", "") in all_units:
-                    _add_opex(v)
+                _add_opex(v)
 
         # All unique components contributing to LCOW
         all_components = list(flows.keys()) + list(all_units)
@@ -845,6 +846,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         lcow_check = 0
         # Sum of negative OPEX contributions
         lcow_neg = sum(neg_opex.values())
+        # Track units to inclue in legend
+        leg_units = list()
 
         # Starting from the bottom:
         # add negative OPEX, then flows, then positive OPEX/CAPEX for each unit
@@ -855,82 +858,82 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             relative = False
             d = 1
             # Set bottom to the sum of negative OPEX contributions
-            bottom = sum(v / d for v in neg_opex.values())
+            bottom = sum(v / d for v in neg_opex.values() if abs(v) > plot_tol)
             for u, v in neg_opex.items():
-                label = _get_label(u)
                 neg_o = v / d
+                if abs(v) > plot_tol:
+                    ax.bar(
+                        [x],
+                        [abs(neg_o)],
+                        bottom=bottom,
+                        hatch=hatch_dict["OPEX"],
+                        color=color_dict[u],
+                        edgecolor="red",
+                        width=width,
+                        zorder=3,
+                    )
+                    leg_units.append(u)
+                    bottom += abs(neg_o)
+
+                lcow_check += neg_o
+
+        for flow, v in flows.items():
+
+            f = v / d
+            if v > plot_tol:
                 ax.bar(
                     [x],
-                    [abs(neg_o)],
+                    [f],
+                    bottom=bottom,
+                    hatch=flows_hatch,
+                    color=color_dict[flow],
+                    width=width,
+                    edgecolor="black",
+                    zorder=3,
+                )
+                leg_units.append(flow)
+                bottom += f
+            lcow_check += f
+
+        for u in all_units:
+
+            o = pos_opex.get(u, 0) / d
+            if pos_opex.get(u, 0) > plot_tol:
+                ax.bar(
+                    [x],
+                    [o],
                     bottom=bottom,
                     hatch=hatch_dict["OPEX"],
                     color=color_dict[u],
-                    edgecolor="red",
+                    edgecolor="black",
                     width=width,
                     zorder=3,
                 )
-                bottom += abs(neg_o)
-                lcow_check += neg_o
-
-                if u not in list(pos_opex.keys()) + list(capex.keys()):
-                    handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
-                    labels.append(label)
-
-        for f in flows:
-            label = _get_label(f)
-
-            v = flows[f] / d
-            ax.bar(
-                [x],
-                [v],
-                bottom=bottom,
-                hatch=flows_hatch,
-                color=color_dict[f],
-                width=width,
-                edgecolor="black",
-                zorder=3,
-            )
-            bottom += v
-            lcow_check += v
-
-            handles.append(
-                Patch(facecolor=color_dict[f], hatch=flows_hatch, edgecolor="k")
-            )
-            labels.append(label)
-
-        for u in all_units:
-            label = _get_label(u)
-
-            o = pos_opex.get(u, 0) / d
-            ax.bar(
-                [x],
-                [o],
-                bottom=bottom,
-                hatch=hatch_dict["OPEX"],
-                color=color_dict[u],
-                edgecolor="black",
-                width=width,
-                zorder=3,
-            )
-            bottom += o
+                leg_units.append(u)
+                bottom += o
             lcow_check += o
 
             c = capex.get(u, 0) / d
-            ax.bar(
-                [x],
-                [c],
-                bottom=bottom,
-                hatch=hatch_dict["CAPEX"],
-                color=color_dict[u],
-                edgecolor="black",
-                width=width,
-                zorder=3,
-            )
-            bottom += c
+            if capex.get(u, 0) > plot_tol:
+                ax.bar(
+                    [x],
+                    [c],
+                    bottom=bottom,
+                    hatch=hatch_dict["CAPEX"],
+                    color=color_dict[u],
+                    edgecolor="black",
+                    width=width,
+                    zorder=3,
+                )
+                leg_units.append(u)
+                bottom += c
             lcow_check += c
 
-            handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
-            labels.append(label)
+        leg_units = list(dict.fromkeys(leg_units))
+        for u in leg_units:
+            hatch = flows_hatch if u in flows else None
+            handles.append(Patch(facecolor=color_dict[u], edgecolor="k", hatch=hatch))
+            labels.append(_get_label(u))
 
         # Reverse legend order to align with plot order (bottom to top)
         handles = handles[::-1]
@@ -981,8 +984,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             )
             labels.insert(0, f"Net LCOW: {lcow_actual:.2f}")
             ax.use_sticky_edges = False
-            ax.autoscale(axis="y")
-
             ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
 
         max_per_col = 16
@@ -996,6 +997,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             loc="upper left",
             borderaxespad=0.0,
         )
+        ax.autoscale(axis="y")
         fig.tight_layout()
         fig.subplots_adjust(right=0.8)
 
@@ -1112,6 +1114,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         bottom = 0
         d = sec_actual * 1e-2 if relative else 1
 
+        leg_units = list()
+
         if sec_neg < 0:
             _log.info(
                 "Cannot plot relative values with negative SEC contributions; setting 'relative' to False."
@@ -1122,7 +1126,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             bottom = sum(v / d for v in neg_sec_comp.values())
             for u, v in neg_sec_comp.items():
                 neg_ec = v / d
-                label = _get_label(u)
                 if abs(v) > plot_tol:
                     # Only plot negative contributions above tolerance
                     ax.bar(
@@ -1134,16 +1137,12 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                         width=width,
                         zorder=3,
                     )
+                    leg_units.append(u)
                     bottom += abs(neg_ec)
                 sec_check += neg_ec
 
-                if u not in sec_comp:
-                    handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
-                    labels.append(label)
-
         for u in sec_comp:
 
-            label = _get_label(u)
             ec = sec_comp.get(u, 0) / d
 
             if sec_comp.get(u, 0) > plot_tol:
@@ -1157,10 +1156,14 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     width=width,
                     zorder=3,
                 )
+                leg_units.append(u)
                 bottom += ec
-                handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
-                labels.append(label)
             sec_check += ec
+
+        leg_units = list(dict.fromkeys(leg_units))
+        for u in leg_units:
+            handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
+            labels.append(_get_label(u))
 
         # Reverse order to align with plot order (bottom to top)
         handles = handles[::-1]
@@ -1203,9 +1206,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 ),
             )
             labels.insert(0, f"Net SEC: {sec_actual:.2f}")
-            ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
             ax.use_sticky_edges = False
-            ax.autoscale(axis="y")
+            ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
 
         max_per_col = 16
         ncols = ceil(len(labels) / max_per_col)
@@ -1218,7 +1220,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             loc="upper left",
             borderaxespad=0.0,
         )
-
+        ax.autoscale(axis="y")
         fig.tight_layout()
         fig.subplots_adjust(right=0.8)
 
