@@ -41,8 +41,8 @@ class TestNaClProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Liq", "NaCl")): 1e2,
         }
         self.stateblock_statistics = {
-            "number_variables": 20,
-            "number_total_constraints": 16,
+            "number_variables": 21,
+            "number_total_constraints": 17,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
         }  # 4 state vars, but pressure is not active
