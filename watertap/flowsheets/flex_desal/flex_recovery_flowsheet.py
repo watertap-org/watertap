@@ -15,7 +15,6 @@ This module contains functions needed for the construction of flexible
 desalination flowsheet
 """
 
-from idaes.apps.grid_integration import OperationModel, StorageModel
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -24,8 +23,11 @@ from pyomo.environ import (
     Var,
     units as pyunits,
 )
-from watertap.flowsheets.flex_desal import params as um_params
-from watertap.flowsheets.flex_desal import unit_models as um
+
+from idaes.apps.grid_integration import OperationModel, StorageModel
+
+from watertap.flowsheets.flex_desal import flex_recovery_params as um_params
+from watertap.flowsheets.flex_desal import flex_recovery_unit_models as um
 
 pyunits.load_definitions_from_strings(["USD = [currency]"])
 
