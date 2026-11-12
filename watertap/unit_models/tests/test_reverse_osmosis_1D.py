@@ -810,19 +810,19 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
-        ] = 0.00593246
+        ] = 0.00644804
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.4481768e-6
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.0041822435
+            0.004174764
         )
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
             1.491610924e-6
         )
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        ] = 0.095819393
+        ] = 0.1005187
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 2.794556261e-5
@@ -855,7 +855,7 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         self.skip_badly_scaled_vars = True
-        self.condition_number = 1.693107e8  # Was previously 2.7895630e14
+        self.condition_number = 1.8238e8  # Was previously 2.7895630e14
 
         return m
 
@@ -1271,3 +1271,84 @@ def test_RO_with_MCAS_NaCl_CaSO4():
         m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
+
+
+def build_friction_factor_flat_sheet():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = props.NaClParameterBlock()
+
+    m.fs.unit = ReverseOsmosis1D(
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
+        module_type=ModuleType.flat_sheet,
+        transformation_scheme="BACKWARD",
+        transformation_method="dae.finite_difference",
+        finite_elements=3,
+    )
+
+    # fully specify system
+    feed_flow_mass = 1
+    feed_mass_frac_NaCl = 0.035
+    feed_pressure = 50e5
+    feed_temperature = 273.15 + 25
+    membrane_area = 19
+    A = 4.2e-12
+    B = 3.5e-8
+    pressure_atmospheric = 101325
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl
+    )
+
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        feed_flow_mass * feed_mass_frac_H2O
+    )
+
+    m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+    m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.A_comp.fix(A)
+    m.fs.unit.B_comp.fix(B)
+    m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+    m.fs.unit.length.fix(8)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+    m.fs.unit.feed_side.channel_height.fix(0.002)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
+    )
+    iscale.calculate_scaling_factors(m.fs.unit)
+
+    return m
+
+
+@pytest.mark.requires_idaes_solver
+@pytest.mark.unit
+def test_module_type_updates_friction_factor_and_N_Sh():
+    m_flat_sheet = build_friction_factor_flat_sheet()
+    m_spiral = build_friction_factor_spiral_wound()
+
+    solver = get_solver()
+
+    results_flat = solver.solve(m_flat_sheet, tee=True)
+    assert_optimal_termination(results_flat)
+
+    results_spiral = solver.solve(m_spiral, tee=True)
+    assert_optimal_termination(results_spiral)
+
+    # Compare friction factor and N_Sh between flat plate and spiral wound modules
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_friction_factor[0, 0].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_friction_factor[0, 0].expr
+    )
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr
+    )

@@ -464,6 +464,7 @@ class MembraneChannelMixin:
         self,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        module_type=ModuleType.flat_sheet,
     ):
 
         solute_set = self.config.property_package.solute_set
@@ -538,7 +539,7 @@ class MembraneChannelMixin:
             )
 
             if mass_transfer_coefficient == MassTransferCoefficient.calculated:
-                self._add_calculated_mass_transfer_coefficient()
+                self._add_calculated_mass_transfer_coefficient(module_type=module_type)
 
         return self.eq_cp_modulus
 
@@ -566,7 +567,9 @@ class MembraneChannelMixin:
                 return sum(b.K[t, x, j] for x in self.difference_elements) / self.nfe
 
     ## should be called by add concentration polarization
-    def _add_calculated_mass_transfer_coefficient(self):
+    def _add_calculated_mass_transfer_coefficient(
+        self, module_type=ModuleType.flat_sheet
+    ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
         solute_set = self.config.property_package.solute_set
@@ -607,17 +610,34 @@ class MembraneChannelMixin:
                 == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh_comp[t, x, j]
             )
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.solute_set,
-            doc="Sherwood number",
-        )
-        def eq_N_Sh_comp(b, t, x, j):
-            return (
-                b.N_Sh_comp[t, x, j]
-                == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
+        if module_type == ModuleType.flat_sheet:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.solute_set,
+                doc="Sherwood number",
             )
+            def eq_N_Sh_comp(b, t, x, j):
+                return (
+                    b.N_Sh_comp[t, x, j]
+                    == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
+                )
+
+        # Sherwood number correlation based on eq. 30 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
+        elif module_type == ModuleType.spiral_wound:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.solute_set,
+                doc="Sherwood number",
+            )
+            def eq_N_Sh_comp(b, t, x, j):
+                return (
+                    b.N_Sh_comp[t, x, j]
+                    == 0.065 * (b.N_Re[t, x]) ** 0.875 * (b.N_Sc_comp[t, x, j]) ** 0.25
+                )
 
         @self.Constraint(
             self.flowsheet().config.time,
