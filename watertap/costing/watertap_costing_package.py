@@ -9,7 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -27,6 +26,7 @@ from watertap.costing.unit_models.mixer import cost_mixer
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
+from .util import plot_LCOW_breakdown, plot_SEC_breakdown
 
 _log = idaeslog.getLogger(__name__)
 
@@ -329,6 +329,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 doc=f"Annual water production based on flow {flow_rate.name}",
             ),
         )
+
+    def add_SEC(self, flow_rate):
+        self.add_specific_energy_consumption(flow_rate, name="SEC")
 
     def add_electricity_intensity(self, flow_rate, name="electricity_intensity"):
         """
@@ -694,6 +697,12 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         else:
             # all other cases are handled in the base class
             super().register_flow_type(flow_type, cost)
+
+    def plot_LCOW_breakdown(self, **kwargs):
+        return plot_LCOW_breakdown(self, _log, **kwargs)
+
+    def plot_SEC_breakdown(self, **kwargs):
+        return plot_SEC_breakdown(self, _log, **kwargs)
 
 
 @declare_process_block_class("WaterTAPCosting")
