@@ -99,7 +99,7 @@ jobs:
           # - macos
         include:
           - os: linux
-            os-version: ubuntu-22.04
+            os-version: ubuntu-24.04
           - os: win64
             os-version: windows-2022
           # - os: macos
@@ -126,7 +126,7 @@ jobs:
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         # Install WaterTAP + dev dependencies from pyproject.toml
-        pip install -e ".[dev]"
+        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
         echo '::endgroup::'
         echo '::group::Output of "conda install -c conda-forge reaktoro cyipopt" command'
         conda install -c conda-forge reaktoro cyipopt
@@ -137,7 +137,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --extra petsc --verbose
         echo '::endgroup::'
     - name: Environment summary
       uses: ./.github/actions/environment-summary
@@ -209,7 +209,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-22.04
+            os-version: ubuntu-24.04
           - os: win64
             os-version: windows-2022
     steps:
@@ -251,7 +251,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install "watertap @ ${_install_url}" pytest
+        pip install "watertap @ ${_install_url}" pytest "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -259,7 +259,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --extra petsc --verbose
         echo '::endgroup::'
     - name: Run pytest
       run: |
@@ -280,7 +280,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-22.04
+            os-version: ubuntu-24.04
           - os: win64
             os-version: windows-2022
     steps:
@@ -300,7 +300,7 @@ jobs:
         conda install --quiet --yes pip setuptools wheel pandoc reaktoro
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        pip install -e ".[dev]"
+        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -308,7 +308,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --extra petsc --verbose
         echo '::endgroup::'
     - name: Install Jupyter kernel
       run: |
