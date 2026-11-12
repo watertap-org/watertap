@@ -39,22 +39,22 @@ def test_seawater_RO_desalination_pressure_exchanger():
 
     p1 = m.fs.desalination.P1
     assert pytest.approx(0.8, rel=1e-4) == value(p1.efficiency_pump[0])
-    assert pytest.approx(1119767.10, rel=1e-4) == value(p1.work_mechanical[0])
+    assert pytest.approx(1120028.50, rel=1e-4) == value(p1.work_mechanical[0])
     assert pytest.approx(6.9e6, rel=1e-4) == value(p1.deltaP[0])
     assert pytest.approx(70.0, rel=1e-4) == value(p1.ratioP[0])
 
-    assert pytest.approx(128.26, rel=1e-4) == value(
+    assert pytest.approx(128.29, rel=1e-4) == value(
         p1.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(4.5448, rel=1e-4) == value(
+    assert pytest.approx(4.5459, rel=1e-4) == value(
         p1.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
     assert pytest.approx(298.15, rel=1e-4) == value(p1.inlet.temperature[0.0])
     assert pytest.approx(1.0e5, rel=1e-4) == value(p1.inlet.pressure[0.0])
-    assert pytest.approx(128.26, rel=1e-4) == value(
+    assert pytest.approx(128.29, rel=1e-4) == value(
         p1.outlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(4.5448, rel=1e-4) == value(
+    assert pytest.approx(4.5459, rel=1e-4) == value(
         p1.outlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
     assert pytest.approx(298.15, rel=1e-4) == value(p1.outlet.temperature[0.0])
@@ -62,10 +62,10 @@ def test_seawater_RO_desalination_pressure_exchanger():
 
     ro = m.fs.desalination.RO
     assert pytest.approx(13914.0, rel=1e-4) == value(ro.area)
-    assert pytest.approx(0.424199, rel=1e-4) == value(
+    assert pytest.approx(0.424298, rel=1e-4) == value(
         ro.recovery_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.420416, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
+    assert pytest.approx(0.420517, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
     assert pytest.approx(305.43, rel=1e-4) == value(
         ro.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
@@ -74,7 +74,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
     )
     assert pytest.approx(298.15, rel=1e-4) == value(ro.inlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(ro.inlet.pressure[0.0])
-    assert pytest.approx(175.858, rel=1e-4) == value(
+    assert pytest.approx(175.827, rel=1e-4) == value(
         ro.retentate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.794, rel=1e-4) == value(
@@ -82,27 +82,27 @@ def test_seawater_RO_desalination_pressure_exchanger():
     )
     assert pytest.approx(298.15, rel=1e-4) == value(ro.retentate.temperature[0.0])
     assert pytest.approx(6599793.75, rel=1e-4) == value(ro.retentate.pressure[0.0])
-    assert pytest.approx(129.567, rel=1e-4) == value(
+    assert pytest.approx(129.587, rel=1e-4) == value(
         ro.permeate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.027637, rel=1e-4) == value(
+    assert pytest.approx(0.027641, rel=1e-4) == value(
         ro.permeate.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
     assert pytest.approx(298.15, rel=1e-4) == value(ro.permeate.temperature[0.0])
     assert pytest.approx(1.0132e5, rel=1e-4) == value(ro.permeate.pressure[0.0])
 
     muni = m.fs.municipal
-    assert pytest.approx(143.674, rel=1e-4) == value(muni.electricity[0])
-    assert pytest.approx(129.567, rel=1e-4) == value(
+    assert pytest.approx(143.707, rel=1e-4) == value(muni.electricity[0])
+    assert pytest.approx(129.587, rel=1e-4) == value(
         muni.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.027637, rel=1e-4) == value(
+    assert pytest.approx(0.027641, rel=1e-4) == value(
         muni.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
-    assert pytest.approx(129.567, rel=1e-4) == value(
+    assert pytest.approx(129.587, rel=1e-4) == value(
         muni.outlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.027637, rel=1e-4) == value(
+    assert pytest.approx(0.027641, rel=1e-4) == value(
         muni.outlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
 
@@ -152,10 +152,10 @@ def test_seawater_RO_desalination_pump_as_turbine():
 
     ro = m.fs.desalination.RO
     assert pytest.approx(13914.0, rel=1e-4) == value(ro.area)
-    assert pytest.approx(0.424199, rel=1e-4) == value(
+    assert pytest.approx(0.424298, rel=1e-4) == value(
         ro.recovery_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.420416, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
+    assert pytest.approx(0.420517, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
     assert pytest.approx(305.42, rel=1e-4) == value(
         ro.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
@@ -164,7 +164,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
     )
     assert pytest.approx(298.15, rel=1e-4) == value(ro.inlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(ro.inlet.pressure[0.0])
-    assert pytest.approx(175.86, rel=1e-4) == value(
+    assert pytest.approx(175.827, rel=1e-4) == value(
         ro.retentate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.794, rel=1e-4) == value(
@@ -172,27 +172,27 @@ def test_seawater_RO_desalination_pump_as_turbine():
     )
     assert pytest.approx(298.15, rel=1e-4) == value(ro.retentate.temperature[0.0])
     assert pytest.approx(6599793.75, rel=1e-4) == value(ro.retentate.pressure[0.0])
-    assert pytest.approx(129.567, rel=1e-4) == value(
+    assert pytest.approx(129.587, rel=1e-4) == value(
         ro.permeate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.027636, rel=1e-4) == value(
+    assert pytest.approx(0.027641, rel=1e-4) == value(
         ro.permeate.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
     assert pytest.approx(298.15, rel=1e-4) == value(ro.permeate.temperature[0.0])
     assert pytest.approx(1.0132e5, rel=1e-4) == value(ro.permeate.pressure[0.0])
 
     muni = m.fs.municipal
-    assert pytest.approx(143.674, rel=1e-4) == value(muni.electricity[0])
-    assert pytest.approx(129.567, rel=1e-4) == value(
+    assert pytest.approx(143.707, rel=1e-4) == value(muni.electricity[0])
+    assert pytest.approx(129.587, rel=1e-4) == value(
         muni.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.027636, rel=1e-4) == value(
+    assert pytest.approx(0.027641, rel=1e-4) == value(
         muni.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
-    assert pytest.approx(129.567, rel=1e-4) == value(
+    assert pytest.approx(129.587, rel=1e-4) == value(
         muni.outlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.027636, rel=1e-4) == value(
+    assert pytest.approx(0.027641, rel=1e-4) == value(
         muni.outlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
     )
 

@@ -101,7 +101,7 @@ def main(erd_type="pressure_exchanger", RO_1D=False, **kwargs):
         checkpoint=f" initializing {erd_type} system",
         tee=False,
     )
-    # display_results(m)
+    display_results(m)
 
     add_costing(m)
     m.fs.costing.initialize()
