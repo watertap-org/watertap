@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MBRZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.core.solvers import get_solver
 
@@ -50,7 +50,7 @@ class TestMBRZOdefault:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "tss",
                 "nonvolatile_toc",
@@ -243,7 +243,7 @@ class TestMBRZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "tss",
                 "nonvolatile_toc",
@@ -453,7 +453,7 @@ class TestMBRZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "tss",
                 "nonvolatile_toc",
@@ -511,7 +511,7 @@ def test_capex(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tds"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tds"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2014
@@ -566,7 +566,7 @@ def test_sec():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["tds"])
+    m.fs.params = ZOParameterBlock(solute_list=["tds"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2014
