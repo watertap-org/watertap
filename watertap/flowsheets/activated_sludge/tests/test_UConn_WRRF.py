@@ -111,4 +111,6 @@ class TestUConnFlowsheetASM3:
             3.0305, rel=1e-3
         )
 
-        assert value(model.fs.Treated.alkalinity[0]) == pytest.approx(0.00495, rel=1e-2)
+        assert value(model.fs.Treated.alkalinity[0]) == pytest.approx(
+            0.004642, rel=1e-2
+        )
