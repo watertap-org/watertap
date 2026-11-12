@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from math import isclose
+from math import isclose, ceil
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -27,6 +27,7 @@ from watertap.costing.unit_models.mixer import cost_mixer
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
+from watertap.custom_exceptions import FrozenPipes
 
 _log = idaeslog.getLogger(__name__)
 
@@ -705,7 +706,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         by="component",
         separate_flows=False,
         relative=False,
-        colormap="tab20",
+        colormap=None,
         save_as=None,
         close_fig=False,
         component_labels={},
@@ -723,7 +724,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             by: breakdown by individual "component" unit or "aggregate" unit class (default: "component")
             separate_flows: whether to separate material/energy flows from OPEX portion (default: False)
             relative: whether to plot as fraction of total LCOW (default: False)
-            colormap: colormap to use for the plot (default: "tab20")
+            colormap: colormap to use for the plot (default: None; a custom colormap of tab20b + tab20c is created)
             save_as: filename to save the plot (default: None)
             close_fig: whether to close the figure after creation (default: False)
             component_labels: dictionary mapping flowsheet unit names to custom unit names (default: {})
@@ -737,6 +738,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         import matplotlib.pyplot as plt
         from matplotlib.patches import Patch
         from matplotlib.lines import Line2D
+        import matplotlib.colors as mcolors
 
         def _add_opex(v):
             if pyo.value(v) > 0:
@@ -744,10 +746,16 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             else:
                 neg_opex[k.replace(f"{fs_name}.", "")] += pyo.value(v)
 
+        def _get_label(u):
+            if u not in component_labels:
+                return u.split(".")[-1]
+            return component_labels[u]
+
         hatch_dict = {
             "CAPEX": "",
             "OPEX": "\\\\",
         }
+        flows_hatch = ".."
 
         if self.find_component(lcow_name) is None:
             msg = f"{self.name} does not have a component named {lcow_name}."
@@ -759,8 +767,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             raise ValueError("'by' argument must be either 'component' or 'aggregate'.")
 
         lcow_actual = pyo.value(self.find_component(lcow_name))
-        lcow_pos = 0
-        lcow_neg = 0
 
         capex_comp_exprs = [
             f"{lcow_name}_{by}_direct_capex",
@@ -770,33 +776,29 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # CAPEX portion of LCOW
         capex = defaultdict(float)
 
+        # OPEX portions of LCOW
+        pos_opex = defaultdict(float)
+        neg_opex = defaultdict(float)
+        flows = defaultdict(float)
+
         # CAPEX = direct + indirect
         for ce in capex_comp_exprs:
             expr = self.find_component(ce)
             for k, v in expr.items():
                 capex[k.replace(f"{fs_name}.", "")] += pyo.value(v)
 
-        # OPEX portion of LCOW
-        pos_opex = defaultdict(float)
-        neg_opex = defaultdict(float)
-        flows = defaultdict(float)
-
         # OPEX will always include fixed OPEX,
         # but may or may not include variable OPEX depending on `separate_flows`
         for k, v in self.find_component(f"{lcow_name}_{by}_fixed_opex").items():
             _add_opex(v)
 
-        # Unique units contributing to LCOW as they appear on flowsheet
-        fs_units = set(
-            list(k.replace(f"{fs_name}.", "") for k in capex.keys())
-            + list(k.replace(f"{fs_name}.", "") for k in pos_opex.keys())
-            + list(k.replace(f"{fs_name}.", "") for k in neg_opex.keys())
-        )
+        # All unique units contributing to LCOW
+        all_units = set([k for _d in [pos_opex, neg_opex, capex] for k in _d])
 
-        # We want this list to start with units that have negative OPEX values
-        sorted_units = list(pos_opex.keys()) + [
-            u for u in capex.keys() if u not in pos_opex.keys()
-        ]
+        # NOTE: Nov. 2026: There are no WaterTAP unit models that have
+        # a variable_operating_cost that is not a flow cost.
+        # If that were to change in the future, it will break the LCOW
+        # accounting that is done here.
         if separate_flows:
             # Aggregate flows are plotted separately from variable OPEX
             for k, v in self.find_component(
@@ -805,38 +807,35 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 if k not in self.used_flows:
                     continue
                 flows[k] += pyo.value(v)
-
-            hatch_dict["Flows"] = ".."
         else:
             # Aggregate flows are included as part of variable OPEX
             for k, v in self.find_component(f"{lcow_name}_{by}_variable_opex").items():
-                if k.replace(f"{fs_name}.", "") in fs_units:
+                if k.replace(f"{fs_name}.", "") in all_units:
                     _add_opex(v)
 
-        lcow_pos = sum(
-            v for _d in [capex, pos_opex, flows] for v in _d.values() if v > 0
-        )
-        lcow_neg = sum(v for _d in [neg_opex] for v in _d.values() if v < 0)
-        # Unique components contributing to LCOW
-        unique_components = list(flows.keys()) + list(sorted_units)
+        # All unique components contributing to LCOW
+        all_components = list(flows.keys()) + list(all_units)
 
-        cmap = plt.get_cmap(colormap)
-        colors = [
-            cmap(i / len(unique_components)) for i in range(len(unique_components))
-        ]
-        color_dict = dict(zip(unique_components, colors))
+        if colormap is None:
+            # Create a custom colormap with 40 unique colors
+            cmap = plt.get_cmap("tab20b").colors + plt.get_cmap("tab20c").colors
+            cmap = mcolors.ListedColormap(cmap)
+        else:
+            cmap = plt.get_cmap(colormap)
+
+        colors = [cmap(i / len(all_components)) for i in range(len(all_components))]
+        color_dict = dict(zip(all_components, colors))
 
         # Start plotting
         fig, ax = plt.subplots()
-        x = -1  # location of bar
+        x = 0  # location of bar
         width = 0.5  # bar width
         xmin = x - width
-        xmax = x + 3 * width
+        xmax = x + width
 
         # Starting bottom needs to be at zero
         bottom = 0
         d = lcow_actual * 1e-2 if relative else 1
-        d_pos = d
 
         # Create legend
         handles = list()
@@ -844,56 +843,65 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         # For checking LCOW calculation
         lcow_check = 0
+        # Sum of negative OPEX contributions
+        lcow_neg = sum(neg_opex.values())
 
         # Starting from the bottom:
         # add negative OPEX, then flows, then positive OPEX/CAPEX for each unit
         if lcow_neg < 0:
-            d_pos = lcow_pos * 1e-2 if relative else 1
-            d_neg = -lcow_neg * 1e-2 if relative else -1
-            bottom = sum(v / -d_neg for v in neg_opex.values())
-            for k, v in neg_opex.items():
-                label = k if k not in component_labels else component_labels[k]
-                neg_o = v / -d_neg
+            _log.info(
+                "Cannot plot relative values with negative LCOW contributions; setting 'relative' to False."
+            )
+            relative = False
+            d = 1
+            # Set bottom to the sum of negative OPEX contributions
+            bottom = sum(v / d for v in neg_opex.values())
+            for u, v in neg_opex.items():
+                label = _get_label(u)
+                neg_o = v / d
                 ax.bar(
                     [x],
                     [abs(neg_o)],
                     bottom=bottom,
                     hatch=hatch_dict["OPEX"],
-                    color=color_dict[k],
+                    color=color_dict[u],
                     edgecolor="red",
                     width=width,
                     zorder=3,
                 )
                 bottom += abs(neg_o)
-                lcow_check += v / d
-                if k not in list(pos_opex.keys()) + list(capex.keys()):
-                    handles.append(Patch(facecolor=color_dict[k], edgecolor="k"))
+                lcow_check += abs(neg_o)
+
+                if u not in list(pos_opex.keys()) + list(capex.keys()):
+                    handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
                     labels.append(label)
 
         for f in flows:
-            label = f if f not in component_labels else component_labels[f]
-            v = flows[f] / d_pos
+            label = _get_label(f)
+
+            v = flows[f] / d
             ax.bar(
                 [x],
                 [v],
                 bottom=bottom,
-                hatch=hatch_dict["Flows"],
+                hatch=flows_hatch,
                 color=color_dict[f],
                 width=width,
                 edgecolor="black",
                 zorder=3,
             )
             bottom += v
-            lcow_check += flows[f] / d
+            lcow_check += v
 
-            handles.append(Patch(facecolor=color_dict[f], edgecolor="k"))
+            handles.append(
+                Patch(facecolor=color_dict[f], hatch=flows_hatch, edgecolor="k")
+            )
             labels.append(label)
 
-        for u in sorted_units:
-            o = pos_opex.get(u, 0) / d_pos
-            c = capex.get(u, 0) / d_pos
-            label = u if u not in component_labels else component_labels[u]
+        for u in all_units:
+            label = _get_label(u)
 
+            o = pos_opex.get(u, 0) / d
             ax.bar(
                 [x],
                 [o],
@@ -905,9 +913,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 zorder=3,
             )
             bottom += o
-            lcow_check += pos_opex.get(u, 0) / d
+            lcow_check += o
 
-            c = capex.get(u, 0) / d_pos
+            c = capex.get(u, 0) / d
             ax.bar(
                 [x],
                 [c],
@@ -919,16 +927,16 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 zorder=3,
             )
             bottom += c
-            lcow_check += capex.get(u, 0) / d
+            lcow_check += c
 
             handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
             labels.append(label)
 
-        # Reverse order to align with plot order (bottom to top)
+        # Reverse legend order to align with plot order (bottom to top)
         handles = handles[::-1]
         labels = labels[::-1]
 
-        # Add hatch legends
+        # Add hatch legends to top
         handles[0:0] = [
             Patch(facecolor="white", edgecolor="k", label=k, hatch=v)
             for k, v in hatch_dict.items()
@@ -944,37 +952,57 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         if lcow_neg < 0:
-            if not relative:
-                xs = [x - width * 0.75, x + width * 0.75]
-                ax.plot(
-                    xs,
-                    [lcow_check, lcow_check],
-                    marker=None,
-                    color="k",
-                    lw=3,
-                    ls=":",
+            if relative:
+                # This should not happen
+                msg = "Cannot plot relative values with negative LCOW contributions. "
+                msg += "Contact a WaterTAP developer."
+                raise FrozenPipes(msg)
+            # If there are negative LCOW contributions, the net LCOW
+            # is plotted with a yellow star
+            ax.scatter(
+                x,
+                lcow_actual,
+                marker="*",
+                color="yellow",
+                edgecolor="black",
+                zorder=100,
+                s=150,
+            )
+            handles.insert(
+                0,
+                Line2D(
+                    [0],
+                    [0],
+                    marker="*",
+                    color="white",
+                    markeredgecolor="black",
+                    markerfacecolor="yellow",
                     zorder=100,
-                )
-                handles.insert(
-                    0,
-                    Line2D(
-                        [0],
-                        [0],
-                        color="k",
-                        ls=":",
-                        lw=3,
-                        marker=None,
-                    ),
-                )
-                labels.insert(0, "Net LCOW")
-                ax.set_ylim(ax.get_ylim()[0] * 1.5, ax.get_ylim()[1])
+                    markersize=150**0.5,
+                ),
+            )
+            labels.insert(0, f"Net LCOW: {lcow_actual:.2f}")
+            ax.set_ylim(ax.get_ylim()[0] * 1.5, ax.get_ylim()[1])
             ax.hlines(0, xmin, xmax, color="k", lw=2, zorder=1)
 
-        ax.legend(handles=handles, labels=labels)
+        max_per_col = 16
+        ncols = ceil(len(labels) / max_per_col)
+
+        ax.legend(
+            handles=handles,
+            labels=labels,
+            ncols=ncols,
+            bbox_to_anchor=(1.05, 1.0),
+            loc="upper left",
+            borderaxespad=0.0,
+        )
         fig.tight_layout()
+        fig.subplots_adjust(right=0.8)
 
         if save_as is not None:
             fig.savefig(f"{save_as}.png", dpi=300, bbox_inches="tight")
+
+        _log.debug(f"Calculated LCOW: {lcow_check * d:.4f}, Actual LCOW: {lcow_actual}")
 
         if not isclose(lcow_check, lcow_actual / d, rel_tol=tol):
             print(f"Calculated LCOW: {lcow_check * d:.6f}")
@@ -985,8 +1013,10 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             raise ValueError(
                 f"Calculated LCOW and actual LCOW differ by more than tolerance ({tol})"
             )
+
         if close_fig:
             plt.close(fig)
+
         return fig, ax
 
     def plot_SEC_breakdown(
@@ -1037,11 +1067,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # Sort so plotting starts with negative contributions
         sec_comp = dict(sorted(sec_comp.items(), key=lambda i: i[1], reverse=False))
 
-        sorted_units = list(sec_comp.keys())
+        all_units = list(sec_comp.keys())
 
         cmap = plt.get_cmap(colormap)
-        colors = [cmap(i / len(sorted_units)) for i in range(len(sorted_units))]
-        color_dict = dict(zip(sorted_units, colors))
+        colors = [cmap(i / len(all_units)) for i in range(len(all_units))]
+        color_dict = dict(zip(all_units, colors))
 
         # Start plotting
         fig, ax = plt.subplots()
@@ -1058,7 +1088,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         bottom = sum(ec for ec in sec_comp.values() if ec < 0) / d * 2
         bottoms = [bottom]
 
-        for u in sorted_units:
+        for u in all_units:
             ec = sec_comp.get(u, 0) / d
 
             if u in component_labels.keys():
