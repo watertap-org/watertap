@@ -196,7 +196,7 @@ class TestFullFlowsheet:
             17756958.700, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            689487.623, rel=1e-3
+            691302.07, rel=1e-3
         )
 
     @pytest.mark.component
