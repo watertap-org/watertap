@@ -337,7 +337,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating electricity intensity
             name (optional) - the name of the Expression for the specific
-                              electrical intensity (default: specific_electrical_carbon_intensity)
+                              electrical intensity (default: electrical_intensity)
         """
         self.add_specific_energy_consumption(flow_rate, name=name)
 
