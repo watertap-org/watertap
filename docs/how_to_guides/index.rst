@@ -23,6 +23,7 @@ How To Guides
    how_to_use_debugging_solver_wrapper
    how_to_use_property_test_harness
    how_to_use_ui_api
+   how_to_test_custom_flowsheets_in_waterap_ui
    how_to_use_unit_test_harness
    how_to_contribute_development
    notebooks
