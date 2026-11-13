@@ -89,14 +89,6 @@ def main(erd_type="pressure_exchanger", RO_1D=False, **kwargs):
 
     scale_model(m)
 
-    import idaes.core.util.scaling as iscale
-
-    # Custom scaling visualization tools
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   Badly Scaled Vars   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     initialize_system(m)
