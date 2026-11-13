@@ -88,6 +88,15 @@ def main(erd_type="pressure_exchanger", RO_1D=False, **kwargs):
     )
 
     scale_model(m)
+
+    import idaes.core.util.scaling as iscale
+
+    # Custom scaling visualization tools
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   Badly Scaled Vars   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     initialize_system(m)
@@ -332,7 +341,7 @@ def scale_model(m):
 
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp",
-        1 / value(m.flow_mass_water),
+        100 / value(m.flow_mass_water),
         index=("Liq", "H2O"),
     )
     m.fs.properties.set_default_scaling(
@@ -347,8 +356,8 @@ def scale_model(m):
     )
 
     iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(desal.RO.area, 1e-4)
-    iscale.set_scaling_factor(desal.RO.width, 1e-3)
+    iscale.set_scaling_factor(desal.RO.area, 1)
+    iscale.set_scaling_factor(desal.RO.width, 1)
 
     if m.erd_type == "pressure_exchanger":
         iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
