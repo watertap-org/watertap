@@ -137,7 +137,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --release 4.0.0rc3 --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --verbose
         echo '::endgroup::'
     - name: Environment summary
       uses: ./.github/actions/environment-summary
@@ -259,7 +259,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --release 4.0.0rc3 --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --verbose
         echo '::endgroup::'
     - name: Run pytest
       run: |
@@ -308,7 +308,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --release 4.0.0rc3 --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --verbose
         echo '::endgroup::'
     - name: Install Jupyter kernel
       run: |
