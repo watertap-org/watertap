@@ -40,9 +40,9 @@ version = "1.9.0.dev0"
 
 dependencies = [
     # primary requirements for unit and property models
-    # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
-    # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-    "idaes-pse>=2.13.0",
+    # Temporary: exercise the IDAES extensions 4.x changes from PR #1768.
+    # Replace this URL with a released version constraint before publishing.
+    "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head",
     "pyomo >=6.9.5",
     "watertap-solvers",
     "pyyaml",            # watertap.core.wt_database

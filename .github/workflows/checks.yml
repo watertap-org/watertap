@@ -99,7 +99,7 @@ jobs:
           # - macos
         include:
           - os: linux
-            os-version: ubuntu-24.04
+            os-version: ubuntu-latest
           - os: win64
             os-version: windows-2022
           # - os: macos
@@ -126,7 +126,7 @@ jobs:
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         # Install WaterTAP + dev dependencies from pyproject.toml
-        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
+        pip install -e ".[dev]"
         echo '::endgroup::'
         echo '::group::Output of "conda install -c conda-forge reaktoro cyipopt" command'
         conda install -c conda-forge reaktoro cyipopt
@@ -214,7 +214,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-24.04
+            os-version: ubuntu-latest
           - os: win64
             os-version: windows-2022
     steps:
@@ -256,7 +256,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install "watertap @ ${_install_url}" pytest "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
+        pip install "watertap @ ${_install_url}" pytest
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -290,7 +290,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-24.04
+            os-version: ubuntu-latest
           - os: win64
             os-version: windows-2022
     steps:
@@ -310,7 +310,7 @@ jobs:
         conda install --quiet --yes pip setuptools wheel pandoc reaktoro
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        pip install -e ".[dev]" "idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1768/head"
+        pip install -e ".[dev]"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
