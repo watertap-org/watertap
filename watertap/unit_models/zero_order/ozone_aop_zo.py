@@ -58,18 +58,14 @@ class OzoneAOPZOData(OzoneZOData, AOPAdditionMixin):
         @self.Constraint(doc="Ozone/TOC ratio constraint")
         def ozone_toc_ratio_constraint(b):
             return b.ozone_toc_ratio == 1 + pyunits.convert(
-                b.concentration_time
-                / b.contact_time
-                / b.properties_in[0].conc_mass_comp["toc"],
+                b.concentration_time / b.contact_time / b._inlet_conc_toc,
                 to_units=pyunits.dimensionless,
             )
 
         @self.Constraint(doc="Oxidant dose constraint")
         def oxidant_dose_constraint(b):
             return b.oxidant_dose == pyunits.convert(
-                b.oxidant_ozone_ratio
-                * b.ozone_toc_ratio
-                * b.properties_in[0].conc_mass_comp["toc"],
+                b.oxidant_ozone_ratio * b.ozone_toc_ratio * b._inlet_conc_toc,
                 to_units=pyunits.mg / pyunits.L,
             )
 

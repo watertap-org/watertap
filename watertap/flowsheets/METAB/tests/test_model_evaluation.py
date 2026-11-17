@@ -112,12 +112,13 @@ def test_get_eff_fr_w_existing_df(mock_case):
     df = get_eff_fr(case=mock_case)
     df = get_eff_fr(case=mock_case, df=df)
     assert df.shape == (2, 3)
+    assert (df.dtypes == "float64").all()
     assert df.iloc[0]["H2O"] == 100.0
     assert df.iloc[0]["CO2"] == 25.0
     assert df.iloc[0]["CH4"] == 50.0
-    assert df.iloc[1]["H2O"] == [100.0]
-    assert df.iloc[1]["CO2"] == [25.0]
-    assert df.iloc[1]["CH4"] == [50.0]
+    assert df.iloc[1]["H2O"] == 100.0
+    assert df.iloc[1]["CO2"] == 25.0
+    assert df.iloc[1]["CH4"] == 50.0
 
 
 def test_get_ch4_fr_no_case(capsys):
@@ -141,12 +142,13 @@ def test_get_ch4_fr_w_existing_df(mock_case):
     df = get_ch4_fr(case=mock_case)
     df = get_ch4_fr(case=mock_case, df=df)
     assert df.shape == (2, 3)
+    assert (df.dtypes == "float64").all()
     assert df.iloc[0]["H2O"] == 10.0
     assert df.iloc[0]["CH4"] == 75.0
     assert df.iloc[0]["CO2"] == 15.0
-    assert df.iloc[1]["H2O"] == [10.0]
-    assert df.iloc[1]["CH4"] == [75.0]
-    assert df.iloc[1]["CO2"] == [15.0]
+    assert df.iloc[1]["H2O"] == 10.0
+    assert df.iloc[1]["CH4"] == 75.0
+    assert df.iloc[1]["CO2"] == 15.0
 
 
 def test_get_h2_fr_no_case(capsys):
@@ -170,12 +172,13 @@ def test_get_h2_fr_w_existing_df(mock_case):
     df = get_h2_fr(case=mock_case)
     df = get_h2_fr(case=mock_case, df=df)
     assert df.shape == (2, 3)
+    assert (df.dtypes == "float64").all()
     assert df.iloc[0]["H2O"] == 1.0
     assert df.iloc[0]["CH4"] == 20.0
     assert df.iloc[0]["CO2"] == 10.0
-    assert df.iloc[1]["H2O"] == [1.0]
-    assert df.iloc[1]["CH4"] == [20.0]
-    assert df.iloc[1]["CO2"] == [10.0]
+    assert df.iloc[1]["H2O"] == 1.0
+    assert df.iloc[1]["CH4"] == 20.0
+    assert df.iloc[1]["CO2"] == 10.0
 
 
 def test_get_r1_ex_biogas_fr_no_case(capsys):
@@ -199,12 +202,13 @@ def test_get_r1_ex_biogas_fr_w_existing_df(mock_case):
     df = get_r1_ex_biogas_fr(case=mock_case)
     df = get_r1_ex_biogas_fr(case=mock_case, df=df)
     assert df.shape == (2, 3)
+    assert (df.dtypes == "float64").all()
     assert df.iloc[0]["H2O"] == 200.0
     assert df.iloc[0]["CH4"] == 80.0
     assert df.iloc[0]["CO2"] == 40.0
-    assert df.iloc[1]["H2O"] == [200.0]
-    assert df.iloc[1]["CH4"] == [80.0]
-    assert df.iloc[1]["CO2"] == [40.0]
+    assert df.iloc[1]["H2O"] == 200.0
+    assert df.iloc[1]["CH4"] == 80.0
+    assert df.iloc[1]["CO2"] == 40.0
 
 
 @pytest.fixture
@@ -242,8 +246,9 @@ def test_get_mass_flowrate_w_existing_df(mock_stream):
     df = get_mass_flowrate(stream=mock_stream)
     df = get_mass_flowrate(stream=mock_stream, df=df)
     assert df.shape == (2, 4)
-    assert df.iloc[1]["H2O"] == [100.0]
-    assert df.iloc[1]["Volumetric Flowrate"] == [10.0]
+    assert (df.dtypes == "float64").all()
+    assert df.iloc[1]["H2O"] == 100.0
+    assert df.iloc[1]["Volumetric Flowrate"] == 10.0
 
 
 @pytest.fixture
