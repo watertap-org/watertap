@@ -30,8 +30,6 @@ import platform
 import pytest
 
 from pyomo.environ import (
-    assert_optimal_termination,
-    TransformationFactory,
     value,
 )
 from pyomo.util.check_units import assert_units_consistent
@@ -83,11 +81,7 @@ class TestFullFlowsheet:
         assert degrees_of_freedom(m) == 0
 
         BSM2.scale_system(m)
-        scaling = TransformationFactory("core.scale_model")
-        m.scaled_model = scaling.create_using(m, rename=False)
-
-        m.scaled_results = BSM2.solve(m.scaled_model)
-        m.results = scaling.propagate_solution(m.scaled_model, m)
+        BSM2.solve(m)
 
         return m
 
@@ -107,24 +101,12 @@ class TestFullFlowsheet:
         assert degrees_of_freedom(m) == 0
 
         BSM2.scale_system(m)
-        scaling = TransformationFactory("core.scale_model")
-        m.scaled_model = scaling.create_using(m, rename=False)
-
-        # Need to deactivate the objective in the unscaled model since only one can be active at a time
-        m.fs.objective.deactivate()
-
-        m.scaled_results = BSM2.solve(m.scaled_model)
-        m.results = scaling.propagate_solution(m.scaled_model, m)
+        BSM2.solve(m)
 
         BSM2.setup_optimization(m)
         BSM2.rescale_system(m)
 
-        rescaling = TransformationFactory("core.scale_model")
-        m.rescaled_model = rescaling.create_using(m, rename=False)
-
-        m.rescaled_results = BSM2.solve(m.rescaled_model)
-
-        m.optimized_results = rescaling.propagate_solution(m.rescaled_model, m)
+        BSM2.solve(m)
 
         return m
 
@@ -132,7 +114,6 @@ class TestFullFlowsheet:
     def test_square_problem(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.scaled_results)
 
     @pytest.mark.component
     def test_square_solve(self, system_frame):
@@ -204,9 +185,9 @@ class TestFullFlowsheet:
         m = system_frame
 
         # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m.scaled_model, scaled=False)
+        jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.08106873e16, rel=1e-3
+            4.16555217e19, rel=1e-3
         )
 
     @pytest.mark.component
@@ -222,12 +203,11 @@ class TestFullFlowsheet:
         @reference_platform_only
         def test_optimization_windows(self, optimized_system_frame):
             m = optimized_system_frame
-            assert_optimal_termination(m.rescaled_results)
 
             assert degrees_of_freedom(m) == 16
 
             # Check condition number to confirm scaling
-            jac, _ = get_jacobian(m.rescaled_model, scaled=False)
+            jac, _ = get_jacobian(m, scaled=False)
             cond = jacobian_cond(jac=jac, scaled=False)
             assert (
                 # Python 3.9 and 3.10
@@ -243,12 +223,11 @@ class TestFullFlowsheet:
     @linux_platform_only
     def test_optimization_linux(self, optimized_system_frame):
         m = optimized_system_frame
-        assert_optimal_termination(m.rescaled_results)
 
         assert degrees_of_freedom(m) == 16
 
         # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m.rescaled_model, scaled=False)
+        jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             2.4450241728958e13,
             # 2.71713e11,

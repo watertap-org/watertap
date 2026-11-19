@@ -295,12 +295,9 @@ class ADScaler(CustomScalerBase):
 class ADInitializationMethod(Enum):
     # Original routine: simplified-chemistry solve from the default guess.
     standard = 0
-    # Healthy-root routine for the standard ADM1 property package (BSM2).
-    healthy_root_adm1 = 1
-    # Healthy-root routine for the modified ADM1 property package (BSM2-P).
-    healthy_root_modified_adm1 = 2
-    # Picks one of the two healthy-root routines from the liquid property package.
-    healthy_root_auto = 3
+    # Healthy-root routine. Selects the ADM1 (BSM2) or modified ADM1 (BSM2-P)
+    # variant automatically from the liquid property package.
+    healthy_root_auto = 1
 
 
 def _methanogen_reaction_keys(reaction_package):
@@ -544,20 +541,16 @@ see reaction package for documentation.}""",
             description="Initialization strategy for the digester",
             doc="""The ADM1 digester has a washout root (no methanogen biomass,
 no CH4) and a methane-producing ("healthy") root, and a cold solve can land on
-the washout root. The healthy-root methods seed the methanogen biomass so the
+the washout root. The healthy-root method seeds the methanogen biomass so the
 solve lands on the healthy root.
 **default** - ADInitializationMethod.standard.
 **Valid values:** {
 **ADInitializationMethod.standard** - original routine, no seeding,
-**ADInitializationMethod.healthy_root_adm1** - healthy-root routine for the
-standard ADM1 package (full seed, two-stage solve with methanogen pH inhibition
-relaxed first),
-**ADInitializationMethod.healthy_root_modified_adm1** - healthy-root routine for
-the modified ADM1 package (reduced seed, simplified-chemistry solve followed by
-a full-equation solve),
-**ADInitializationMethod.healthy_root_auto** - choose between the two healthy-root
-routines from the liquid property package (modified ADM1 if S_IP is a component,
-otherwise ADM1).}""",
+**ADInitializationMethod.healthy_root_auto** - healthy-root routine, with the
+variant chosen from the liquid property package. If S_IP is a component, the
+modified ADM1 variant is used (reduced seed, simplified-chemistry solve followed
+by a full-equation solve); otherwise the standard ADM1 variant is used (full
+seed, two-stage solve with methanogen pH inhibition relaxed first).}""",
         ),
     )
 
@@ -1256,7 +1249,9 @@ otherwise ADM1).}""",
         healthy_seed=None,
     ):
         """
-        Shared function for the ADM1 and modified-ADM1 healthy-root routines.
+        Simplified-chemistry initialization routine. Used as-is for the
+        ``standard`` method, and with ``healthy_seed`` for the modified-ADM1
+        variant of ``healthy_root_auto``.
 
         Keyword Arguments:
             liquid_state_args : a dict of arguments to be passed to the
@@ -1392,14 +1387,6 @@ otherwise ADM1).}""",
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
 
-    def _resolve_initialization_method(self):
-        method = self.config.initialization_method
-        if method is ADInitializationMethod.healthy_root_auto:
-            if "S_IP" in self.config.liquid_property_package.component_list:
-                return ADInitializationMethod.healthy_root_modified_adm1
-            return ADInitializationMethod.healthy_root_adm1
-        return method
-
     @contextmanager
     def _fixed_inlet(self):
         fixed = []
@@ -1524,11 +1511,19 @@ otherwise ADM1).}""",
         Returns:
             None
         """
-        method = self._resolve_initialization_method()
-
-        if method is ADInitializationMethod.healthy_root_adm1:
+        if self.config.initialization_method is ADInitializationMethod.standard:
+            self._initialize_standard(
+                liquid_state_args=liquid_state_args,
+                vapor_state_args=vapor_state_args,
+                outlvl=outlvl,
+                solver=solver,
+                optarg=optarg,
+            )
+        elif "S_IP" not in self.config.liquid_property_package.component_list:
+            # healthy_root_auto, standard ADM1 package (e.g. BSM2)
             self._initialize_healthy_root_adm1(outlvl, solver, optarg)
-        elif method is ADInitializationMethod.healthy_root_modified_adm1:
+        else:
+            # healthy_root_auto, modified ADM1 package (e.g. BSM2-P)
             with self._fixed_inlet():
                 self._initialize_standard(
                     liquid_state_args=liquid_state_args,
@@ -1540,14 +1535,6 @@ otherwise ADM1).}""",
                 )
             self._warn_if_washed_out(
                 idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-            )
-        else:
-            self._initialize_standard(
-                liquid_state_args=liquid_state_args,
-                vapor_state_args=vapor_state_args,
-                outlvl=outlvl,
-                solver=solver,
-                optarg=optarg,
             )
 
     @property
