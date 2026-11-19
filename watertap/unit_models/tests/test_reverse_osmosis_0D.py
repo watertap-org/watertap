@@ -920,24 +920,76 @@ def build_friction_factor_spiral_wound():
     return m
 
 
+def build_friction_factor_flat_sheet():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = props.NaClParameterBlock()
+
+    m.fs.unit = ReverseOsmosis0D(
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
+        module_type=ModuleType.flat_sheet,
+    )
+
+    # fully specify system
+    feed_flow_mass = 1 / 3.6
+    feed_mass_frac_NaCl = 0.035
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    feed_pressure = 70e5
+    feed_temperature = 273.15 + 25
+    membrane_area = 19
+    A = 4.2e-12
+    B = 3.5e-8
+    pressure_atmospheric = 101325
+
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl
+    )
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        feed_flow_mass * feed_mass_frac_H2O
+    )
+    m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+    m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.A_comp.fix(A)
+    m.fs.unit.B_comp.fix(B)
+    m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+    m.fs.unit.feed_side.channel_height.fix(0.001)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+    m.fs.unit.length.fix(16)
+
+    # Set scaling factors for badly scaled variables
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    )
+    iscale.calculate_scaling_factors(m.fs.unit)
+
+    return m
+
+
 class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
     def configure(self):
         m = build_friction_factor_spiral_wound()
 
-        self.unit_solutions[m.fs.unit.deltaP[0]] = -4.68073933e5
+        self.unit_solutions[m.fs.unit.deltaP[0]] = -5.63642e5
         self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 0]] = 791.6814859
         self.unit_solutions[m.fs.unit.feed_side.velocity[0, 0]] = 0.472172596
-        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1]] = 374.5383911
-        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1]] = 0.2329687
+        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1]] = 343.34807
+        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1]] = 0.21495119
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
-            0.0072232991
+            0.00776820127325
         )
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
             2.11255771e-6
         )
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        ] = 0.13724268
+        ] = 0.1475958
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 4.01385965e-5
@@ -945,15 +997,15 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
             m.fs.unit.feed_side.properties_interface[0, 0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 47.435640
+        ] = 41.658467
         self.unit_solutions[
             m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 72.1598903
+        ] = 78.2211840
         self.unit_solutions[
             m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 75.1415897247
+        ] = 79.07775795
 
         comp_lst = ["NaCl", "H2O"]
 
@@ -995,6 +1047,29 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         return m
+
+
+@pytest.mark.requires_idaes_solver
+@pytest.mark.unit
+def test_module_type_updates_friction_factor_and_N_Sh():
+    m_flat_sheet = build_friction_factor_flat_sheet()
+    m_spiral = build_friction_factor_spiral_wound()
+
+    solver = get_solver()
+
+    results_flat = solver.solve(m_flat_sheet, tee=True)
+    assert_optimal_termination(results_flat)
+
+    results_spiral = solver.solve(m_spiral, tee=True)
+    assert_optimal_termination(results_spiral)
+
+    # Compare friction factor and N_Sh between flat plate and spiral wound modules
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_friction_factor[0, 0].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_friction_factor[0, 0].expr
+    )
+    assert str(m_flat_sheet.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr) != str(
+        m_spiral.fs.unit.feed_side.eq_N_Sh_comp[0, 0, "NaCl"].expr
+    )
 
 
 @pytest.mark.requires_idaes_solver
@@ -1270,6 +1345,8 @@ def test_RO_with_MCAS_NaCl_CaSO4():
     m.fs.unit.rejection_phase_comp[0, "Liq", "Ca_2+"].fix(0.98)
     m.fs.unit.rejection_phase_comp[0, "Liq", "SO4_2-"].fix(0.98)
 
+    # Reducing flux lower bound to 0 to avoid infeasible solutions
+    m.fs.unit.flux_mass_phase_comp.setlb(0)
     for r in np.linspace(0.9, 0.99, 10):
         m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)
         results = solver.solve(m, tee=True)
