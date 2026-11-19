@@ -611,7 +611,7 @@ class MembraneChannelMixin:
             )
 
         if module_type == ModuleType.flat_sheet:
-
+            # Sherwood number correlation based on eq. 10 in Modeling the impacts of feed spacer geometry on reverse osmosis and nanofiltration processes (Guillen and Hoek, 2009)
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.length_domain,
