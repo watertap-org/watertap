@@ -34,7 +34,7 @@ from idaes.core.util.exceptions import ConfigurationError
 
 from watertap.unit_models.zero_order import ChemicalAdditionZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.core.solvers import get_solver
 
@@ -47,7 +47,7 @@ def test_no_subtype():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     with pytest.raises(
         ConfigurationError,
@@ -66,7 +66,7 @@ class TestChemicalAdditionZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.unit = ChemicalAdditionZO(
             property_package=m.fs.params, database=m.db, process_subtype="default"
@@ -157,7 +157,7 @@ class TestChemicalAdditionZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         return m
 
@@ -234,7 +234,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["tss"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2007

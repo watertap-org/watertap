@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for general zero-order proeprty package
+Tests for general zero-order property package
 """
 
 import pytest
@@ -35,7 +35,27 @@ import idaes.logger as idaeslog
 from pyomo.environ import ConcreteModel, Expression, Param, Set, units as pyunits, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
-from watertap.core import Database, WaterParameterBlock, WaterStateBlock
+from watertap.core import Database
+from watertap.property_models import ZOParameterBlock, ZOStateBlock
+
+
+@pytest.mark.unit
+class TestZODeprecation:
+    """
+    Test that the deprecated WaterParameterBlock and WaterStateBlock are still available.
+    """
+
+    def test_zo_param_block_deprecation(self):
+        from watertap.property_models import ZOParameterBlock
+        from watertap.core import WaterParameterBlock as DeprecatedZOParameterBlock
+
+        assert ZOParameterBlock is DeprecatedZOParameterBlock
+
+    def test_zo_state_block_deprecation(self):
+        from watertap.property_models import ZOStateBlock
+        from watertap.core import WaterStateBlock as DeprecatedZOStateBlock
+
+        assert ZOStateBlock is DeprecatedZOStateBlock
 
 
 @pytest.fixture(scope="module")
@@ -44,7 +64,7 @@ def model():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+    m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
     return m
 
@@ -65,14 +85,14 @@ def test_parameter_block(model):
     for j in model.fs.water_props.phase_list:
         assert j in ["Liq"]
 
-    assert model.fs.water_props._state_block_class is WaterStateBlock
+    assert model.fs.water_props._state_block_class is ZOStateBlock
 
 
 @pytest.mark.unit
 def test_build_state_block(model):
     model.fs.state = model.fs.water_props.build_state_block([0])
 
-    assert isinstance(model.fs.state, WaterStateBlock)
+    assert isinstance(model.fs.state, ZOStateBlock)
 
     assert model.fs.state.component_list is model.fs.water_props.component_list
     assert model.fs.state[0].component_list is model.fs.water_props.component_list
@@ -230,7 +250,7 @@ def test_no_solute_list_defined():
         "defined. Users must provide at least one of these "
         "arguments.",
     ):
-        m.fs.water_props = WaterParameterBlock()
+        m.fs.water_props = ZOParameterBlock()
 
 
 @pytest.mark.component
@@ -241,7 +261,7 @@ def test_solute_list_from_database():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.water_props = WaterParameterBlock(database=db)
+    m.fs.water_props = ZOParameterBlock(database=db)
 
     assert m.fs.water_props.solute_set == db.get_solute_set()
 
@@ -258,7 +278,7 @@ def test_solute_list_with_database(caplog):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "tds"], database=db)
+    m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "tds"], database=db)
 
     assert (
         "fs.water_props component A is not defined in the water_sources "
