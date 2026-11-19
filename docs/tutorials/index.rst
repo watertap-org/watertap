@@ -4,10 +4,9 @@ Tutorials
 Browsing the tutorials
 ----------------------
 
-The tutorials included with WaterTAP are available in the "tutorials" directory
-of the WaterTAP GitHub repository: `<https://github.com/watertap-org/watertap/tree/main/tutorials/>`_.
+The tutorials included with WaterTAP are available in the `tutorials <https://github.com/watertap-org/watertap/tree/main/tutorials/>`_ directory of the WaterTAP GitHub repository.
 
-To view a static version of the notebooks online, you can use the following link: `<https://nbviewer.org/github/watertap-org/watertap/blob/main/tutorials/00-index.ipynb>`_.
+A static version of the notebooks is available online `here <https://nbviewer.org/github/watertap-org/watertap/blob/main/tutorials/00-index.ipynb>`_.
 
 Running the notebooks
 ---------------------
@@ -22,6 +21,18 @@ Running the notebooks
 
     |Binder launch button|
 
+WaterTAP Academy
+----------------
+WaterTAP Academy is an initiative through NAWI to provide a structured and interactive set of learning resources for new WaterTAP users. It includes guided lessons and exercises that 
+help users build a solid foundation in using WaterTAP effectively. 
+
+| **Resources for previous years WaterTAP Academy sessions are available on GitHub. Refer to the ReadMe for installation details.**
+| `WaterTAP Academy 2025 resources <https://github.com/watertap-org/watertap_academy_fall_2025>`_
+
+| **Recordings from previous years WaterTAP Academy sessions can be found on the NAWI YouTube channel.**
+| `WaterTAP Academy 2025 recordings <https://www.youtube.com/@NAWIhub>`_
+ 
+    
 Additional resources
 --------------------
 

@@ -10,7 +10,7 @@ The example script shown below is for the dual media filtration zero-order model
     from watertap.core.solvers import get_solver
 
     from watertap.core.wt_database import Database
-    from watertap.core.zero_order_properties import WaterParameterBlock
+    from watertap.property_models import ZOParameterBlock
     from watertap.unit_models.zero_order import DualMediaFiltrationZO
 
 
@@ -22,7 +22,7 @@ The example script shown below is for the dual media filtration zero-order model
 
         # Create an IDAES flowsheet and define the solutes
         model.fs = FlowsheetBlock(dynamic=False)
-        model.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "toc", "tss"])
+        model.fs.params = ZOParameterBlock(solute_list=["nonvolatile_toc", "toc", "tss"])
 
         # Setup the zero-order model and define inlet flows
         model.fs.unit = DualMediaFiltrationZO(
