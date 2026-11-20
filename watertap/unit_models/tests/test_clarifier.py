@@ -355,18 +355,18 @@ class TestClarifierScaler:
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         # Scaling factors for FTP
         assert isinstance(sfx_in, Suffix)
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_underflow) == 3
+        assert len(sfx_underflow) == 16
 
         sfx_effluent = model.fs.unit.effluent_state[0].scaling_factor
         assert isinstance(sfx_effluent, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_effluent) == 3
+        assert len(sfx_effluent) == 16
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
@@ -399,18 +399,18 @@ class TestClarifierScaler:
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 16
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_underflow) == 3
+        assert len(sfx_underflow) == 16
 
         sfx_effluent = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_effluent, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_effluent) == 3
+        assert len(sfx_effluent) == 16
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor

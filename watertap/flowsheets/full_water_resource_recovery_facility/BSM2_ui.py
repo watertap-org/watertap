@@ -13,7 +13,7 @@
 GUI configuration for the base BSM2 flowsheet.
 """
 
-from pyomo.environ import units as pyunits, TransformationFactory
+from pyomo.environ import units as pyunits
 
 from idaes_flowsheet_processor.api import FlowsheetInterface
 
@@ -25,6 +25,7 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import (
     scale_system,
     solve,
     setup_optimization,
+    rescale_system,
 )
 
 
@@ -3064,13 +3065,11 @@ def build_flowsheet(build_options=None, **kwargs):
 
     # Handle scaling transformations
     scale_system(m)
-    scaling = TransformationFactory("core.scale_model")
-    scaled_model = scaling.create_using(m, rename=False)
-    solve(scaled_model)
-    scaling.propagate_solution(scaled_model, m)
+    solve(m)
 
     # Set up optimization with additional scaling
     setup_optimization(m, reactor_volume_equalities=True)
+    rescale_system(m)
 
     return m
 

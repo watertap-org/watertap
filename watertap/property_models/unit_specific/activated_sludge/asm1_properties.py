@@ -203,12 +203,14 @@ class ASM1PropertiesScaler(CustomScalerBase):
 
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-6),
+        "pressure": (pyo.units.Pa, 1e-6),
     }
 
     DEFAULT_SCALING_FACTORS = {
         "flow_vol": 1e1,
         "temperature": 1e-1,
+        "conc_mass_comp": 1e3,
+        "alkalinity": 1e3,
     }
 
     def variable_scaling_routine(
@@ -216,7 +218,10 @@ class ASM1PropertiesScaler(CustomScalerBase):
     ):
         self.scale_variable_by_default(model.temperature, overwrite=overwrite)
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_default(model.alkalinity, overwrite=overwrite)
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for idx, var in model.conc_mass_comp.items():
+            self.scale_variable_by_default(var, overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(
