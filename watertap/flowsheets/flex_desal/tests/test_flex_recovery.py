@@ -10,16 +10,15 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import os
-
-import pyomo.environ as pyo
 import pytest
 import pandas as pd
+import pyomo.environ as pyo
 
 from idaes.apps.grid_integration import PriceTakerModel
 
-from watertap.flowsheets.flex_desal import flowsheet as fs
-from watertap.flowsheets.flex_desal import utils
-from watertap.flowsheets.flex_desal.params import FlexDesalParams
+from watertap.flowsheets.flex_desal import flex_recovery_flowsheet as fs
+from watertap.flowsheets.flex_desal import flex_recovery_utils
+from watertap.flowsheets.flex_desal.flex_recovery_params import FlexDesalParams
 from watertap.core.solvers import get_solver
 
 solver = get_solver()
@@ -32,7 +31,6 @@ class TestPriceTakerWorkflow:
     def system_frame(cls):
         price_data_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "..",
             "sbce_pricesignal.csv",
         )
         price_data = pd.read_csv(price_data_path)
@@ -205,12 +203,12 @@ class TestPriceTakerWorkflow:
 
         # If water recovery is static, it must be fixed
         if not m.params.ro.allow_variable_recovery:
-            utils.fix_recovery(m, recovery=m.params.ro.nominal_recovery)
+            flex_recovery_utils.fix_recovery(m, recovery=m.params.ro.nominal_recovery)
 
     @pytest.mark.unit
     def test_update_recovery_bounds(self, system_frame):
         m, price_data = system_frame
-        utils.update_recovery_bounds(m, lb=0.4, ub=0.5)
+        flex_recovery_utils.update_recovery_bounds(m, lb=0.4, ub=0.5)
 
     # NOTE: get_baseline_model function uses Pyomo's clone method
     # For some reason, the clone method is taking too long to create
@@ -236,7 +234,7 @@ class TestPriceTakerWorkflow:
     def test_gurobi_util_solve(self, system_frame):
         m, price_data = system_frame
 
-        solver = utils.get_gurobi_solver_model(m)
+        solver = flex_recovery_utils.get_gurobi_solver_model(m)
         solver.solve(m)
 
     # @pytest.mark.component
@@ -265,7 +263,6 @@ class TestPriceTakerWorkflow:
 def test_onsite_solar_and_battery():
     price_data_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "..",
         "sbce_pricesignal.csv",
     )
     price_data = pd.read_csv(price_data_path)
