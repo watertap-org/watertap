@@ -116,11 +116,11 @@ jobs:
       - name: Install OS deps for ipopt
         run: |
           sudo apt-get update
-          sudo apt-get install -y liblapack3 libblas3 libgfortran5
+          sudo apt-get install -y libgfortran5 libgomp1 liblapack3 libblas3
       - name: Run tests
         working-directory: /tmp
         run: |
-          idaes get-extensions --extra petsc --verbose
+          idaes get-extensions --verbose
           pip install pytest
           pytest --pyargs watertap -x -vv
   upload-test-pypi:
@@ -165,10 +165,10 @@ jobs:
       - name: Install OS deps for ipopt
         run: |
           sudo apt-get update
-          sudo apt-get install -y liblapack3 libblas3 libgfortran5
+          sudo apt-get install -y libgfortran5 libgomp1 liblapack3 libblas3
       - name: Run tests
         run: |
-          idaes get-extensions --extra petsc --verbose
+          idaes get-extensions --verbose
           pip install pytest
           pytest --pyargs watertap -x -vv
   upload-pypi:

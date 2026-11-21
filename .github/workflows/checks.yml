@@ -99,7 +99,7 @@ jobs:
           # - macos
         include:
           - os: linux
-            os-version: ubuntu-22.04
+            os-version: ubuntu-latest
           - os: win64
             os-version: windows-2022
           # - os: macos
@@ -137,8 +137,13 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --verbose
         echo '::endgroup::'
+    - name: Install OS dependencies for IDAES extensions
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgfortran5 libgomp1 liblapack3 libblas3
     - name: Environment summary
       uses: ./.github/actions/environment-summary
       with:
@@ -209,7 +214,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-22.04
+            os-version: ubuntu-latest
           - os: win64
             os-version: windows-2022
     steps:
@@ -259,8 +264,13 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --verbose
         echo '::endgroup::'
+    - name: Install OS dependencies for IDAES extensions
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgfortran5 libgomp1 liblapack3 libblas3
     - name: Run pytest
       run: |
         pytest --pyargs watertap
@@ -280,7 +290,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-22.04
+            os-version: ubuntu-latest
           - os: win64
             os-version: windows-2022
     steps:
@@ -308,8 +318,13 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions --release 4.0.0rc3 --verbose
         echo '::endgroup::'
+    - name: Install OS dependencies for IDAES extensions
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgfortran5 libgomp1 liblapack3 libblas3
     - name: Install Jupyter kernel
       run: |
         jupyter kernelspec list
