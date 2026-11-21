@@ -42,8 +42,7 @@ class TestGACCosting:
     def test_robust_costing_pressure(self, build):
         m = build
 
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
+        m.fs.costing = WaterTAPCosting(base_currency_year=2020)
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -77,8 +76,7 @@ class TestGACCosting:
     def test_robust_costing_gravity(self, build):
         mr_grav = build
 
-        mr_grav.fs.costing = WaterTAPCosting()
-        mr_grav.fs.costing.base_currency = pyo.units.USD_2020
+        mr_grav.fs.costing = WaterTAPCosting(base_currency_year=2020)
 
         mr_grav.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mr_grav.fs.costing,
@@ -115,8 +113,7 @@ class TestGACCosting:
     def test_robust_costing_modular_contactors(self, build):
         m = build
 
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
+        m.fs.costing = WaterTAPCosting(base_currency_year=2020)
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -143,8 +140,7 @@ class TestGACCosting:
         unit_feed.flow_mol_phase_comp["Liq", "H2O"].fix(10 * 824.0736620370348)
         unit_feed.flow_mol_phase_comp["Liq", "TCE"].fix(10 * 5.644342973110135e-05)
 
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
+        m.fs.costing = WaterTAPCosting(base_currency_year=2020)
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()

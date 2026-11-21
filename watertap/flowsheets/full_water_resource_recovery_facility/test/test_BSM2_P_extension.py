@@ -141,7 +141,7 @@ class TestFullFlowsheetBioPFalse:
             24184640.909, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            928717.352, rel=1e-3
+            931068.79, rel=1e-3
         )
 
     @pytest.mark.solver
@@ -260,7 +260,7 @@ class TestFullFlowsheetBioPTrue:
             24003751.225, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            922338.478, rel=1e-3
+            924678.89, rel=1e-3
         )
 
     @pytest.mark.solver

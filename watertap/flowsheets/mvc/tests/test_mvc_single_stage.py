@@ -293,7 +293,7 @@ class TestMVC:
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
             22.02, rel=1e-2
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(23.47, rel=1e-2)
+        assert value(m.fs.costing.LCOW) == pytest.approx(23.232, rel=1e-2)
 
         # Check mass balance
         assert pytest.approx(
