@@ -1673,6 +1673,33 @@ def test_flow_mass_basis():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "basis, conc_name, conc_units",
+    [
+        (MaterialFlowBasis.molar, "conc_mol_phase_comp", pyunits.mol / pyunits.m**3),
+        (MaterialFlowBasis.mass, "conc_mass_phase_comp", pyunits.kg / pyunits.m**3),
+    ],
+)
+def test_get_material_density_terms(basis, conc_name, conc_units):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["A"],
+        material_flow_basis=basis,
+        mw_data={"A": 1},
+        charge={"A": 0},
+    )
+    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+
+    assert not m.fs.sb[0].is_property_constructed(conc_name)
+    for j in ["H2O", "A"]:
+        term = m.fs.sb[0].get_material_density_terms("Liq", j)
+        assert term is getattr(m.fs.sb[0], conc_name)["Liq", j]
+        assert_units_equivalent(term, conc_units)
+    assert m.fs.sb[0].is_property_constructed(conc_name)
+
+
+@pytest.mark.unit
 def test_compatibility_with_feed_mole_basis():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(time_set=[0, 1], dynamic=False)
