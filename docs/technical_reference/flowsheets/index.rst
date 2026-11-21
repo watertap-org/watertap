@@ -20,6 +20,7 @@ The flowsheets below can be accessed at the
    generic_desalination_train
    lsrro
    membrane_distillation
+   multistage_RO
    mvc
    RO_with_energy_recovery
    seawater_RO_desalination
