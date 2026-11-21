@@ -10,10 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from typing import ClassVar
-
 import pyomo.environ as pyo
-from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.common.config import ConfigValue
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -34,11 +31,6 @@ from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
 
 _log = idaeslog.getLogger(__name__)
-
-
-_FLOW_BASIS_LABELS = ("volumetric", "mass", "energy")
-_FLOW_BASIS_OUTPUT_UNITS = (pyo.units.m**3, pyo.units.kg, pyo.units.kWh)
-_FLOW_BASIS_UNITS_MAP = dict(zip(_FLOW_BASIS_LABELS, _FLOW_BASIS_OUTPUT_UNITS))
 
 
 class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
@@ -66,7 +58,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     )
 
     # Define default mapping of costing methods to unit models
-    unit_mapping: ClassVar = {
+    unit_mapping = {
         Mixer: cost_mixer,
         HeatExchanger: cost_heat_exchanger,
         CSTR: cost_cstr,
@@ -77,73 +69,190 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # Register currency and conversion rates based on CE Index
         register_idaes_currency_units()
 
-    def set_base_currency_base_period(self):
-        # Set the base year for all costs
-        self.base_currency = pyo.units.USD_2018
-        # Set a base period for all operating costs
-        self.base_period = pyo.units.year
+    def set_base_currency_and_period(self):
+        self.base_currency = None
+        self.base_period = None
 
-    def add_levelized_cost(
-        self, flow_rate, name="levelized_cost", flow_basis=None, flow_basis_units=None
-    ):
+        # Hidden variables for internal tracking of base currency and period
+        self._base_currency = None
+        self._base_period = None
+        self._base_currency_year = None
+
+        # Boolean to track if the base currency and period have been defined
+        self._base_currency_period_defined = False
+
+        if "case_study_definition" in self.config:
+            # it is a ZeroOrderCosting block, so we preferentially
+            # use the values from the _cs_def if available
+            if "base_currency" in self._cs_def:
+                base_currency_year = int(
+                    str(self._cs_def["base_currency"]).split("_")[-1]
+                )
+                # Assign the base currency to the internal variable
+                self._base_currency_year = base_currency_year
+                self._check_base_currency_year(base_currency_year)
+                if isinstance(self._cs_def["base_currency"], int):
+                    # Allow users to pass only the year for the base currency via yaml
+                    self.base_currency = getattr(
+                        pyo.units, f"USD_{self._cs_def['base_currency']}"
+                    )
+                else:
+                    self.base_currency = getattr(
+                        pyo.units, self._cs_def["base_currency"]
+                    )
+
+                self._base_currency = self.base_currency
+                _log.info(
+                    f"Setting base_currency from case study yaml: {self.base_currency}"
+                )
+
+            if "base_period" in self._cs_def:
+                self._check_base_period(self._cs_def["base_period"])
+                self.base_period = getattr(pyo.units, self._cs_def["base_period"])
+                # str representation of year is "a"
+                bs_str = (
+                    "year" if self.base_period == pyo.units.year else self.base_period
+                )
+                # Assign the base period to the internal variable
+                self._base_period = self.base_period
+                _log.info(f"Setting base_period from case study yaml: {bs_str}")
+
+            # Mark that the base currency and period have been defined
+            self._base_currency_period_defined = True
+
+        # For ZO unit models where a config argument was provided, update the base currency to use config argument
+        if self.config.base_currency_year is not None:
+            self._check_base_currency_year(self.config.base_currency_year)
+            self.base_currency = getattr(
+                pyo.units, f"USD_{self.config.base_currency_year}"
+            )
+            # Assign the base currency year to the internal variable
+            self._base_currency_year = self.config.base_currency_year
+            self._base_currency = self.base_currency
+            _log.info(f"Setting base_currency from config: {self.base_currency}")
+
+        # If the base currency year and base currency is not set or specified in the config, use the default base_currency USD_2018
+        elif self.config.base_currency_year is None and self.base_currency is None:
+            _log.info(
+                "Base currency year not specified in config or case_study_definition, using default value: 2018"
+            )
+            self.config.base_currency_year = 2018
+            self.base_currency = pyo.units.USD_2018
+            self._base_currency = self.base_currency
+
+        # For ZO unit models where a config argument was provided, update the base period to use config argument if it is valid
+        if self.config.base_period is not None:
+            self._check_base_period(self.config.base_period)
+            self.base_period = getattr(pyo.units, self.config.base_period)
+            # Assign the base period to the internal variable
+            self._base_period = self.base_period
+            _log.info(f"Setting base_period from config: {self.config.base_period}")
+
+        # If the base period is not set or specified in the config, use the default base_period 'year'
+        elif self.config.base_period is None and self.base_period is None:
+            _log.info(
+                "Base period not specified in config or case_study_definition, using default value: year"
+            )
+            self.config.base_period = "year"
+            self.base_period = pyo.units.year
+            self._base_period = self.base_period
+
+        self._base_currency_period_defined = True
+
+    def _validate_watertap_costing_config(self):
         """
-        Add a levelized cost to costing block.
+        Validate the configuration of a WaterTAP costing block
+        and set the base_currency and base_period attributes.
+        """
+
+        if getattr(self, "_base_currency_period_defined", None) is True:
+            if (
+                self.base_currency is not self._base_currency
+                or self.base_period is not self._base_period
+            ):
+                # Users cannot manually re-set base_currency and base_period
+                msg = "base_currency and base_period are already set:"
+                msg += f" base_currency = {self._base_currency}, base_period = {self._base_period}"
+                _log.warning(msg)
+
+                # Reassign the base_currency and base_period from the existing attributes
+                self.base_currency = getattr(self, "_base_currency")
+                self.base_period = getattr(self, "_base_period")
+
+        if (
+            getattr(self, "_base_currency", None) is None
+            or getattr(self, "_base_period", None) is None
+        ):
+            self.set_base_currency_and_period()
+
+    @staticmethod
+    def _check_base_currency_year(base_currency_year):
+        if not 1990 <= base_currency_year <= 2023:
+            raise ConfigurationError(
+                f"Base currency year must be between 1990 and 2023, but got {base_currency_year}"
+            )
+
+    @staticmethod
+    def _check_base_period(base_period):
+        try:
+            bp = getattr(pyo.units, base_period)
+        except AttributeError:
+            raise ConfigurationError(f"{base_period} is not a valid unit.")
+
+        if not bp._pint_unit.dimensionality == "[time]":
+            msg = f"base_period configuration must be a unit of time "
+            msg += f"but got {base_period} {bp._pint_unit.dimensionality}."
+            raise ConfigurationError(msg)
+
+    def add_LCOW(self, flow_rate, name="LCOW"):
+        """
+        Add Levelized Cost of Water (LCOW) to costing block.
         Args:
-            flow_rate - flow rate to be used in calculating the levelized cost
-            name (optional) - name for the levelized cost expression (default: "levelized_cost")
-            flow_basis (optional) - basis for the flow rate, either "volumetric", "mass", or "energy"
-            flow_basis_units (optional) - denominator units (e.g., m**3, kg, kWh);
-                                      when omitted, inferred from flow_rate units unless flow_basis is provided
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating LCOW
+            name (optional) - name for the LCOW variable (default: LCOW)
         """
 
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
-            flow_rate=flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
-            period=self.base_period,
-        )
+        self._validate_watertap_costing_config()
 
         denominator = (
-            pyo.units.convert(flow_rate, to_units=flow_basis_units / self.base_period)
+            pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / self.base_period)
             * self.utilization_factor
         )
-
-        metric_label = {
-            "LCOW": "Levelized Cost of Water",
-            "LCOP": "Levelized Cost of Product",
-        }.get(name, f"{name}")
-        doc_string = f"{metric_label} based on flow {flow_rate.name}"
 
         self.add_component(
             name,
             pyo.Expression(
-                expr=self.total_annualized_cost / denominator,
-                doc=doc_string,
+                expr=(
+                    self.total_capital_cost * self.capital_recovery_factor
+                    + self.total_operating_cost
+                )
+                / denominator,
+                doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
             ),
         )
 
         c_units = self.base_currency
         t_units = self.base_period
-        levelized_units = c_units / flow_basis_units
         direct_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} direct capital expenditure by component",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         indirect_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} indirect capital expenditure by component",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         fixed_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} fixed operating expenditure by component",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         variable_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} variable operating expenditure by component",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         self.add_component(name + "_component_direct_capex", direct_capex_lcows)
         self.add_component(name + "_component_indirect_capex", indirect_capex_lcows)
@@ -152,23 +261,23 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         agg_direct_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} direct capital expenditure by unit type",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         agg_indirect_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} indirect capital expenditure by unit type",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         agg_fixed_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} fixed operating expenditure by unit type",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         agg_variable_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"{doc_string} variable operating expenditure by unit type",
-            initialize=0 * levelized_units,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         self.add_component(name + "_aggregate_direct_capex", agg_direct_capex_lcows)
         self.add_component(name + "_aggregate_indirect_capex", agg_indirect_capex_lcows)
@@ -272,102 +381,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     flow_cost * self.utilization_factor
                 ) / denominator
 
-    @classmethod
-    def _infer_flow_basis_from_units(cls, units):
-        """Checks the provided units against the known flow basis units and returns the corresponding flow basis label if a match is found."""
-        if units is None:
-            raise ValueError(
-                "Could not infer flow basis because no units were provided."
-            )
-
-        for basis, basis_units in _FLOW_BASIS_UNITS_MAP.items():
-            try:
-                pyo.units.convert(1 * units, to_units=basis_units)
-                return basis
-            except (InconsistentUnitsError, TypeError, ValueError) as err:
-                _log.debug(
-                    f"Unable to match output units {units} to basis '{basis}': {err}"
-                )
-                continue
-
-        valid_units = ", ".join(str(u) for u in _FLOW_BASIS_OUTPUT_UNITS)
-        raise ValueError(
-            f"Could not infer flow basis from units '{units}'. Supported unit bases are: {valid_units}."
-        )
-
-    @classmethod
-    def _infer_flow_basis_from_flow_rate_units(cls, flow_rate, period):
-        """Checks the provided flow_rate units against the known flow basis units and returns the corresponding flow basis label if a match is found."""
-        flow_rate_units = pyo.units.get_units(flow_rate)
-        if flow_rate_units is None:
-            raise ValueError(
-                "Could not infer flow basis from flow_rate because it has no units. "
-                "Provide flow_basis or flow_basis_units explicitly."
-            )
-
-        for basis, basis_units in _FLOW_BASIS_UNITS_MAP.items():
-            try:
-                pyo.units.convert(flow_rate, to_units=basis_units / period)
-                return basis
-            except (InconsistentUnitsError, TypeError, ValueError) as err:
-                _log.debug(
-                    f"Unable to match flow_rate {flow_rate} units to basis '{basis}' "
-                    f"with period '{period}': {err}"
-                )
-                continue
-
-        raise ValueError(
-            f"Could not infer flow basis from flow_rate units '{flow_rate_units}' with period '{period}'. "
-            "Provide flow_basis or flow_basis_units explicitly."
-        )
-
-    def _resolve_flow_basis_and_flow_basis_units(
-        self, flow_rate, flow_basis=None, flow_basis_units=None, period=None
-    ):
-        """Resolves the flow basis and output units for a given flow rate.
-        If flow_basis is provided, it will be used to determine the flow_basis_units.
-        If flow_basis_units is provided, it will be used to determine the flow_basis.
-        If neither is provided, the flow_basis will be inferred from the flow_rate units and the flow_basis_units will be set accordingly.
-        """
-        if period is None:
-            period = self.base_period
-
-        basis_units_map = _FLOW_BASIS_UNITS_MAP
-
-        if flow_basis_units is None:
-            if flow_basis is None:
-                flow_basis = self._infer_flow_basis_from_flow_rate_units(
-                    flow_rate, period
-                )
-            elif flow_basis not in basis_units_map:
-                raise ValueError(
-                    f"Unrecognized flow_basis {flow_basis}. Valid options are "
-                    "'volumetric', 'mass', and 'energy'."
-                )
-            # The output units match the defined flow basis units
-            flow_basis_units = basis_units_map[flow_basis]
-        else:
-            inferred_basis = self._infer_flow_basis_from_units(flow_basis_units)
-            if flow_basis is None:
-                flow_basis = inferred_basis
-            elif flow_basis != inferred_basis:
-                raise ValueError(
-                    f"flow_basis '{flow_basis}' is inconsistent with flow_basis_units '{flow_basis_units}'. "
-                    f"Inferred basis from flow_basis_units is '{inferred_basis}'."
-                )
-
-        return flow_basis, flow_basis_units
-
-    def add_LCOW(self, flow_rate, name="LCOW"):
-        """
-        Add Levelized Cost of Water (LCOW) to costing block.
-
-        Args:
-            flow_rate: flow rate of water (volumetric) to be used in calculating LCOW
-            name: name for the levelized cost of water expression (default: LCOW)
-        """
-        return self.add_levelized_cost(flow_rate, flow_basis="volumetric", name=name)
-
     @staticmethod
     def _find_flow_unit(flow_expr):
         """
@@ -422,49 +435,27 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         return str(flow_expr)
 
     def add_specific_energy_consumption(
-        self,
-        flow_rate,
-        name="specific_energy_consumption",
-        flow_basis=None,
-        flow_basis_units=None,
+        self, flow_rate, name="specific_energy_consumption"
     ):
         """
-        Add specific energy consumption (kWh/m**3, kWh/kg, or kWh/kWh) to costing block.
-
+        Add specific energy consumption (kWh/m**3) to costing block.
         Args:
-            flow_rate: flow rate to be used in calculating specific energy consumption
-            name (optional): name for the specific energy consumption expression (default: specific_energy_consumption)
-            flow_basis (optional): basis for the flow rate, either "volumetric", "mass", or "energy"
-            flow_basis_units (optional): denominator units (e.g., m**3, kg, kWh);
-                                     when omitted, inferred from flow_rate units unless flow_basis is provided
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating specific energy consumption
+            name (optional) - the name of the Expression for the specific
+                              energy consumption (default: specific_energy_consumption)
         """
-
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
-            flow_rate=flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
-            period=pyo.units.hr,
-        )
-
-        flow_units = flow_basis_units / pyo.units.hr
 
         self.add_component(
             name,
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
-                / pyo.units.convert(flow_rate, to_units=flow_units),
+                / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr),
                 doc=f"Specific energy consumption based on flow {flow_rate.name}",
             ),
         )
-
         self.add_flow_component_breakdown(
-            "electricity",
-            name,
-            flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
-            utilization_factor=1.0,
-            period=pyo.units.hr,
+            "electricity", flow_rate, name=name, period=pyo.units.hr
         )
 
     def add_annual_water_production(self, flow_rate, name="annual_water_production"):
@@ -476,56 +467,19 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name (optional) - name for the annual water production
                               Expression (default: annual_water_production)
         """
-        return self.add_process_throughput(
-            flow_rate, name=name, flow_basis="volumetric", period=pyo.units.year
-        )
-
-    def add_process_throughput(
-        self,
-        flow_rate,
-        name="annual_process_throughput",
-        flow_basis=None,
-        flow_basis_units=None,
-        period=pyo.units.year,
-    ):
-        """
-        Add process throughput expressed over a specified period.
-
-        The throughput may represent any process stream quantity,
-        including feed streams, treated streams, products, recovered
-        materials, or energy flows, adjusted by the utilization factor.
-
-        Args:
-            flow_rate: flow rate to be used in calculating throughput.
-            name (optional): name for the throughput expression (default: annual_process_throughput).
-            flow_basis (optional): basis for the flow rate, either
-                "volumetric", "mass", or "energy".
-            flow_basis_units (optional): numerator units (e.g., m**3,
-                kg, kWh); when omitted, inferred from flow_rate units
-                unless flow_basis is provided.
-            period (optional): reporting period for throughput
-                (e.g., year, month, day). Defaults to year.
-        """
-
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
-            flow_rate=flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
-            period=period,
-        )
-
 
         self._validate_watertap_costing_config()
 
         self.add_component(
             name,
             pyo.Expression(
-                expr=pyo.units.convert(
-                    flow_rate,
-                    to_units=flow_basis_units / period,
-                )
-                * self.utilization_factor,
-                doc=f"Process throughput based on flow {flow_rate.name} over period {period}",
+                expr=(
+                    pyo.units.convert(
+                        flow_rate, to_units=pyo.units.m**3 / self.base_period
+                    )
+                    * self.utilization_factor
+                ),
+                doc=f"Annual water production based on flow {flow_rate.name}",
             ),
         )
 
@@ -536,100 +490,71 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating electricity intensity
             name (optional) - the name of the Expression for the specific
-                              electrical intensity (default: electrical_intensity)
+                              electrical intensity (default: specific_electrical_carbon_intensity)
         """
         self.add_specific_energy_consumption(flow_rate, name=name)
 
     def add_specific_electrical_carbon_intensity(
-        self,
-        flow_rate,
-        name="specific_electrical_carbon_intensity",
-        flow_basis=None,
-        flow_basis_units=None,
+        self, flow_rate, name="specific_electrical_carbon_intensity"
     ):
         """
-        Add specific electrical carbon intensity (kg_CO2eq/m**3, kg_CO2eq/kg, kg_CO2eq/kWh) to costing block.
+        Add specific electrical carbon intensity (kg_CO2eq/m**3) to costing block.
         Args:
-            flow_rate - flow rate to be used in calculating specific electrical carbon intensity
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating specific electrical carbon intensity
             name (optional) - the name of the Expression for the specific
-                                          carbon intensity (default: specific_electrical_carbon_intensity)
-            flow_basis (optional) - basis for the flow rate, either "volumetric", "mass", or "energy", default is "volumetric"
-            flow_basis_units (optional) - denominator production units (e.g., m**3, kg, kWh);
-                                      when omitted, inferred from flow_rate units unless flow_basis is provided
+                              carbon intensity (default: specific_electrical_carbon_intensity)
         """
-
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
-            flow_rate=flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
-            period=pyo.units.hr,
-        )
 
         self.add_component(
             name,
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
                 * self.electrical_carbon_intensity
-                / pyo.units.convert(
-                    flow_rate, to_units=flow_basis_units / pyo.units.hr
-                ),
+                / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr),
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
         self.add_flow_component_breakdown(
             "electricity",
-            name,
             flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
+            name=name,
             period=pyo.units.hr,
-            utilization_factor=1.0,
             multiplier=self.electrical_carbon_intensity,
         )
 
     def add_flow_component_breakdown(
         self,
         flow_name,
-        name,
         flow_rate,
-        flow_basis=None,
-        flow_basis_units=None,
+        name=None,
         period=None,
-        utilization_factor=None,
         multiplier=1.0,
     ):
         """
-        Add per-component breakdowns for specific `flow_name` consumption with base-name `name`
-        at `flow_rate`.
-
+        Add per-component breakdowns for a registered flow type normalized by a flow rate over a period
         Args:
-            flow_name (required): string for a registered flow type
-            name (required): base name appended with ``_component`` for expression name
-            flow_rate (required): flow rate to be used for normalization
-            flow_basis (optional): flow basis, either ``"volumetric"``, ``"mass"``, or ``"energy"``
-            flow_basis_units (optional): explicit units for the flow rate
-            period (optional): time period for normalization (default is ``base_period``)
-            utilization_factor (optional): utilization factor for the flow (default is the costing block's ``utilization_factor``)
-            multiplier (optional): multiplier for the flow (default is 1.0)
+            flow_name - name of registered flow
+            flow_rate - flow rate of water (volumetric) to be used for normalization
+            name (optional)- base name for the component Expression (default is flow_name)
+            period (optional) - time period for normalization (default is base_period)
+            multiplier (optional) - multiplier for the flow (default is 1.0)
         """
-        if utilization_factor is None:
-            utilization_factor = self.utilization_factor
+        # NOTE: utilization_factor cancels in final expression but is included for convention
+
         if period is None:
             period = self.base_period
 
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
-            flow_rate=flow_rate,
-            flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
-            period=period,
-        )
+        if name is None:
+            name = flow_name
 
         denominator = (
-            pyo.units.convert(flow_rate, to_units=flow_basis_units / period)
-            * utilization_factor
+            pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / period)
+            * self.utilization_factor
         )
         f_units = pyo.units.get_units(getattr(self, f"aggregate_flow_{flow_name}"))
         c_units = f_units * pyo.units.get_units(multiplier)
+        expr_units = c_units / pyo.units.get_units(denominator)
 
         try:
             flows = self._registered_flows[flow_name]
@@ -639,7 +564,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         specific_flow_consumption = pyo.Expression(
             pyo.Any,
             doc=f"Specific {flow_name} consumption by component",
-            initialize=0.0 * period * c_units / flow_basis_units,
+            initialize=0.0 * period * c_units / pyo.units.m**3,
         )
         self.add_component(name + "_component", specific_flow_consumption)
 
@@ -647,15 +572,17 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_std = pyo.units.convert(flow_expr, to_units=f_units)
             unit = self._find_flow_unit(flow_expr)
             if unit is not None:
-                specific_flow_consumption[unit.name] += (
-                    flow_std * utilization_factor * multiplier
-                ) / denominator
+                specific_flow_consumption[unit.name] += pyo.units.convert(
+                    (flow_std * self.utilization_factor * multiplier) / denominator,
+                    to_units=expr_units,
+                )
                 continue
             _log.warning(f"Could not find unique unit for flow {flow_expr}")
-            flow_name_str = self._get_flow_name(flow_expr)
-            specific_flow_consumption[flow_name_str] += (
-                flow_std * utilization_factor * multiplier
-            ) / denominator
+            flow_name = self._get_flow_name(flow_expr)
+            specific_flow_consumption[flow_name] += pyo.units.convert(
+                (flow_std * self.utilization_factor * multiplier) / denominator,
+                to_units=expr_units,
+            )
 
     def cost_process(self):
         """
