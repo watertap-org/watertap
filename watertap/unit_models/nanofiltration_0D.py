@@ -315,6 +315,9 @@ class Nanofiltration0DScaler(CustomScalerBase):
         # Variables with default scaling factors
         for n in self.DEFAULT_SCALING_FACTORS.keys():
             c = model.find_component(n)
+            if c is None:
+                # deltaP only exists when has_pressure_change is True
+                continue
             for v in c.values():
                 self.scale_variable_by_default(v, overwrite=overwrite)
 

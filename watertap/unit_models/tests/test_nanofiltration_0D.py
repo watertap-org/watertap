@@ -897,6 +897,25 @@ class TestNanofiltration0DScaler:
         )
 
     @pytest.mark.unit
+    def test_variable_scaling_routine_no_pressure_change(self, mcas_model):
+        mcas_model.fs.unit_no_dp = Nanofiltration0D(
+            property_package=mcas_model.fs.properties,
+            has_pressure_change=False,
+        )
+        unit = mcas_model.fs.unit_no_dp
+        assert not hasattr(unit, "deltaP")
+
+        scaler = Nanofiltration0DScaler()
+        scaler.variable_scaling_routine(unit)
+
+        # rejection_comp (4 solutes) and recovery_solvent, but no deltaP
+        assert isinstance(unit.scaling_factor, Suffix)
+        assert len(unit.scaling_factor) == 5
+        for j in ["Ca_2+", "Mg_2+", "SO4_2-", "Na_+"]:
+            assert unit.scaling_factor[unit.rejection_comp[0, j]] == 1e2
+        assert unit.scaling_factor[unit.recovery_solvent[0]] == 10
+
+    @pytest.mark.unit
     def test_constraint_scaling_routine(self, mcas_model):
         scaler = Nanofiltration0DScaler()
 
