@@ -75,6 +75,20 @@ _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 
 
+def _mask(secret):
+    """
+    Masks a secret for logging, keeping only its last four characters.
+
+    :param secret: string to mask
+
+    :return string: masked string
+    """
+    secret = str(secret)
+    if len(secret) <= 8:
+        return "****"
+    return "****" + secret[-4:]
+
+
 class CredentialManager:
     """
     A class to handle credentials for OLI Cloud.
@@ -259,7 +273,6 @@ class CredentialManager:
         """
 
         encryption_key = Fernet.generate_key()
-        _logger.info(f" Secret key is {encryption_key.decode()}")
 
         try:
             cipher = Fernet(encryption_key)
@@ -268,10 +281,21 @@ class CredentialManager:
             )
             with open(self.config_file, "wb") as f:
                 f.write(encrypted_credentials)
-            return encryption_key
 
         except:
             raise RuntimeError(f" Failed encryption.")
+
+        # The key decrypts config_file, so it never goes to the logger
+        # (handlers may write it to files, CI output or log collectors).
+        _logger.info(
+            f" Encrypted credentials written to {self.config_file}. The key to"
+            " decrypt it is in CredentialManager.encryption_key; keep it secret"
+            " and pass it as encryption_key=... to reuse the file."
+        )
+        if self.interactive_mode:
+            # shown once, directly to the person answering the prompt
+            print(f"Encryption key (store it securely): {encryption_key.decode()}")
+        return encryption_key
 
     def set_access_key(self):
         """
@@ -284,7 +308,7 @@ class CredentialManager:
         else:
             _logger.info("Specify an access key: ")
             for i in range(len(self.credentials["access_keys"])):
-                _logger.info(f"{i}\t{self.credentials['access_keys'][i]}")
+                _logger.info(f"{i}\t{_mask(self.credentials['access_keys'][i])}")
                 if self.test:
                     r = 0
                 else:
@@ -325,10 +349,12 @@ class CredentialManager:
             data=json.dumps({"expiry": _set_expiry_timestamp(key_lifetime)}),
         )
 
-        self.credentials["access_keys"].append(
-            json.loads(response.text)["data"]["apiKey"]
-        )
-        _logger.info(response.text)
+        response_data = json.loads(response.text)
+        new_key = response_data["data"]["apiKey"]
+        self.credentials["access_keys"].append(new_key)
+        # the full key is in the return value and in credentials["access_keys"]
+        response_data["data"]["apiKey"] = _mask(new_key)
+        _logger.info(json.dumps(response_data))
         return response.text
 
     def delete_oliapi_access_key(self, api_key):
